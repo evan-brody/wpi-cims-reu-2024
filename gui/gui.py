@@ -690,7 +690,10 @@ class MainWindow(QMainWindow):
         self.database_table_widget.clear()
 
         try:
-            with open("database.csv", newline="") as csvfile:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(script_dir, "database.csv")
+
+            with open(file_path, newline="") as csvfile:
                 reader = csv.reader(csvfile)
                 rows = list(reader)
 
