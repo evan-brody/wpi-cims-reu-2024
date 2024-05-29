@@ -27,12 +27,16 @@ TODO: Add bathtub curve in Statistics tab with options for parameter changes. (n
 TODO: FSD should be Ints
 TODO: Change database type from csv to SQL Lite
 TODO: UI Bug fixes
+TODO: Not putting in risk acceptance threshold makes main tool crash when try to generate
+TODO: Tables are same size so labels are cut off
+
 TODO: Search for components
 
 """
 
-import statistics
+import stats as statistics
 
+import os
 import sys
 import csv
 import seaborn as sns
@@ -663,7 +667,7 @@ class MainWindow(QMainWindow):
 
         # error checking for the existence of a database.csv file
         try:
-            with open('database.csv', newline='') as csvfile:
+            with open(os.getcwd()+'\\gui\\database.csv', newline='') as csvfile:
                 reader = csv.reader(csvfile)
                 next(reader)  # skip the header row
                 for row in reader:
