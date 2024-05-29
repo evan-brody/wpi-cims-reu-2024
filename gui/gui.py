@@ -21,14 +21,13 @@ Worcester Polytechnic Institute.
 
 ### TASK LIST ###
 
-TODO: Add dropdown menu so user can easily select component from database when generating table. (DONE)
 TODO: Refactor the code so that it can generate Weibull/Rayleigh plots for any component using defaults if data isn't
       provided. (WIP, this will take more doing)
 TODO: Add bathtub curve in Statistics tab with options for parameter changes. (notes on the dropbox) (WIP, just need to write some code)
-TODO: Add mission time. (see presentation slides) (DONE)
-TODO: Change color scheme to stand out more (more readability) (DONE)
-TODO: Add next and previous buttons to the statistics tab. (DONE)
-TODO: Make dropdown menus for choosing plots you want to generate. (DONE)
+TODO: FSD should be Ints
+TODO: Change database type from csv to SQL Lite
+TODO: UI Bug fixes
+TODO: Search for components
 
 """
 
