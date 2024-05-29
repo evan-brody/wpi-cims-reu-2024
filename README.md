@@ -1,4 +1,5 @@
-# Collins-wpi-reu
+## Center for Industrial Mathematics and Statistics, Worcester Polytechnic Institute
+# NSF REU
 
 
 Repository for the WPI Industrial Mathematics & Statistics REU (DMS-2244306) sponsored by Collins Aerospace, a subsidiary of Raytheon Technologies.
