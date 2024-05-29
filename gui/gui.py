@@ -748,10 +748,12 @@ class MainWindow(QMainWindow):
     def read_data_from_csv(self):
         database_data.clear()
         self.database_data = {}
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(script_dir, "database.csv")
 
         # error checking for the existence of a database.csv file
         try:
-            with open(os.getcwd()+'\\gui\\database.csv', newline='') as csvfile:
+            with open(file_path, newline="") as csvfile:
                 reader = csv.reader(csvfile)
                 next(reader)  # skip the header row
                 for row in reader:
