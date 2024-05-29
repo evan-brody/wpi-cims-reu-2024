@@ -39,6 +39,7 @@ import stats as statistics
 import os
 import sys
 import csv
+import os
 import seaborn as sns
 import matplotlib as mpl
 import pandas as pd
@@ -81,10 +82,12 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Component Failure Modes and Effects Analysis (FMEA)")
         self.setGeometry(100, 100, 1000, 572)
-        self.setStyleSheet("QPushButton { color: white; background-color: #C02F1D; }"
-                           "QLabel { color: #C02F1D; font-weight: bold; }"
-                           "QTableWidget { gridline-color: #C02F1D; } "
-                           "QLineEdit { border: 2px solid #C02F1D; }")
+        self.setStyleSheet(
+            "QPushButton { color: white; background-color: #C02F1D; }"
+            "QLabel { color: #C02F1D; font-weight: bold; }"
+            "QTableWidget { gridline-color: #C02F1D; } "
+            "QLineEdit { border: 2px solid #C02F1D; }"
+        )
 
         # Creating tabs widget
         self.central_widget = QTabWidget(self)
@@ -92,13 +95,21 @@ class MainWindow(QMainWindow):
 
         # Creating the tabs
         self.user_instructions_tab = QWidget()  # Create a new tab
-        self.central_widget.addTab(self.user_instructions_tab, "User Instructions")  # Add the tab to the QTabWidget
+        self.central_widget.addTab(
+            self.user_instructions_tab, "User Instructions"
+        )  # Add the tab to the QTabWidget
         self.main_tool_tab = QWidget()  # Create a new tab
-        self.central_widget.addTab(self.main_tool_tab, "Main Tool")  # Add the tab to the QTabWidget
+        self.central_widget.addTab(
+            self.main_tool_tab, "Main Tool"
+        )  # Add the tab to the QTabWidget
         self.statistics_tab = QWidget()  # Create a new tab
-        self.central_widget.addTab(self.statistics_tab, "Statistics")  # Add the tab to the QTabWidget
+        self.central_widget.addTab(
+            self.statistics_tab, "Statistics"
+        )  # Add the tab to the QTabWidget
         self.database_view_tab = QWidget()  # Create a new tab
-        self.central_widget.addTab(self.database_view_tab, "Database View")  # Add the tab to the QTabWidget
+        self.central_widget.addTab(
+            self.database_view_tab, "Database View"
+        )  # Add the tab to the QTabWidget
 
         ### START OF USER INSTRUCTIONS TAB SETUP ###
 
@@ -108,15 +119,21 @@ class MainWindow(QMainWindow):
         # Create a QLabel instance and set the text
         instructions1 = QLabel("Welcome to the Component FMEA Risk Mitigation Tool!")
         instructions1.setAlignment(Qt.AlignCenter)  # Center the text
-        instructions1.setStyleSheet("QLabel {font-size: 30px;}")  # Set the text color to black and increase the font size
+        instructions1.setStyleSheet(
+            "QLabel {font-size: 30px;}"
+        )  # Set the text color to black and increase the font size
 
         # Create QLabel instances for the logos
         logo1 = QLabel()
         logo2 = QLabel()
 
         # Create QPixmap instances with the logo images
-        pixmap1 = QPixmap(u"images/Collins_Aerospace_Logo.png").scaled(100, 100, Qt.KeepAspectRatio)
-        pixmap2 = QPixmap(u"images/WPI_Inst_Prim_FulClr.png").scaled(100, 100, Qt.KeepAspectRatio)
+        pixmap1 = QPixmap("images/Collins_Aerospace_Logo.png").scaled(
+            100, 100, Qt.KeepAspectRatio
+        )
+        pixmap2 = QPixmap("images/WPI_Inst_Prim_FulClr.png").scaled(
+            100, 100, Qt.KeepAspectRatio
+        )
 
         # Set the QPixmap to the QLabel
         logo1.setPixmap(pixmap1)
@@ -124,7 +141,8 @@ class MainWindow(QMainWindow):
 
         self.instructions2 = QWidget
         self.instructions2 = QTextEdit()
-        self.instructions2.setText("""
+        self.instructions2.setText(
+            """
         Please choose whether you want to complete an FMEA or FMECA analysis by clicking one of the buttons on the right!
         
         Here is some information regarding use:
@@ -137,7 +155,8 @@ class MainWindow(QMainWindow):
 
         3. The “Statistics tab allows the user to generate a neural network, regression, etc. [WORK IN PROGRESS]
         
-        """)
+        """
+        )
 
         font = QFont()
         font.setPointSize(16)  # Set this to the desired size
@@ -211,7 +230,9 @@ class MainWindow(QMainWindow):
         # Create and add the risk acceptance threshold field
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
         self.threshold_field = QLineEdit()
-        self.threshold_field.setToolTip("Enter the maximum acceptable RPN: must be a value between [1-1000].")
+        self.threshold_field.setToolTip(
+            "Enter the maximum acceptable RPN: must be a value between [1-1000]."
+        )
         self.left_layout.addWidget(self.threshold_label)
         self.left_layout.addWidget(self.threshold_field)
 
@@ -224,8 +245,19 @@ class MainWindow(QMainWindow):
         self.table_widget = QTableWidget()
         self.table_widget.setColumnCount(10)
         self.table_widget.setHorizontalHeaderLabels(
-            ["ID", "Failure Mode", "RPN", "Frequency", "Severity", "Detectability", "Mission Time", "Lower Bound (LB)",
-             "Best Estimate (BE)", "Upper Bound (UB)"])
+            [
+                "ID",
+                "Failure Mode",
+                "RPN",
+                "Frequency",
+                "Severity",
+                "Detectability",
+                "Mission Time",
+                "Lower Bound (LB)",
+                "Best Estimate (BE)",
+                "Upper Bound (UB)",
+            ]
+        )
         self.table_widget.setColumnWidth(0, 150)  # ID
         self.table_widget.setColumnWidth(1, 150)  # Failure Mode
         self.table_widget.setColumnWidth(3, 150)  # RPN
@@ -243,7 +275,9 @@ class MainWindow(QMainWindow):
 
         # Add the left layout to the main layout
         self.main_layout.addLayout(self.left_layout)
-        self.main_layout.setStretchFactor(self.left_layout, 2)  # make the left layout 3 times wider than the right
+        self.main_layout.setStretchFactor(
+            self.left_layout, 2
+        )  # make the left layout 3 times wider than the right
 
         # Create the right layout for the chart
         self.right_layout = QVBoxLayout()
@@ -282,7 +316,9 @@ class MainWindow(QMainWindow):
 
         # Add the right layout to the main layout
         self.main_layout.addLayout(self.right_layout)
-        self.main_layout.setStretchFactor(self.right_layout, 2)  # the right layout stays with default size
+        self.main_layout.setStretchFactor(
+            self.right_layout, 2
+        )  # the right layout stays with default size
 
         # Create a QHBoxLayout for the navigation buttons
         self.nav_button_layout = QHBoxLayout()
@@ -315,7 +351,9 @@ class MainWindow(QMainWindow):
         # self.input_and_plot_layout = QVBoxLayout()
         self.x_input_label = QLabel("Probability :")
         self.x_input_field = QLineEdit()
-        self.x_input_field.setValidator(QDoubleValidator(0.99, 99.99, 2))  # This will only accept float values
+        self.x_input_field.setValidator(
+            QDoubleValidator(0.99, 99.99, 2)
+        )  # This will only accept float values
         self.x_input_field.setToolTip("Humanoid Recommendation: 9 or 10 (Unacceptable)")
         self.left_layout.addWidget(self.x_input_field)
         self.left_layout.addWidget(self.x_input_label)
@@ -323,13 +361,17 @@ class MainWindow(QMainWindow):
 
         self.y_input_label = QLabel("Severity:")
         self.y_input_field = QLineEdit()
-        self.y_input_field.setValidator(QDoubleValidator(0.99, 99.99, 2))  # This will only accept float values
+        self.y_input_field.setValidator(
+            QDoubleValidator(0.99, 99.99, 2)
+        )  # This will only accept float values
         self.left_layout.addWidget(self.y_input_label)
         self.left_layout.addWidget(self.y_input_field)
 
         self.z_input_label = QLabel("Detection:")
         self.z_input_field = QLineEdit()
-        self.z_input_field.setValidator(QDoubleValidator(0.99, 99.99, 2))  # This will only accept float values
+        self.z_input_field.setValidator(
+            QDoubleValidator(0.99, 99.99, 2)
+        )  # This will only accept float values
         self.left_layout.addWidget(self.z_input_label)
         self.left_layout.addWidget(self.z_input_field)
 
@@ -373,7 +415,9 @@ class MainWindow(QMainWindow):
         left_layout_stats.addWidget(self.stat_submit_button)
 
         # Create button for detectability recommendation
-        self.detectability_button_stats = QPushButton("Get Detectability Recommendation")
+        self.detectability_button_stats = QPushButton(
+            "Get Detectability Recommendation"
+        )
         self.detectability_button_stats.clicked.connect(self.ask_questions)
         left_layout_stats.addWidget(self.detectability_button_stats)
 
@@ -381,8 +425,19 @@ class MainWindow(QMainWindow):
         self.table_widget_stats = QTableWidget()
         self.table_widget_stats.setColumnCount(10)
         self.table_widget_stats.setHorizontalHeaderLabels(
-            ["ID", "Failure Mode", "RPN", "Frequency", "Severity", "Detectability", "Mission Time", "Lower Bound (LB)",
-             "Best Estimate (BE)", "Upper Bound (UB)"])
+            [
+                "ID",
+                "Failure Mode",
+                "RPN",
+                "Frequency",
+                "Severity",
+                "Detectability",
+                "Mission Time",
+                "Lower Bound (LB)",
+                "Best Estimate (BE)",
+                "Upper Bound (UB)",
+            ]
+        )
         self.table_widget_stats.setColumnWidth(0, 150)  # ID
         self.table_widget_stats.setColumnWidth(1, 150)  # Failure Mode
         self.table_widget_stats.setColumnWidth(3, 150)  # RPN
@@ -465,7 +520,7 @@ class MainWindow(QMainWindow):
         self.questions = [
             "Does this system have redundancy, i.e. multiple units of the same component/subsystem in the case one fails?",
             "Does this system have diversity, i.e. multiple components/subsystems that are responsible for the same function?",
-            "Does this system have safety features, e.g. sensors, user-warnings, fail-safes?"
+            "Does this system have safety features, e.g. sensors, user-warnings, fail-safes?",
         ]
         self.qindex = 0
 
@@ -534,7 +589,6 @@ class MainWindow(QMainWindow):
         self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
         self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
-
     """
     
     Name: updateRayleighCanvas
@@ -552,12 +606,16 @@ class MainWindow(QMainWindow):
         # Clear the existing tabs
         self.stats_tab.clear()
 
-        if self.component_name_field.currentText() == "Motor-Driven Pump":  # Idealy, this would be modified to search through the list of component neames instead of the names being specificed here
+        if (
+            self.component_name_field.currentText() == "Motor-Driven Pump"
+        ):  # Idealy, this would be modified to search through the list of component neames instead of the names being specificed here
             # Get new figures from weibull()
             fig1 = statistics.rayleigh(np.array([20.8, 125.0, 4.17]))
             fig2 = statistics.rayleigh(np.array([1.0, 30.0, 1000.0]))
             fig3 = statistics.rayleigh(np.array([4.17, 83.3, 417.0]))
-        if self.component_name_field.currentText() == "Motor-Operated Valves":  # Same here
+        if (
+            self.component_name_field.currentText() == "Motor-Operated Valves"
+        ):  # Same here
             fig1 = statistics.rayleigh(np.array([41.7, 125.0, 375.0]))
             fig2 = statistics.rayleigh(np.array([83.3, 4170.0, 4.17]))
             fig3 = statistics.rayleigh(np.array([2.5, 33.3, 250.0]))
@@ -595,12 +653,16 @@ class MainWindow(QMainWindow):
         # Clear the existing tabs
         self.stats_tab.clear()
 
-        if self.component_name_field_stats.currentText() == "Motor-Driven Pump":  # Fix to read through database
+        if (
+            self.component_name_field_stats.currentText() == "Motor-Driven Pump"
+        ):  # Fix to read through database
             # Get new figures from weibull()
             fig1 = statistics.weibull(np.array([20.8, 125.0, 4.17]))
             fig2 = statistics.weibull(np.array([1.0, 30.0, 1000.0]))
             fig3 = statistics.weibull(np.array([4.17, 83.3, 417.0]))
-        if self.component_name_field_stats.currentText() == "Motor-Operated Valves":  # Fix to read through database (likely with currently unused values() function in Statistics.py)
+        if (
+            self.component_name_field_stats.currentText() == "Motor-Operated Valves"
+        ):  # Fix to read through database (likely with currently unused values() function in Statistics.py)
             fig1 = statistics.weibull(np.array([41.7, 125.0, 375.0]))
             fig2 = statistics.weibull(np.array([83.3, 4170.0, 4.17]))
             fig3 = statistics.weibull(np.array([2.5, 33.3, 250.0]))
@@ -632,7 +694,10 @@ class MainWindow(QMainWindow):
         self.database_table_widget.clear()
 
         try:
-            with open('database.csv', newline='') as csvfile:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(script_dir, "database.csv")
+
+            with open(file_path, newline="") as csvfile:
                 reader = csv.reader(csvfile)
                 rows = list(reader)
 
@@ -677,18 +742,20 @@ class MainWindow(QMainWindow):
                     if component_name not in database_data:
                         database_data[component_name] = []
                     # filling the list for holding information for a component's failure modes
-                    database_data[component_name].append({
-                        'id': int(row[1]),
-                        'failure_mode': row[2],
-                        'rpn': float(row[3]),
-                        'lower_bound': float(row[4]),
-                        'best_estimate': float(row[5]),
-                        'upper_bound': float(row[6]),
-                        'frequency': float(row[7]),
-                        'severity': float(row[8]),
-                        'detectability': float(row[9]),
-                        'mission_time': float(row[10])
-                    })
+                    database_data[component_name].append(
+                        {
+                            "id": int(row[1]),
+                            "failure_mode": row[2],
+                            "rpn": float(row[3]),
+                            "lower_bound": float(row[4]),
+                            "best_estimate": float(row[5]),
+                            "upper_bound": float(row[6]),
+                            "frequency": float(row[7]),
+                            "severity": float(row[8]),
+                            "detectability": float(row[9]),
+                            "mission_time": float(row[10]),
+                        }
+                    )
         except FileNotFoundError:
             error_message = "Error: Could not find the database.csv file."
             QMessageBox.critical(self, "File Not Found", error_message)
@@ -717,7 +784,15 @@ class MainWindow(QMainWindow):
 
         # Update the column header for "Failure Mode"
         self.table_widget.setHorizontalHeaderLabels(
-            ["ID", component_name + " Failure Modes", "RPN", "Frequency", "Severity", "Detectability"])
+            [
+                "ID",
+                component_name + " Failure Modes",
+                "RPN",
+                "Frequency",
+                "Severity",
+                "Detectability",
+            ]
+        )
 
         # Get data from the database
         component_data = database_data.get(component_name, [])
@@ -737,17 +812,29 @@ class MainWindow(QMainWindow):
         self.table_widget.setRowCount(self.max_ids)
 
         # Populate the table widget
-        for row, data in enumerate(component_data[self.selected_index:self.selected_index + self.max_ids]):
+        for row, data in enumerate(
+            component_data[self.selected_index : self.selected_index + self.max_ids]
+        ):
             self.table_widget.setItem(row, 0, QTableWidgetItem(str(data["id"])))
             self.table_widget.setItem(row, 1, QTableWidgetItem(data["failure_mode"]))
             self.table_widget.setItem(row, 2, QTableWidgetItem(str(data["rpn"])))
             self.table_widget.setItem(row, 3, QTableWidgetItem(str(data["frequency"])))
             self.table_widget.setItem(row, 4, QTableWidgetItem(str(data["severity"])))
-            self.table_widget.setItem(row, 5, QTableWidgetItem(str(data["detectability"])))
-            self.table_widget.setItem(row, 6, QTableWidgetItem(str(data["mission_time"])))
-            self.table_widget.setItem(row, 7, QTableWidgetItem(str(data["lower_bound"])))
-            self.table_widget.setItem(row, 8, QTableWidgetItem(str(data["best_estimate"])))
-            self.table_widget.setItem(row, 9, QTableWidgetItem(str(data["upper_bound"])))
+            self.table_widget.setItem(
+                row, 5, QTableWidgetItem(str(data["detectability"]))
+            )
+            self.table_widget.setItem(
+                row, 6, QTableWidgetItem(str(data["mission_time"]))
+            )
+            self.table_widget.setItem(
+                row, 7, QTableWidgetItem(str(data["lower_bound"]))
+            )
+            self.table_widget.setItem(
+                row, 8, QTableWidgetItem(str(data["best_estimate"]))
+            )
+            self.table_widget.setItem(
+                row, 9, QTableWidgetItem(str(data["upper_bound"]))
+            )
 
     """
 
@@ -771,7 +858,15 @@ class MainWindow(QMainWindow):
 
         # Update the column header for "Failure Mode"
         self.table_widget_stats.setHorizontalHeaderLabels(
-            ["ID", component_name + " Failure Modes", "RPN", "Frequency", "Severity", "Detectability"])
+            [
+                "ID",
+                component_name + " Failure Modes",
+                "RPN",
+                "Frequency",
+                "Severity",
+                "Detectability",
+            ]
+        )
 
         # Get data from the database
         component_data = database_data.get(component_name, [])
@@ -792,17 +887,37 @@ class MainWindow(QMainWindow):
 
         # Populate the table widget
         for row, data in enumerate(
-                component_data[self.selected_index_stats:self.selected_index_stats + self.max_ids_stats]):
+            component_data[
+                self.selected_index_stats : self.selected_index_stats
+                + self.max_ids_stats
+            ]
+        ):
             self.table_widget_stats.setItem(row, 0, QTableWidgetItem(str(data["id"])))
-            self.table_widget_stats.setItem(row, 1, QTableWidgetItem(data["failure_mode"]))
+            self.table_widget_stats.setItem(
+                row, 1, QTableWidgetItem(data["failure_mode"])
+            )
             self.table_widget_stats.setItem(row, 2, QTableWidgetItem(str(data["rpn"])))
-            self.table_widget_stats.setItem(row, 3, QTableWidgetItem(str(data["frequency"])))
-            self.table_widget_stats.setItem(row, 4, QTableWidgetItem(str(data["severity"])))
-            self.table_widget_stats.setItem(row, 5, QTableWidgetItem(str(data["detectability"])))
-            self.table_widget_stats.setItem(row, 6, QTableWidgetItem(str(data["mission_time"])))
-            self.table_widget_stats.setItem(row, 7, QTableWidgetItem(str(data["lower_bound"])))
-            self.table_widget_stats.setItem(row, 8, QTableWidgetItem(str(data["best_estimate"])))
-            self.table_widget_stats.setItem(row, 9, QTableWidgetItem(str(data["upper_bound"])))
+            self.table_widget_stats.setItem(
+                row, 3, QTableWidgetItem(str(data["frequency"]))
+            )
+            self.table_widget_stats.setItem(
+                row, 4, QTableWidgetItem(str(data["severity"]))
+            )
+            self.table_widget_stats.setItem(
+                row, 5, QTableWidgetItem(str(data["detectability"]))
+            )
+            self.table_widget_stats.setItem(
+                row, 6, QTableWidgetItem(str(data["mission_time"]))
+            )
+            self.table_widget_stats.setItem(
+                row, 7, QTableWidgetItem(str(data["lower_bound"]))
+            )
+            self.table_widget_stats.setItem(
+                row, 8, QTableWidgetItem(str(data["best_estimate"]))
+            )
+            self.table_widget_stats.setItem(
+                row, 9, QTableWidgetItem(str(data["upper_bound"]))
+            )
 
     """
 
@@ -828,7 +943,9 @@ class MainWindow(QMainWindow):
         component_name = self.component_name_field.currentText()
         id = self.current_row
 
-        values1 = np.array([20.8, 125.0, 4.17])  # lower bound, geometric mean, and upper bound
+        values1 = np.array(
+            [20.8, 125.0, 4.17]
+        )  # lower bound, geometric mean, and upper bound
         values2 = np.array([1.0, 30.0, 1000.0])
         values3 = np.array([4.17, 83.3, 417.0])
         values4 = np.array([41.7, 125.0, 375.0])
@@ -861,7 +978,9 @@ class MainWindow(QMainWindow):
 
     def on_rpn_item_changed(self):
         # Get the Frequency, Severity, and Detection values
-        probability = float(self.x_input_field.text()) if self.x_input_field.text() else 0
+        probability = (
+            float(self.x_input_field.text()) if self.x_input_field.text() else 0
+        )
         severity = float(self.y_input_field.text()) if self.y_input_field.text() else 0
         detection = float(self.z_input_field.text()) if self.z_input_field.text() else 0
 
@@ -872,7 +991,9 @@ class MainWindow(QMainWindow):
         rpn = probability * severity * detection
 
         # error checking for RPN value
-        if (probability or severity or detection) < 1 or (probability or severity or detection) > 10:
+        if (probability or severity or detection) < 1 or (
+            probability or severity or detection
+        ) > 10:
             error_message = "Error: Please re-enter values between 1 and 10, inclusive."
             QMessageBox.critical(self, "Value Error", error_message)
             return
@@ -919,17 +1040,28 @@ class MainWindow(QMainWindow):
             mission_time = self.table_widget.item(row, 6)
 
             if rpn_item:
-                component_data[row + self.selected_index]["rpn"] = float(frequency_item.text()) * float(
-                    mission_time.text()) * float(
-                    severity_item.text()) * float(detectability_item.text())
+                component_data[row + self.selected_index]["rpn"] = (
+                    float(frequency_item.text())
+                    * float(mission_time.text())
+                    * float(severity_item.text())
+                    * float(detectability_item.text())
+                )
             if frequency_item:
-                component_data[row + self.selected_index]["frequency"] = float(frequency_item.text())
+                component_data[row + self.selected_index]["frequency"] = float(
+                    frequency_item.text()
+                )
             if severity_item:
-                component_data[row + self.selected_index]["severity"] = float(severity_item.text())
+                component_data[row + self.selected_index]["severity"] = float(
+                    severity_item.text()
+                )
             if detectability_item:
-                component_data[row + self.selected_index]["detectability"] = float(detectability_item.text())
+                component_data[row + self.selected_index]["detectability"] = float(
+                    detectability_item.text()
+                )
             if mission_time:
-                component_data[row + self.selected_index]["mission_time"] = float(mission_time.text())
+                component_data[row + self.selected_index]["mission_time"] = float(
+                    mission_time.text()
+                )
 
         # Update the database with the modified component data
         database_data[component_name] = component_data
@@ -957,7 +1089,9 @@ class MainWindow(QMainWindow):
 
     def show_previous_stats(self):
         # so that it doesn't go below 0
-        self.selected_index_stats = max(0, self.selected_index_stats - self.max_ids_stats)
+        self.selected_index_stats = max(
+            0, self.selected_index_stats - self.max_ids_stats
+        )
         self.show_table_stats()
 
     """
@@ -977,8 +1111,10 @@ class MainWindow(QMainWindow):
 
         if self.selected_index + self.max_ids < len(component_data):
             self.selected_index += self.max_ids
-        elif self.selected_index + self.max_ids >= len(
-                component_data) and self.selected_index // self.max_ids < total_pages - 1:
+        elif (
+            self.selected_index + self.max_ids >= len(component_data)
+            and self.selected_index // self.max_ids < total_pages - 1
+        ):
             self.selected_index = (total_pages - 1) * self.max_ids
         self.show_table()
 
@@ -999,8 +1135,10 @@ class MainWindow(QMainWindow):
 
         if self.selected_index_stats + self.max_ids_stats < len(component_data):
             self.selected_index_stats += self.max_ids_stats
-        elif self.selected_index_stats + self.max_ids_stats >= len(
-                component_data) and self.selected_index_stats // self.max_ids_stats < total_pages - 1:
+        elif (
+            self.selected_index_stats + self.max_ids_stats >= len(component_data)
+            and self.selected_index_stats // self.max_ids_stats < total_pages - 1
+        ):
             self.selected_index_stats = (total_pages - 1) * self.max_ids_stats
         self.show_table_stats()
 
@@ -1021,17 +1159,21 @@ class MainWindow(QMainWindow):
             failure_mode_item = self.table_widget.item(row, 1)
             rpn_item = self.table_widget.item(row, 2)
             if id_item and failure_mode_item and rpn_item:
-                component_data.append({
-                    "id": int(id_item.text()),
-                    "failure_mode": failure_mode_item.text(),
-                    "rpn": float(rpn_item.text())
-                })
+                component_data.append(
+                    {
+                        "id": int(id_item.text()),
+                        "failure_mode": failure_mode_item.text(),
+                        "rpn": float(rpn_item.text()),
+                    }
+                )
 
         # Clear the existing plot
         self.figure.clear()
 
         # Adjust the subplot for spacing
-        self.figure.subplots_adjust(left=0.18)  # You can adjust the value to suit your needs
+        self.figure.subplots_adjust(
+            left=0.18
+        )  # You can adjust the value to suit your needs
 
         # Extract the failure modes and RPN values
         ids = [data["id"] for data in component_data]
@@ -1047,19 +1189,19 @@ class MainWindow(QMainWindow):
         ax = self.figure.add_subplot(111)
 
         # Set the color of the bars based on RPN values
-        colors = ['#5f9ea0' if rpn < threshold else '#FF6961' for rpn in rpn_values]
+        colors = ["#5f9ea0" if rpn < threshold else "#FF6961" for rpn in rpn_values]
         sns.barplot(x="Failure Mode ID", y="RPN", data=df, palette=colors, ax=ax)
 
-        ax.axhline(threshold, color='#68855C', linestyle='--')
-        ax.set_ylabel('Risk Priority Number (RPN)')
-        ax.set_xlabel('Failure Mode ID')
+        ax.axhline(threshold, color="#68855C", linestyle="--")
+        ax.set_ylabel("Risk Priority Number (RPN)")
+        ax.set_xlabel("Failure Mode ID")
         component_name = self.component_name_field.currentText()
-        ax.set_title(component_name + ' Risk Profile')
-        ax.tick_params(axis='x', rotation=0)
+        ax.set_title(component_name + " Risk Profile")
+        ax.tick_params(axis="x", rotation=0)
 
         # Set the font to bold
-        font = {'weight': 'bold'}
-        mpl.rc('font', **font)
+        font = {"weight": "bold"}
+        mpl.rc("font", **font)
 
         # Set the x-axis ticks to integers only
         ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
@@ -1076,10 +1218,12 @@ class MainWindow(QMainWindow):
     """
 
     def download_chart(self):
-        file_path, _ = QFileDialog.getSaveFileName(self, "Save Image", "", "JPEG (*.jpg);;All Files (*)")
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Save Image", "", "JPEG (*.jpg);;All Files (*)"
+        )
 
         if file_path:
-            self.figure.savefig(file_path, format='jpg', dpi=300)
+            self.figure.savefig(file_path, format="jpg", dpi=300)
 
     """
 
@@ -1113,24 +1257,34 @@ class MainWindow(QMainWindow):
         self.figure.clear()
 
         # Prepare the data for the pie chart
-        labels = ['Below Risk Threshold', 'Above Risk Threshold']
+        labels = ["Below Risk Threshold", "Above Risk Threshold"]
         rpn_values = [below_threshold, above_threshold]
 
         # Set the color of the slices based on the categories
-        colors = ['#5f9ea0', '#FF6961']
+        colors = ["#5f9ea0", "#FF6961"]
 
         # Create a pie chart
         ax = self.figure.add_subplot(111)
-        wedges, texts, autotexts = ax.pie(rpn_values, labels=labels, colors=colors, autopct='%1.1f%%', radius=1)
+        wedges, texts, autotexts = ax.pie(
+            rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=1
+        )
 
         # Create legend
-        legend_labels = [f'Number of Green Failure Modes: {below_threshold}',
-                         f'Number of Red Failure Modes: {above_threshold}',
-                         f'Total Failure Modes: {below_threshold + above_threshold}']
-        ax.legend(wedges, legend_labels, title="Failure Modes", loc="upper right", bbox_to_anchor=(1, 0.5))
+        legend_labels = [
+            f"Number of Green Failure Modes: {below_threshold}",
+            f"Number of Red Failure Modes: {above_threshold}",
+            f"Total Failure Modes: {below_threshold + above_threshold}",
+        ]
+        ax.legend(
+            wedges,
+            legend_labels,
+            title="Failure Modes",
+            loc="upper right",
+            bbox_to_anchor=(1, 0.5),
+        )
 
         component_name = self.component_name_field.currentText()
-        ax.set_title(component_name + ' Risk Profile')
+        ax.set_title(component_name + " Risk Profile")
 
         # Refresh the canvas
         self.canvas.draw()
@@ -1153,8 +1307,11 @@ class MainWindow(QMainWindow):
             width = float(self.y_input_field.text())
             height = float(self.z_input_field.text())
         except ValueError:
-            QMessageBox.critical(self, "Value Error",
-                                 "Please enter valid numbers for Frequency, Severity, and Detection.")
+            QMessageBox.critical(
+                self,
+                "Value Error",
+                "Please enter valid numbers for Frequency, Severity, and Detection.",
+            )
             return
 
         # Calculate RPN
@@ -1162,29 +1319,58 @@ class MainWindow(QMainWindow):
 
         # Determine color
         if rpn < 560:
-            color = 'green'
+            color = "green"
         elif 560 <= rpn < 840:
-            color = 'yellow'
+            color = "yellow"
         else:
-            color = 'red'
+            color = "red"
 
         # Generate the surface plot
         self.figure.clear()
-        ax = self.figure.add_subplot(111, projection='3d')
+        ax = self.figure.add_subplot(111, projection="3d")
 
         # Create a list of 3D coordinates for the vertices of each face
         vertices = [
-            [(0, 0, 0), (0, width, 0), (length, width, 0), (length, 0, 0)],  # Bottom face
-            [(0, 0, 0), (0, 0, height), (length, 0, height), (length, 0, 0)],  # Front face
+            [
+                (0, 0, 0),
+                (0, width, 0),
+                (length, width, 0),
+                (length, 0, 0),
+            ],  # Bottom face
+            [
+                (0, 0, 0),
+                (0, 0, height),
+                (length, 0, height),
+                (length, 0, 0),
+            ],  # Front face
             [(0, 0, 0), (0, 0, height), (0, width, height), (0, width, 0)],  # Left face
-            [(length, 0, 0), (length, 0, height), (length, width, height), (length, width, 0)],  # Right face
-            [(0, 0, height), (0, width, height), (length, width, height), (length, 0, height)],  # Top face
-            [(0, width, 0), (0, width, height), (length, width, height), (length, width, 0)],  # Rear face
+            [
+                (length, 0, 0),
+                (length, 0, height),
+                (length, width, height),
+                (length, width, 0),
+            ],  # Right face
+            [
+                (0, 0, height),
+                (0, width, height),
+                (length, width, height),
+                (length, 0, height),
+            ],  # Top face
+            [
+                (0, width, 0),
+                (0, width, height),
+                (length, width, height),
+                (length, width, 0),
+            ],  # Rear face
         ]
 
         # Add the faces to the plot
         for face in vertices:
-            ax.add_collection3d(Poly3DCollection([face], alpha=.25, linewidths=1, edgecolors='r', facecolors=color))
+            ax.add_collection3d(
+                Poly3DCollection(
+                    [face], alpha=0.25, linewidths=1, edgecolors="r", facecolors=color
+                )
+            )
 
         ax.set_xlabel("Frequency")
         ax.set_ylabel("Severity")
@@ -1214,12 +1400,14 @@ class MainWindow(QMainWindow):
             severity_item = self.table_widget.item(row, 4)
             detection_item = self.table_widget.item(row, 5)
             if id_item and severity_item and detection_item and frequency_item:
-                component_data.append({
-                    "id": int(id_item.text()),
-                    "severity": float(severity_item.text()),
-                    "detection": float(detection_item.text()),
-                    "frequency": float(frequency_item.text())
-                })
+                component_data.append(
+                    {
+                        "id": int(id_item.text()),
+                        "severity": float(severity_item.text()),
+                        "detection": float(detection_item.text()),
+                        "frequency": float(frequency_item.text()),
+                    }
+                )
 
         # Clear the existing plot
         self.figure.clear()
@@ -1230,23 +1418,31 @@ class MainWindow(QMainWindow):
         detection_values = [data["detection"] for data in component_data]
         frequency_values = [data["frequency"] for data in component_data]
 
-        df = pd.DataFrame({
-            "Failure Mode ID": ids,
-            "Severity": severity_values,
-            "Detection": detection_values,
-            "Frequency": frequency_values
-        })
+        df = pd.DataFrame(
+            {
+                "Failure Mode ID": ids,
+                "Severity": severity_values,
+                "Detection": detection_values,
+                "Frequency": frequency_values,
+            }
+        )
 
         # Create a 3D scatterplot
-        ax = self.figure.add_subplot(111, projection='3d')
+        ax = self.figure.add_subplot(111, projection="3d")
 
-        sc = ax.scatter(df["Severity"], df["Detection"], df["Frequency"], c=df["Failure Mode ID"], cmap='viridis')
+        sc = ax.scatter(
+            df["Severity"],
+            df["Detection"],
+            df["Frequency"],
+            c=df["Failure Mode ID"],
+            cmap="viridis",
+        )
 
-        ax.set_xlabel('Severity')
-        ax.set_ylabel('Detection')
-        ax.set_zlabel('Frequency')
+        ax.set_xlabel("Severity")
+        ax.set_ylabel("Detection")
+        ax.set_zlabel("Frequency")
         component_name = self.component_name_field.currentText()
-        ax.set_title(component_name + ' Risk Profile')
+        ax.set_title(component_name + " Risk Profile")
 
         # Add a colorbar
         self.figure.colorbar(sc, ax=ax, pad=0.02)
@@ -1272,12 +1468,14 @@ class MainWindow(QMainWindow):
             severity_item = self.table_widget.item(row, 4)
             detection_item = self.table_widget.item(row, 5)
             if id_item and severity_item and detection_item and frequency_item:
-                component_data.append({
-                    "id": int(id_item.text()),
-                    "severity": float(severity_item.text()),
-                    "detection": float(detection_item.text()),
-                    "frequency": float(frequency_item.text())
-                })
+                component_data.append(
+                    {
+                        "id": int(id_item.text()),
+                        "severity": float(severity_item.text()),
+                        "detection": float(detection_item.text()),
+                        "frequency": float(frequency_item.text()),
+                    }
+                )
 
         # Extract the values
         ids = [data["id"] for data in component_data]
@@ -1286,7 +1484,10 @@ class MainWindow(QMainWindow):
         frequency_values = [data["frequency"] for data in component_data]
 
         # Calculate RPN values for bubble sizes
-        rpn_values = [data["severity"] * data["detection"] * data["frequency"] for data in component_data]
+        rpn_values = [
+            data["severity"] * data["detection"] * data["frequency"]
+            for data in component_data
+        ]
 
         # Scale the RPN values
         rpn_scaled = [np.cbrt(val) for val in rpn_values]
@@ -1296,32 +1497,43 @@ class MainWindow(QMainWindow):
             x=frequency_values,
             y=severity_values,
             z=detection_values,
-            mode='markers',
+            mode="markers",
             marker=dict(
-                sizemode='diameter',
+                sizemode="diameter",
                 sizeref=0.1,
                 size=rpn_scaled,
                 color=rpn_scaled,
-                colorscale='Viridis',
-                colorbar_title='RPN',
-                line_color='rgb(140, 140, 170)'
+                colorscale="Viridis",
+                colorbar_title="RPN",
+                line_color="rgb(140, 140, 170)",
             ),
             text=ids,  # Display the ids when hovering over the points
-            hoverinfo='text'  # Display only the text information when hovering
+            hoverinfo="text",  # Display only the text information when hovering
         )
 
-        layout = go.Layout(height=800, width=800, title='3D Bubble plot', scene=dict(
-            xaxis=dict(title='Frequency'),
-            yaxis=dict(title='Severity'),
-            zaxis=dict(title='Detection'), ))
+        layout = go.Layout(
+            height=800,
+            width=800,
+            title="3D Bubble plot",
+            scene=dict(
+                xaxis=dict(title="Frequency"),
+                yaxis=dict(title="Severity"),
+                zaxis=dict(title="Detection"),
+            ),
+        )
 
         fig = go.Figure(data=[trace], layout=layout)
         fig.show()
 
     def ask_questions(self):
         if self.qindex < len(self.questions):
-            reply = QMessageBox.question(self, 'Question', self.questions[self.qindex],
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(
+                self,
+                "Question",
+                self.questions[self.qindex],
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
 
             if reply == QMessageBox.Yes:
                 self.counter += 1
@@ -1336,9 +1548,9 @@ class MainWindow(QMainWindow):
             3: "Recommended Detectability: 1-3 (Low)",
             2: "Recommended Detectability: 4-6 (Medium)",
             1: "Recommended Detectability: 7-8 (Severe)",
-            0: "Recommended Detectability: 9-10 (Unacceptable)"
+            0: "Recommended Detectability: 9-10 (Unacceptable)",
         }
-        QMessageBox.information(self, 'Recommendation', recommendations[self.counter])
+        QMessageBox.information(self, "Recommendation", recommendations[self.counter])
 
 
 if __name__ == "__main__":
