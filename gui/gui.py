@@ -23,13 +23,32 @@ Worcester Polytechnic Institute.
 
 TODO: Refactor the code so that it can generate Weibull/Rayleigh plots for any component using defaults if data isn't
       provided. (WIP, this will take more doing)
-TODO: Add bathtub curve in Statistics tab with options for parameter changes. (notes on the dropbox) (WIP, just need to write some code)
+TODO: Add bathtub curve in Statistics tab with options for parameter changes. (WIP, just need to write some code)
 TODO: FSD should be Ints
 TODO: Change database type from csv to SQL Lite
-TODO: UI Bug fixes
-TODO: Not putting in risk acceptance threshold makes main tool crash when try to generate
-TODO: Tables are same size so labels are cut off
 
+TODO: UI Bug fixes
+    TODO: Not putting in risk acceptance threshold makes main tool crash when try to generate
+    TODO: Tables are same size so labels are cut off
+    TODO: generating weibull distribution in stats tab crashes
+    TODO: generating rayleigh distribution in stats tab crashes
+    TODO: generate table in stats distribution crashes app unless you modify something
+    TODO: Plot1, plot2, plot3 are identical
+    TODO: Download chart button downloads blank jpeg
+    TODO: Read database pulls from csv not local storage/current modified database
+    TODO: Save RPN values should save it to a file not just locally
+    TODO: modifying FSD variables should auto save to local database instead of having button do it
+    TODO: modifying FSD variables should wait till you leave the text box to throw out of bounds errors
+    TODO: all data modification should just be in the table, no need for textboxes
+    TODO: FMEA and FMECA buttons exist but don't do anything 
+    TODO: risk acceptance should autocolor when table is generated
+    TODO: detectability recommendation should reset when selected component is changed
+    TODO: read database at startup
+    TODO: automatically update database
+    TODO: stats show table without selecting crashes
+    
+
+TODO: bubbleplot should open to app and not browser
 TODO: Search for components
 
 """
