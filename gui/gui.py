@@ -820,12 +820,13 @@ class MainWindow(QMainWindow):
         self.components = pd.read_sql_query("SELECT * FROM components", self.default_conn)
         self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.default_conn)
         self.comp_fails = pd.read_sql_query("SELECT * FROM comp_fails", self.default_conn)
+        print(self.comp_fails)
 
     def read_risk_threshold(self):
         try:
             risk_threshold = float(self.threshold_field.text())
             # error checking for risk value threshold
-            if(risk_threshold >1000 or risk_threshold <1):
+            if not (1 <= risk_threshold <= 1000):
                 error_message = "Error: Please re-enter a risk threshold value between 1 and 1000, inclusive."
                 QMessageBox.critical(self, "Value Error", error_message)
         except:
