@@ -59,6 +59,8 @@ DONE: convert .csv to sqlite .db file
 DONE: normalize database
 TODO: re-implement dictionary database as pandas dataframe, populated from SQLite database
 
+DONE: create charts.py to hold all charting functions
+
 """
 
 import os, sys, csv, sqlite3, stats
