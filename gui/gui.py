@@ -299,9 +299,15 @@ class MainWindow(QMainWindow):
         self.component_selection = QLabel("Component Selection: ")
         self.left_layout.addWidget(self.component_selection)
 
+        #######################################TESTING############################################
+
+        self.component_search_field = QLineEdit(self)
+        self.component_search_field.setPlaceholderText("Search for a component...")
+        self.component_search_field.textChanged.connect(self.filter_components)
+        self.left_layout.addWidget(self.component_search_field)
+
         # Create and add the component name dropdown menu
         self.component_name_field = QComboBox(self)
-        self.component_name_field.addItem("Select a Component")
         self.component_name_field.activated.connect(
             lambda: (
                 self.component_name_field_stats.setCurrentText(
@@ -310,9 +316,25 @@ class MainWindow(QMainWindow):
                 self.update_layout(),
             )
         )
-        for name in self.components["name"]:
-            self.component_name_field.addItem(name)
+        self.populate_component_dropdown(self.components["name"])
         self.left_layout.addWidget(self.component_name_field)
+
+        ##########################################################################################
+
+        # # Create and add the component name dropdown menu
+        # self.component_name_field = QComboBox(self)
+        # self.component_name_field.addItem("Select a Component")
+        # self.component_name_field.activated.connect(
+        #     lambda: (
+        #         self.component_name_field_stats.setCurrentText(
+        #             self.component_name_field.currentText()
+        #         ),
+        #         self.update_layout(),
+        #     )
+        # )
+        # for name in self.components["name"]:
+        #     self.component_name_field.addItem(name)
+        # self.left_layout.addWidget(self.component_name_field)
 
         # Create and add the risk acceptance threshold field
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
@@ -459,7 +481,7 @@ class MainWindow(QMainWindow):
         self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
         self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
 
-        #self.table_widget.cellChanged.connect(self.save_sql)
+        # self.table_widget.cellChanged.connect(self.save_sql)
 
         ### END OF MAIN TAB SETUP ###
 
@@ -1212,6 +1234,20 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self, "Recommendation", self.recommendations[self.counter]
         )
+
+    def filter_components(self, search_query):
+        filtered_components = [
+            component
+            for component in self.components["name"]
+            if search_query.lower() in component.lower()
+        ]
+        self.populate_component_dropdown(filtered_components)
+
+    def populate_component_dropdown(self, components):
+        self.component_name_field.clear()
+        self.component_name_field.addItem("Select a Component")
+        for name in components:
+            self.component_name_field.addItem(name)
 
 
 if __name__ == "__main__":
