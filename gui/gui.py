@@ -856,7 +856,7 @@ class MainWindow(QMainWindow):
             2,
             "rpn",
             [
-                row["frequency"] * row["severity"] * row["detection"]
+                int(row["frequency"] * row["severity"] * row["detection"])
                 for _, row in self.comp_fails.iterrows()
             ],
             True,
