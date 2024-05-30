@@ -25,8 +25,7 @@ Worcester Polytechnic Institute.
 TODO: Refactor the code so that it can generate Weibull/Rayleigh plots for any component using defaults if data isn't
       provided. (WIP, this will take more doing)
 TODO: Add bathtub curve in Statistics tab with options for parameter changes. (WIP, just need to write some code)
-TODO: FSD should be Ints
-TODO: Change database type from csv to SQL Lite
+DONE: RPN & FSD should be Ints
 
 TODO: UI Bug fixes
     DONE: Not putting in risk acceptance threshold makes main tool crash when try to generate
@@ -55,7 +54,7 @@ TODO: bubbleplot should open to app and not browser
 TODO: Search for components
 DONE: generate_chart() if block to switch case
 TODO: values() design fix, also figure out what it does ???
-TODO: fix csv formatting. there shouldn't be spaces after commas
+DONE: fix csv formatting. there shouldn't be spaces after commas
 DONE: convert .csv to sqlite .db file
 DONE: normalize database
 TODO: re-implement dictionary database as pandas dataframe, populated from SQLite database
@@ -85,6 +84,7 @@ import stats
 database_data = {}
 
 DEFAULT_RISK_THRESHOLD = 1
+
 """
 
 Name: MainWindow
@@ -103,6 +103,20 @@ class MainWindow(QMainWindow):
         "Recommended Detectability: 4-6 (Medium)",
         "Recommended Detectability: 1-3 (Low)"
         ]
+    # Columns to show in the failure mode table.
+    fail_mode_columns = ["desc", "rpn", "frequency", "severity", "detection", "lower_bound",
+                         "best_estimate", "upper_bound", "mission_time"]
+    horizontal_header_labels = [
+                "Failure Modes",
+                "RPN",
+                "Frequency",
+                "Severity",
+                "Detectability",
+                "Lower Bound (LB)",
+                "Best Estimate (BE)",
+                "Upper Bound (UB)",
+                "Mission Time"
+            ]
 
     """
 
@@ -283,8 +297,8 @@ class MainWindow(QMainWindow):
         self.component_name_field = QComboBox(self)
         self.component_name_field.addItem("Select a Component")
         self.component_name_field.activated.connect(lambda: (self.component_name_field_stats.setCurrentText(self.component_name_field.currentText())))
-        for key in database_data.keys():
-            self.component_name_field.addItem(key)
+        for comp_name in self.components["name"]:
+            self.component_name_field.addItem(comp_name)
         self.left_layout.addWidget(self.component_name_field)
 
         # Create and add the risk acceptance threshold field
@@ -304,21 +318,8 @@ class MainWindow(QMainWindow):
 
         # Create and add the table widget
         self.table_widget = QTableWidget()
-        self.table_widget.setColumnCount(10)
-        self.table_widget.setHorizontalHeaderLabels(
-            [
-                "ID",
-                "Failure Mode",
-                "RPN",
-                "Frequency",
-                "Severity",
-                "Detectability",
-                "Mission Time",
-                "Lower Bound (LB)",
-                "Best Estimate (BE)",
-                "Upper Bound (UB)",
-            ]
-        )
+        self.table_widget.setColumnCount(len(self.horizontal_header_labels))
+        self.table_widget.setHorizontalHeaderLabels(self.horizontal_header_labels)
         self.table_widget.setColumnWidth(0, 150)  # ID
         self.table_widget.setColumnWidth(1, 150)  # Failure Mode
         self.table_widget.setColumnWidth(3, 150)  # RPN
@@ -461,8 +462,8 @@ class MainWindow(QMainWindow):
         self.component_name_field_stats = QComboBox(self)
         self.component_name_field_stats.addItem("Select a Component")
         self.component_name_field_stats.activated.connect(lambda: (self.component_name_field.setCurrentText(self.component_name_field_stats.currentText())))
-        for key in database_data.keys():
-            self.component_name_field_stats.addItem(key)
+        for comp_name in self.components["name"]:
+            self.component_name_field_stats.addItem(comp_name)
         self.left_layout.addWidget(self.component_name_field_stats)
         left_layout_stats.addWidget(self.component_name_field_stats)
 
@@ -480,21 +481,8 @@ class MainWindow(QMainWindow):
 
         # Create and add the table widget
         self.table_widget_stats = QTableWidget()
-        self.table_widget_stats.setColumnCount(10)
-        self.table_widget_stats.setHorizontalHeaderLabels(
-            [
-                "ID",
-                "Failure Mode",
-                "RPN",
-                "Frequency",
-                "Severity",
-                "Detectability",
-                "Mission Time",
-                "Lower Bound (LB)",
-                "Best Estimate (BE)",
-                "Upper Bound (UB)",
-            ]
-        )
+        self.table_widget_stats.setColumnCount(len(self.horizontal_header_labels))
+        self.table_widget_stats.setHorizontalHeaderLabels(self.horizontal_header_labels)
         self.table_widget_stats.setColumnWidth(0, 150)  # ID
         self.table_widget_stats.setColumnWidth(1, 150)  # Failure Mode
         self.table_widget_stats.setColumnWidth(3, 150)  # RPN
@@ -834,7 +822,7 @@ class MainWindow(QMainWindow):
         self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.default_conn)
         self.comp_fails = pd.read_sql_query("SELECT * FROM comp_fails", self.default_conn)
         # Calculates RPN = Frequency * Severity * Detection
-        self.comp_fails.insert(2, "rpn", [ row["frequency"] * row["severity"] * row["detection"] for _, row in self.comp_fails.iterrows() ], True)
+        self.comp_fails.insert(2, "rpn", [ int(row["frequency"] * row["severity"] * row["detection"]) for _, row in self.comp_fails.iterrows() ], True)
 
     def read_risk_threshold(self):
         try:
@@ -862,59 +850,34 @@ class MainWindow(QMainWindow):
         # retrieve component name from text box
         component_name = self.component_name_field.currentText()
 
-        # error checking for component name
-        if component_name not in database_data:
+        # Error checking for component name
+        if not self.components["name"].str.contains(component_name).any():
             error_message = "Error: Please re-enter a component name that's present in the database."
             QMessageBox.critical(self, "Name Error", error_message)
 
         # Update the column header for "Failure Mode"
         self.table_widget.setHorizontalHeaderLabels(
-            [
-                "ID",
-                component_name + " Failure Modes",
-                "RPN",
-                "Frequency",
-                "Severity",
-                "Detectability",
-            ]
+            [f"{component_name} Failure Modes"] + self.horizontal_header_labels[1:]
         )
-
-        # Get data from the database
-        component_data = database_data.get(component_name, [])
-
-        # Get risk acceptance threshold
-        risk_threshold = self.read_risk_threshold()
 
         # Update the maximum number of IDs to show
         self.max_ids = 10
 
+        # drop_duplicates shouldn't be necessary here, since components are unique. Just in case, though.
+        # np.sum is a duct-tapey way to convert to int, since you can't directly
+        comp_id = np.sum(self.components[self.components["name"] == component_name].drop_duplicates()["id"])
+        component_data2 = self.comp_fails[self.comp_fails["comp_id"] == comp_id].head(self.max_ids).reset_index(drop=True)
+        component_data2 = pd.merge(self.fail_modes, component_data2, left_on="id", right_on="fail_id")
+
+        # Get risk acceptance threshold
+        risk_threshold = self.read_risk_threshold()
+
         # Set the row count of the table widget
         self.table_widget.setRowCount(self.max_ids)
 
-        # Populate the table widget
-        for row, data in enumerate(
-            component_data[self.selected_index : self.selected_index + self.max_ids]
-        ):
-            self.table_widget.setItem(row, 0, QTableWidgetItem(str(data["id"])))
-            self.table_widget.setItem(row, 1, QTableWidgetItem(data["failure_mode"]))
-            self.table_widget.setItem(row, 2, QTableWidgetItem(str(data["rpn"])))
-            self.table_widget.setItem(row, 3, QTableWidgetItem(str(data["frequency"])))
-            self.table_widget.setItem(row, 4, QTableWidgetItem(str(data["severity"])))
-            self.table_widget.setItem(
-                row, 5, QTableWidgetItem(str(data["detectability"]))
-            )
-            self.table_widget.setItem(
-                row, 6, QTableWidgetItem(str(data["mission_time"]))
-            )
-            self.table_widget.setItem(
-                row, 7, QTableWidgetItem(str(data["lower_bound"]))
-            )
-            self.table_widget.setItem(
-                row, 8, QTableWidgetItem(str(data["best_estimate"]))
-            )
-            self.table_widget.setItem(
-                row, 9, QTableWidgetItem(str(data["upper_bound"]))
-            )
+        for row, data in component_data2.iterrows():
+            for i, key in enumerate(self.fail_mode_columns):
+                self.table_widget.setItem(row, i, QTableWidgetItem(str(data[key])))
 
     """
 
