@@ -1620,7 +1620,6 @@ class MainWindow(QMainWindow):
     def show_recommendation(self):
         QMessageBox.information(self, "Recommendation", self.recommendations[self.counter])
 
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
