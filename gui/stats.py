@@ -25,7 +25,7 @@ def weibull_objective(params, values):
         # Calculate the difference between actual and estimated values
         return np.sum((values - estimated_values) ** 2)
 
-def weibull(values):
+def _weibull(values):
     input = values
     
     # Set the lower bound, geometric mean, and upper bound of the failure rates
@@ -51,12 +51,12 @@ def weibull(values):
     # Generate a sample from the Weibull distribution with the optimized parameters
     sample = lam_opt * np.random.weibull(k_opt, 1000)
 
-    print(f"Shape (k): {k_opt}")
-    print(lam_opt)
+    #print(f"Shape (k): {k_opt}")
+    #print(lam_opt)
     #print(f"Scale (λ): {lam_opt}")
 
     # Create a Figure and Axes object
-    fig = plt.Figure(figsize=(8, 6))
+    fig = plt.figure(figsize=(8, 6))
     ax = fig.subplots()
 
     # Set x values and calculate the PDF
@@ -84,8 +84,15 @@ def weibull(values):
     ax.legend()
 
     # Return the Figure
+    """
+    import time
+    fig.show()
+    while True:
+        time.sleep(1)
+    """
     return fig
 
+#_weibull(np.array([1,2,3]))
 """
 
    Name: rayleigh
@@ -95,13 +102,7 @@ def weibull(values):
 
 """
 
-
-def rayleigh(values):
-
-    # name = component
-    input = values
-
-    def rayleigh_objective(param, values):
+def rayleigh_objective(param, values):
         sigma = param[0]
         # Calculate the estimated values for lower bound, geometric mean, and upper bound
         estimated_lower = rayleigh.ppf(0.05, scale=sigma)
@@ -111,8 +112,11 @@ def rayleigh(values):
         # Calculate the difference between actual and estimated values
         return np.sum((values - estimated_values) ** 2)
 
+def _rayleigh(values):
+    input = values
+    
     # Set the lower bound, geometric mean, and upper bound of the failure rates
-    values = np.array([1.0, 3.0, 1000.0])  # replace with actual lower bound, mean, and upper bound
+    values1 = np.array([1.0, 3.0, 1000.0])  # replace with actual lower bound, mean, and upper bound
 
     # Initial guess for sigma
     initial_guess = np.array([1.0])
@@ -122,6 +126,7 @@ def rayleigh(values):
 
     # Perform the optimization
     result = minimize(rayleigh_objective, initial_guess, args=(input,), bounds=bounds)
+    print(result)
 
     # Extract the optimized parameter
     sigma_opt = result.x[0]
@@ -155,8 +160,9 @@ def rayleigh(values):
 
     return fig
 
+_rayleigh(np.array([1,2,3]))
 
-def bathtub(N, T, t1, t2):
+def _bathtub(N, T, t1, t2):
     # Time vector
     t = np.linspace(0, T, N)
 
@@ -195,12 +201,12 @@ def bathtub(N, T, t1, t2):
 
 if __name__ == "__weibull__":
     # stuff only to run when not called via 'import' here
-    weibull()
+    _weibull()
 
 if __name__ == "__rayleigh__":
     # stuff only to run when not called via 'import' here
-    rayleigh()
+    _rayleigh()
 
 if __name__ == "__bathtub__":
     # stuff only to run when not called via 'import' here
-    bathtub()
+    _bathtub()
