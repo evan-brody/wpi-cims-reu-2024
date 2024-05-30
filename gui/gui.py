@@ -831,6 +831,8 @@ class MainWindow(QMainWindow):
         self.components = pd.read_sql_query("SELECT * FROM components", self.default_conn)
         self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.default_conn)
         self.comp_fails = pd.read_sql_query("SELECT * FROM comp_fails", self.default_conn)
+        # Calculates RPN = Frequency * Severity * Detection
+        self.comp_fails.insert(2, "rpn", [ row["frequency"] * row["severity"] * row["detection"] for _, row in self.comp_fails.iterrows() ], True)
 
     def read_risk_threshold(self):
         try:
