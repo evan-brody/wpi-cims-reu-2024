@@ -44,7 +44,7 @@ TODO: UI Bug fixes
     TODO: FMEA and FMECA buttons exist but don't do anything 
     TODO: risk acceptance should autocolor when table is generated
     TODO: detectability recommendation should reset when selected component is changed
-    TODO: read database at startup
+    DONE: read database at startup
     TODO: automatically update database
     DONE: stats show table without selecting crashes
     DONE: synced component select between tabs
@@ -62,13 +62,9 @@ TODO: re-implement dictionary database as pandas dataframe, populated from SQLit
 """
 
 import os, sys, csv, sqlite3, stats
-import seaborn as sns
-import matplotlib as mpl
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import plotly.graph_objects as go
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -277,7 +273,7 @@ class MainWindow(QMainWindow):
         self.database_view_layout = QVBoxLayout(self.database_view_tab)
 
         # Create and add the read database button
-        self.read_database_button = QPushButton("Read Database")
+        self.read_database_button = QPushButton("Refresh Database")
         self.read_database_button.clicked.connect(self.read_database)
         self.database_view_layout.addWidget(self.read_database_button)
 
@@ -285,6 +281,7 @@ class MainWindow(QMainWindow):
         self.database_table_widget = QTableWidget()
         self.database_view_layout.addWidget(self.database_table_widget)
 
+        self.read_database()
         ### END OF DATABASE VIEW TAB SETUP ###
 
     def _init_main_tab(self):
