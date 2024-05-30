@@ -589,11 +589,11 @@ class MainWindow(QMainWindow):
     def generate_stats_chart(self):
         match (self.chart_name_field_stats.currentText()):
             case "Weibull Distribution":
-                self.updateWeibullCanvas()
+                self.update_weibull_canvas()
             case "Rayleigh Distribution":
-                self.updateRayleighCanvas()
+                self.update_rayleigh_canvas()
             case "Bathtub Curve":
-                self.updateBathtubCanvas()
+                self.update_bathtub_canvas()
 
     """
 
@@ -603,7 +603,7 @@ class MainWindow(QMainWindow):
 
     """
 
-    def updateBathtubCanvas(self):
+    def update_bathtub_canvas(self):
         N = 1000
         T = 20
         t1 = 1
@@ -636,13 +636,13 @@ class MainWindow(QMainWindow):
 
     """
     
-    Name: updateRayleighCanvas
+    Name: update_rayleigh_canvas
     Type: function
     Description: Invokes the rayleigh function in stats.py to populate the canvas with a histogram PDF plot.
     
     """
 
-    def updateRayleighCanvas(self):
+    def update_rayleigh_canvas(self):
         # Clear the existing figures before displaying new ones
         self.stats_tab_canvas1.figure.clear()
         self.stats_tab_canvas2.figure.clear()
@@ -691,7 +691,7 @@ class MainWindow(QMainWindow):
     
     """
 
-    def updateWeibullCanvas(self):
+    def update_weibull_canvas(self):
         # Clear the existing figures before displaying new ones
         self.stats_tab_canvas1.figure.clear()
         self.stats_tab_canvas2.figure.clear()
@@ -1000,7 +1000,7 @@ class MainWindow(QMainWindow):
     
     Name: values
     Type: function
-    Description: ???
+    Description: uses locally defined data to generate statistical analysis data
     
     """
 
@@ -1075,9 +1075,7 @@ class MainWindow(QMainWindow):
                 rpn_item.setBackground(QColor(255, 102, 102))  # muted red
             else:
                 rpn_item.setBackground(QColor(102, 255, 102))  # muted green
-
-        if rpn_item:
-            rpn_item.setText(str(rpn))
+                
         if frequency_item:
             frequency_item.setText(str(probability))
         if severity_item:
