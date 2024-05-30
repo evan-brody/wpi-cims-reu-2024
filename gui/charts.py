@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import seaborn as sns
+from PyQt5.QtWidgets import QMessageBox
 
 
 class Charts:
@@ -132,11 +133,157 @@ class Charts:
         # Refresh the canvas
         self.main_window.canvas.draw()
 
-    # def plot_3D(self):
-    #     # Copy the plot_3D method code from your main GUI file here
+    """
+    Displays 3D plot of data in table.
+    """
 
-    # def scatterplot(self):
-    #     # Copy the scatterplot method code from your main GUI file here
+    def plot_3D(self):
+        # Clear the existing plot
+        self.main_window.main_figure.clear()
+
+        # Get the X, Y, and Z values
+        try:
+            length = float(self.main_window.x_input_field.text())
+            width = float(self.main_window.y_input_field.text())
+            height = float(self.main_window.z_input_field.text())
+        except ValueError:
+            QMessageBox.critical(
+                self.main_window,
+                "Value Error",
+                "Please enter valid numbers for Frequency, Severity, and Detection.",
+            )
+            return
+
+        # Calculate RPN
+        rpn = length * width * height
+
+        # Determine color
+        if rpn < 560:
+            color = "green"
+        elif 560 <= rpn < 840:
+            color = "yellow"
+        else:
+            color = "red"
+
+        # Generate the surface plot
+        self.main_window.main_figure.clear()
+        ax = self.main_window.main_figure.add_subplot(111, projection="3d")
+
+        # Create a list of 3D coordinates for the vertices of each face
+        vertices = [
+            [
+                (0, 0, 0),
+                (0, width, 0),
+                (length, width, 0),
+                (length, 0, 0),
+            ],  # Bottom face
+            [
+                (0, 0, 0),
+                (0, 0, height),
+                (length, 0, height),
+                (length, 0, 0),
+            ],  # Front face
+            [(0, 0, 0), (0, 0, height), (0, width, height), (0, width, 0)],  # Left face
+            [
+                (length, 0, 0),
+                (length, 0, height),
+                (length, width, height),
+                (length, width, 0),
+            ],  # Right face
+            [
+                (0, 0, height),
+                (0, width, height),
+                (length, width, height),
+                (length, 0, height),
+            ],  # Top face
+            [
+                (0, width, 0),
+                (0, width, height),
+                (length, width, height),
+                (length, width, 0),
+            ],  # Rear face
+        ]
+
+        # Add the faces to the plot
+        for face in vertices:
+            ax.add_collection3d(
+                Poly3DCollection(
+                    [face], alpha=0.25, linewidths=1, edgecolors="r", facecolors=color
+                )
+            )
+
+        ax.set_xlabel("Frequency")
+        ax.set_ylabel("Severity")
+        ax.set_zlabel("Detection")
+
+        ax.set_xlim([0, length])
+        ax.set_ylim([0, width])
+        ax.set_zlim([0, height])
+
+        self.main_window.canvas.draw()
+
+    """
+    Displays a 3D scatterplot of data (Frequency, Severity, Detection) in table.
+    """
+
+    def scatterplot(self):
+        component_data = []
+        threshold = float(self.main_window.threshold_field.text())
+
+        for row in range(self.main_window.table_widget.rowCount()):
+            frequency_item = self.main_window.table_widget.item(row, 2)
+            severity_item = self.main_window.table_widget.item(row, 3)
+            detection_item = self.main_window.table_widget.item(row, 4)
+            if severity_item and detection_item and frequency_item:
+                component_data.append(
+                    {
+                        "id": int(row),
+                        "severity": float(severity_item.text()),
+                        "detection": float(detection_item.text()),
+                        "frequency": float(frequency_item.text()),
+                    }
+                )
+
+        # Clear the existing plot
+        self.main_window.main_figure.clear()
+
+        # Extract the values
+        ids = [data["id"] for data in component_data]
+        severity_values = [data["severity"] for data in component_data]
+        detection_values = [data["detection"] for data in component_data]
+        frequency_values = [data["frequency"] for data in component_data]
+
+        df = pd.DataFrame(
+            {
+                "Failure Mode ID": ids,
+                "Severity": severity_values,
+                "Detection": detection_values,
+                "Frequency": frequency_values,
+            }
+        )
+
+        # Create a 3D scatterplot
+        ax = self.main_window.main_figure.add_subplot(111, projection="3d")
+
+        sc = ax.scatter(
+            df["Severity"],
+            df["Detection"],
+            df["Frequency"],
+            c=df["Failure Mode ID"],
+            cmap="viridis",
+        )
+
+        ax.set_xlabel("Severity")
+        ax.set_ylabel("Detection")
+        ax.set_zlabel("Frequency")
+        component_name = self.main_window.component_name_field.currentText()
+        ax.set_title(component_name + " Risk Profile")
+
+        # Add a colorbar
+        self.main_window.main_figure.colorbar(sc, ax=ax, pad=0.02)
+
+        # Refresh the canvas
+        self.main_window.canvas.draw()
 
     # def bubble_plot(self):
     #     # Copy the bubble_plot method code from your main GUI file here
