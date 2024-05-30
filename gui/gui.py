@@ -816,7 +816,12 @@ class MainWindow(QMainWindow):
     """
 
     def read_sql_default(self) -> None:
-        self.default_conn = sqlite3.connect(os.path.abspath(os.path.join(self.current_directory, self.db_path, self.default_db_name)))
+        default_db_path = os.path.abspath(os.path.join(self.current_directory, self.db_path, self.default_db_name))
+        if not os.path.isfile(default_db_path):
+            error_message = "Error: could not find part_info.db."
+            QMessageBox.critical(self, "File Not Found", error_message)
+            return
+        self.default_conn = sqlite3.connect(default_db_path)
         self.components = pd.read_sql_query("SELECT * FROM components", self.default_conn)
         self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.default_conn)
         self.comp_fails = pd.read_sql_query("SELECT * FROM comp_fails", self.default_conn)
