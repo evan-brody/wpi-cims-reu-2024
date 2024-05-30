@@ -459,6 +459,8 @@ class MainWindow(QMainWindow):
         self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
         self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
 
+        #self.table_widget.cellChanged.connect(self.save_sql)
+
         ### END OF MAIN TAB SETUP ###
 
     def _init_stats_tab(self):
@@ -587,6 +589,9 @@ class MainWindow(QMainWindow):
         ### END OF STATISTICS TAB SETUP ###
 
     def update_layout(self):
+        if hasattr(self, "comp_data"):
+            self.save_sql()
+        self.read_sql_default()
         self.show_table()
         self.show_table_stats()
         self.generate_main_chart()
