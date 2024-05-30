@@ -30,10 +30,10 @@ TODO: Change database type from csv to SQL Lite
 TODO: UI Bug fixes
     TODO: Not putting in risk acceptance threshold makes main tool crash when try to generate
     TODO: Tables are same size so labels are cut off
-    TODO: generating weibull distribution in stats tab crashes
+    DONE: generating weibull distribution in stats tab crashes
     TODO: generating rayleigh distribution in stats tab crashes
     TODO: generate table in stats distribution crashes app unless you modify something
-    TODO: Plot1, plot2, plot3 are identical
+    TODO: Source Plot1,2,3 from database instead of hardcoded
     TODO: Download chart button downloads blank jpeg
     TODO: Read database pulls from csv not local storage/current modified database
     TODO: Save RPN values should save it to a file not just locally
@@ -329,7 +329,7 @@ class MainWindow(QMainWindow):
 
         # Create and add the generate chart button
         self.generate_chart_button = QPushButton("Generate Chart")
-        self.generate_chart_button.clicked.connect(self.generate_chart)
+        self.generate_chart_button.clicked.connect(self.generate_main_chart)
         self.right_layout.addWidget(self.generate_chart_button)
 
         # Create and add the download chart button
@@ -528,7 +528,7 @@ class MainWindow(QMainWindow):
 
         # Create and add the generate chart button
         self.generate_chart_button_stats = QPushButton("Generate Chart")
-        self.generate_chart_button_stats.clicked.connect(self.generate_chart)
+        self.generate_chart_button_stats.clicked.connect(self.generate_stats_chart)
         right_layout_stats.addWidget(self.generate_chart_button_stats)
 
         # Create and add the download chart button (non-functional)
@@ -558,7 +558,7 @@ class MainWindow(QMainWindow):
 
     """
 
-    def generate_chart(self):
+    def generate_main_chart(self):
         match (self.chart_name_field_main_tool.currentText()):
             case "Bar Chart":
                 self.update_chart()
@@ -570,12 +570,15 @@ class MainWindow(QMainWindow):
                 self.scatterplot()
             case "Bubbleplot":
                 self.bubble_plot()
+                
+    def generate_stats_chart(self):
+        match (self.chart_name_field_stats.currentText()):
             case "Weibull Distribution":
                 self.updateWeibullCanvas()
             case "Rayleigh Distribution":
                 self.updateRayleighCanvas()
             case "Bathtub Curve":
-                self.bathtub()
+                self.updateBathtubCanvas()
 
     """
 
@@ -585,7 +588,7 @@ class MainWindow(QMainWindow):
 
     """
 
-    def bathtub(self):
+    def updateBathtubCanvas(self):
         N = 1000
         T = 20
         t1 = 1
@@ -597,9 +600,9 @@ class MainWindow(QMainWindow):
 
         self.stats_tab.clear()
 
-        fig1 = stats.bathtub(N, T, t1, t2)
-        fig2 = stats.bathtub(N, T, t1, t2)
-        fig3 = stats.bathtub(N, T, t1, t2)
+        fig1 = stats._bathtub(N, T, t1, t2)
+        fig2 = stats._bathtub(N, T, t1, t2)
+        fig3 = stats._bathtub(N, T, t1, t2)
 
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
@@ -632,20 +635,22 @@ class MainWindow(QMainWindow):
 
         # Clear the existing tabs
         self.stats_tab.clear()
+        
 
         if (
             self.component_name_field.currentText() == "Motor-Driven Pump"
         ):  # Idealy, this would be modified to search through the list of component neames instead of the names being specificed here
             # Get new figures from weibull()
-            fig1 = stats.rayleigh(np.array([20.8, 125.0, 4.17]))
-            fig2 = stats.rayleigh(np.array([1.0, 30.0, 1000.0]))
-            fig3 = stats.rayleigh(np.array([4.17, 83.3, 417.0]))
+            fig1 = stats._rayleigh(np.array([20.8, 125.0, 4.17]))
+            print(fig1)
+            fig2 = stats._rayleigh(np.array([1.0, 30.0, 1000.0]))
+            fig3 = stats._rayleigh(np.array([4.17, 83.3, 417.0]))
         if (
             self.component_name_field.currentText() == "Motor-Operated Valves"
         ):  # Same here
-            fig1 = stats.rayleigh(np.array([41.7, 125.0, 375.0]))
-            fig2 = stats.rayleigh(np.array([83.3, 4170.0, 4.17]))
-            fig3 = stats.rayleigh(np.array([2.5, 33.3, 250.0]))
+            fig1 = stats._rayleigh(np.array([41.7, 125.0, 375.0]))
+            fig2 = stats._rayleigh(np.array([83.3, 4170.0, 4.17]))
+            fig3 = stats._rayleigh(np.array([2.5, 33.3, 250.0]))
 
         # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
@@ -684,15 +689,15 @@ class MainWindow(QMainWindow):
             self.component_name_field_stats.currentText() == "Motor-Driven Pump"
         ):  # Fix to read through database
             # Get new figures from weibull()
-            fig1 = stats.weibull(np.array([20.8, 125.0, 4.17]))
-            fig2 = stats.weibull(np.array([1.0, 30.0, 1000.0]))
-            fig3 = stats.weibull(np.array([4.17, 83.3, 417.0]))
+            fig1 = stats._weibull(np.array([20.8, 125.0, 4.17]))
+            fig2 = stats._weibull(np.array([1.0, 30.0, 1000.0]))
+            fig3 = stats._weibull(np.array([4.17, 83.3, 417.0]))
         if (
             self.component_name_field_stats.currentText() == "Motor-Operated Valves"
         ):  # Fix to read through database (likely with currently unused values() function in stats.py)
-            fig1 = stats.weibull(np.array([41.7, 125.0, 375.0]))
-            fig2 = stats.weibull(np.array([83.3, 4170.0, 4.17]))
-            fig3 = stats.weibull(np.array([2.5, 33.3, 250.0]))
+            fig1 = stats._weibull(np.array([41.7, 125.0, 375.0]))
+            fig2 = stats._weibull(np.array([83.3, 4170.0, 4.17]))
+            fig3 = stats._weibull(np.array([2.5, 33.3, 250.0]))
 
             # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
