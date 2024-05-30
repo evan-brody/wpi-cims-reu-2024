@@ -72,8 +72,65 @@ class Charts:
         # Refresh the canvas
         self.main_window.canvas.draw()
 
-    # def pie_chart(self):
-    #     # Copy the pie_chart method code from your main GUI file here
+    """
+    Makes a pie chart of data in table.
+    """
+
+    def pie_chart(self):
+        # Clear the existing plot
+        self.main_window.main_figure.clear()
+
+        component_data = []
+        threshold = float(self.main_window.threshold_field.text())
+        below_threshold = 0
+        above_threshold = 0
+
+        for row in range(self.main_window.table_widget.rowCount()):
+            id_item = self.main_window.table_widget.item(row, 0)
+            failure_mode_item = self.main_window.table_widget.item(row, 1)
+            rpn_item = self.main_window.table_widget.item(row, 2)
+            if id_item and failure_mode_item and rpn_item:
+                rpn = float(rpn_item.text())
+                if rpn < threshold:
+                    below_threshold += 1
+                else:
+                    above_threshold += 1
+
+        # Clear the existing plot
+        self.main_window.main_figure.clear()
+
+        # Prepare the data for the pie chart
+        labels = ["Below Risk Threshold", "Above Risk Threshold"]
+        rpn_values = [below_threshold, above_threshold]
+
+        # Set the color of the slices based on the categories
+        colors = ["#5f9ea0", "#FF6961"]
+
+        # Create a pie chart
+        ax = self.main_window.main_figure.add_subplot(111)
+        wedges, texts, autotexts = ax.pie(
+            rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=1
+        )
+
+        # Create legend
+        legend_labels = [
+            f"Number of Green Failure Modes: {below_threshold}",
+            f"Number of Red Failure Modes: {above_threshold}",
+            f"Total Failure Modes: {below_threshold + above_threshold}",
+        ]
+        ax.legend(
+            wedges,
+            legend_labels,
+            title="Failure Modes",
+            loc="upper right",
+            bbox_to_anchor=(1, 0.5),
+        )
+
+        component_name = self.main_window.component_name_field.currentText()
+        ax.set_title(component_name + " Risk Profile")
+
+        # Refresh the canvas
+        self.main_window.canvas.draw()
 
     # def plot_3D(self):
     #     # Copy the plot_3D method code from your main GUI file here

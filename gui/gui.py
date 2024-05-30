@@ -604,7 +604,7 @@ class MainWindow(QMainWindow):
             case "Bar Chart":
                 self.charts.bar_chart()
             case "Pie Chart":
-                self.pie_chart()
+                self.charts.pie_chart()
             case "3D Risk Plot":
                 self.plot_3D()
             case "Scatterplot":
@@ -1149,65 +1149,65 @@ class MainWindow(QMainWindow):
         self.main_figure
         figure.savefig(file_path, format="jpg", dpi=300)
 
-    """
-    Makes a pie chart of data in table.
-    """
+    # """
+    # Makes a pie chart of data in table.
+    # """
 
-    def pie_chart(self):
-        # Clear the existing plot
-        self.main_figure.clear()
+    # def pie_chart(self):
+    #     # Clear the existing plot
+    #     self.main_figure.clear()
 
-        component_data = []
-        threshold = float(self.threshold_field.text())
-        below_threshold = 0
-        above_threshold = 0
+    #     component_data = []
+    #     threshold = float(self.threshold_field.text())
+    #     below_threshold = 0
+    #     above_threshold = 0
 
-        for row in range(self.table_widget.rowCount()):
-            id_item = self.table_widget.item(row, 0)
-            failure_mode_item = self.table_widget.item(row, 1)
-            rpn_item = self.table_widget.item(row, 2)
-            if id_item and failure_mode_item and rpn_item:
-                rpn = float(rpn_item.text())
-                if rpn < threshold:
-                    below_threshold += 1
-                else:
-                    above_threshold += 1
+    #     for row in range(self.table_widget.rowCount()):
+    #         id_item = self.table_widget.item(row, 0)
+    #         failure_mode_item = self.table_widget.item(row, 1)
+    #         rpn_item = self.table_widget.item(row, 2)
+    #         if id_item and failure_mode_item and rpn_item:
+    #             rpn = float(rpn_item.text())
+    #             if rpn < threshold:
+    #                 below_threshold += 1
+    #             else:
+    #                 above_threshold += 1
 
-        # Clear the existing plot
-        self.main_figure.clear()
+    #     # Clear the existing plot
+    #     self.main_figure.clear()
 
-        # Prepare the data for the pie chart
-        labels = ["Below Risk Threshold", "Above Risk Threshold"]
-        rpn_values = [below_threshold, above_threshold]
+    #     # Prepare the data for the pie chart
+    #     labels = ["Below Risk Threshold", "Above Risk Threshold"]
+    #     rpn_values = [below_threshold, above_threshold]
 
-        # Set the color of the slices based on the categories
-        colors = ["#5f9ea0", "#FF6961"]
+    #     # Set the color of the slices based on the categories
+    #     colors = ["#5f9ea0", "#FF6961"]
 
-        # Create a pie chart
-        ax = self.main_figure.add_subplot(111)
-        wedges, texts, autotexts = ax.pie(
-            rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=1
-        )
+    #     # Create a pie chart
+    #     ax = self.main_figure.add_subplot(111)
+    #     wedges, texts, autotexts = ax.pie(
+    #         rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=1
+    #     )
 
-        # Create legend
-        legend_labels = [
-            f"Number of Green Failure Modes: {below_threshold}",
-            f"Number of Red Failure Modes: {above_threshold}",
-            f"Total Failure Modes: {below_threshold + above_threshold}",
-        ]
-        ax.legend(
-            wedges,
-            legend_labels,
-            title="Failure Modes",
-            loc="upper right",
-            bbox_to_anchor=(1, 0.5),
-        )
+    #     # Create legend
+    #     legend_labels = [
+    #         f"Number of Green Failure Modes: {below_threshold}",
+    #         f"Number of Red Failure Modes: {above_threshold}",
+    #         f"Total Failure Modes: {below_threshold + above_threshold}",
+    #     ]
+    #     ax.legend(
+    #         wedges,
+    #         legend_labels,
+    #         title="Failure Modes",
+    #         loc="upper right",
+    #         bbox_to_anchor=(1, 0.5),
+    #     )
 
-        component_name = self.component_name_field.currentText()
-        ax.set_title(component_name + " Risk Profile")
+    #     component_name = self.component_name_field.currentText()
+    #     ax.set_title(component_name + " Risk Profile")
 
-        # Refresh the canvas
-        self.canvas.draw()
+    #     # Refresh the canvas
+    #     self.canvas.draw()
 
     """
     Displays 3D plot of data in table.
