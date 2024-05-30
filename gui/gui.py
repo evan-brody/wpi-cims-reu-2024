@@ -96,6 +96,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         # function call to read in the database.csv file before running the rest of the gui
+        #test comment for changelog
         self.read_data_from_csv()
 
         super().__init__()
