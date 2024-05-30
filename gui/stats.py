@@ -101,11 +101,6 @@ def weibull(values):
 
 
 def rayleigh(values):
-    import numpy as np
-    from scipy.optimize import minimize, Bounds
-    from scipy.stats import rayleigh
-    import matplotlib.pyplot as plt
-    import seaborn as sns
 
     # name = component
     input = values
