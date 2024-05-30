@@ -53,8 +53,9 @@ TODO: Search for components
 DONE: generate_chart() if block to switch case
 TODO: values() design fix
 TODO: fix csv formatting. there shouldn't be spaces after commas
-TODO: convert .csv to sqlite .db file
-TODO: normalize database
+DONE: convert .csv to sqlite .db file
+DONE: normalize database
+TODO: re-implement dictionary database as pandas dataframe, populated from SQLite database
 
 """
 
@@ -76,6 +77,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+import sqlite3
 
 current_row = None
 current_column = None
