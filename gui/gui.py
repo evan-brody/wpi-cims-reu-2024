@@ -933,9 +933,20 @@ class MainWindow(QMainWindow):
 
         # drop_duplicates shouldn't be necessary here, since components are unique. Just in case, though.
         # np.sum is a duct-tapey way to convert to int, since you can't directly
-        comp_id = np.sum(self.components[self.components["name"] == component_name].drop_duplicates()["id"])
-        self.comp_data = self.comp_fails[self.comp_fails["comp_id"] == comp_id].head(self.max_ids).reset_index(drop=True)
-        self.comp_data = pd.merge(self.fail_modes, self.comp_data, left_on="id", right_on="fail_id")
+        comp_id = np.sum(
+            self.components[
+                self.components["name"] == component_name
+                ].drop_duplicates()["id"]
+                )
+        
+        self.comp_data = self.comp_fails[
+            self.comp_fails["comp_id"] == comp_id
+            ].head(self.max_ids).reset_index(drop=True)
+        
+        self.comp_data = pd.merge(
+            self.fail_modes, self.comp_data, left_on="id", right_on="fail_id"
+            )
+        
         self.comp_data = self.comp_data.drop(columns="id")
 
         # Get risk acceptance threshold
