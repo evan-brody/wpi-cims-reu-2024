@@ -1,7 +1,8 @@
 """
 
 Project: AI-Based FMEA Tool
-Contributor(s): Nicholas Grabill, Stephanie Wang
+2023 Contributor(s): Nicholas Grabill, Stephanie Wang
+2024 Contributor(s): Evan Brody, Karl Ramus, Esther Yu
 Description: Blah, blah. Blah.
 Industry Mentor(s): Dr. Yehia Khalil
 Academic Mentor(s): Dr. Frank Zou, Dr. Tharindu DeAlwis, Hammed Olayinka
@@ -53,15 +54,13 @@ TODO: UI Bug fixes
 TODO: bubbleplot should open to app and not browser
 TODO: Search for components
 DONE: generate_chart() if block to switch case
-TODO: values() design fix
+TODO: values() design fix, also figure out what it does ???
 TODO: fix csv formatting. there shouldn't be spaces after commas
 DONE: convert .csv to sqlite .db file
 DONE: normalize database
 TODO: re-implement dictionary database as pandas dataframe, populated from SQLite database
 
 """
-
-import stats
 
 import os
 import sys
@@ -81,8 +80,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import sqlite3
 
-current_row = None
-current_column = None
+import stats
+
 database_data = {}
 
 """
@@ -95,6 +94,9 @@ Description: MainWindow class that holds all of our functions for the GUI.
 
 
 class MainWindow(QMainWindow):
+    db_path = "\\data\\"
+    default_db_name = "part_info.db"
+
     """
 
     Name: __init__
@@ -104,6 +106,10 @@ class MainWindow(QMainWindow):
     """
 
     def __init__(self):
+        # Initializes DataFrames with default values.
+        self.current_directory = os.path.dirname(os.path.abspath(__file__))
+        self.read_sql_default()
+
         # function call to read in the database.csv file before running the rest of the gui
         self.read_data_from_csv()
 
@@ -797,6 +803,16 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "File Not Found", error_message)
 
         return database_data
+    
+    """
+    Pulls default data from part_info.db and stores it in a pandas DataFrame.
+    """
+
+    def read_sql_default(self) -> None:
+        self.default_conn = sqlite3.connect(self.current_directory + self.db_path + self.default_db_name)
+        self.components = pd.read_sql_query("SELECT * FROM components", self.default_conn)
+        self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.default_conn)
+        self.comp_fails = pd.read_sql_query("SELECT * FROM comp_fails", self.default_conn)
 
     """
 
@@ -1492,7 +1508,7 @@ class MainWindow(QMainWindow):
        Type: function
        Description: Makes a bubble chart of data in table. Builds upon the scatterplot function by altering bubbles to size according to RPN
 
-       """
+    """
 
     def bubble_plot(self):
         component_data = []
