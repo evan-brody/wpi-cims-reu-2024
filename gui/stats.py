@@ -1,6 +1,4 @@
 from matplotlib import figure
-
-import gui
 import numpy as np
 from scipy.optimize import minimize, Bounds
 from scipy.stats import weibull_min, rayleigh
@@ -17,12 +15,7 @@ import seaborn as sns
 
 """
 
-
-def weibull(values):
-    # name = component
-    input = values
-
-    def weibull_objective(params, values):
+def weibull_objective(params, values):
         k, lam = params
         # Calculate the estimated values for lower bound, geometric mean, and upper bound
         estimated_lower = weibull_min.ppf(0.05, k, scale=lam)  # 5% point probability (lower bound), given by Appendix B
@@ -32,6 +25,9 @@ def weibull(values):
         # Calculate the difference between actual and estimated values
         return np.sum((values - estimated_values) ** 2)
 
+def weibull(values):
+    input = values
+    
     # Set the lower bound, geometric mean, and upper bound of the failure rates
     values1 = np.array([20.8, 125.0, 4.17])  # replace with actual lower bound, geometric mean, and upper bound
     values2 = np.array([1.0, 30.0, 1000.0])
@@ -56,7 +52,8 @@ def weibull(values):
     sample = lam_opt * np.random.weibull(k_opt, 1000)
 
     print(f"Shape (k): {k_opt}")
-    print(f"Scale (λ): {lam_opt}")
+    print(lam_opt)
+    #print(f"Scale (λ): {lam_opt}")
 
     # Create a Figure and Axes object
     fig = plt.Figure(figsize=(8, 6))
@@ -88,7 +85,6 @@ def weibull(values):
 
     # Return the Figure
     return fig
-
 
 """
 
