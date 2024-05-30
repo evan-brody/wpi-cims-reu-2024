@@ -62,10 +62,7 @@ TODO: re-implement dictionary database as pandas dataframe, populated from SQLit
 
 """
 
-import os
-import sys
-import csv
-import os
+import os, sys, csv, sqlite3, stats
 import seaborn as sns
 import matplotlib as mpl
 import pandas as pd
@@ -78,9 +75,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import sqlite3
-
-import stats
 
 database_data = {}
 
@@ -659,7 +653,10 @@ class MainWindow(QMainWindow):
         # Clear the existing tabs
         self.stats_tab.clear()
         
-
+        fig1 = stats._rayleigh(self.values())
+        fig2 = stats._rayleigh(self.values())
+        fig3= stats._rayleigh(self.values())
+        """
         if (
             self.component_name_field.currentText() == "Motor-Driven Pump"
         ):  # Idealy, this would be modified to search through the list of component neames instead of the names being specificed here
@@ -674,6 +671,7 @@ class MainWindow(QMainWindow):
             fig1 = stats._rayleigh(np.array([41.7, 125.0, 375.0]))
             fig2 = stats._rayleigh(np.array([83.3, 4170.0, 4.17]))
             fig3 = stats._rayleigh(np.array([2.5, 33.3, 250.0]))
+        """
 
         # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
@@ -708,6 +706,11 @@ class MainWindow(QMainWindow):
         # Clear the existing tabs
         self.stats_tab.clear()
 
+        fig1 = stats._weibull(self.values())
+        fig2 = stats._weibull(self.values())
+        fig3= stats._weibull(self.values())
+        
+        """
         if (
             self.component_name_field_stats.currentText() == "Motor-Driven Pump"
         ):  # Fix to read through database
@@ -721,8 +724,9 @@ class MainWindow(QMainWindow):
             fig1 = stats._weibull(np.array([41.7, 125.0, 375.0]))
             fig2 = stats._weibull(np.array([83.3, 4170.0, 4.17]))
             fig3 = stats._weibull(np.array([2.5, 33.3, 250.0]))
+        """
 
-            # Update the canvas with the new figures
+        # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
         self.stats_tab_canvas1.draw()
@@ -1018,8 +1022,8 @@ class MainWindow(QMainWindow):
     """
 
     def values(self):
+        print("generating values")
         component_name = self.component_name_field.currentText()
-        id = self.current_row
 
         values1 = np.array(
             [20.8, 125.0, 4.17]
@@ -1030,20 +1034,12 @@ class MainWindow(QMainWindow):
         values5 = np.array([83.3, 4170.0, 4.17])
         values6 = np.array([2.5, 33.3, 250.0])
 
-        if component_name == "Motor-Driven Pump" and id == 0:
+        if component_name == "Motor-Driven Pump":
             return values1
-        elif component_name == "Motor-Driven Pump" and id == 1:
-            return values2
-        elif component_name == "Motor-Driven Pump" and id == 2:
-            return values3
-        elif component_name == "Motor-Operated Valves" and id == 0:
+        elif component_name == "Motor-Operated Valves":
             return values4
-        elif component_name == "Motor-Operated Valves" and id == 1:
-            return values5
-        elif component_name == "Motor-Operated Valves" and id == 2:
-            return values6
         else:
-            return "Error"
+            return np.array([1,1,1])
 
     """
 
