@@ -37,8 +37,11 @@ def _weibull(values):
     values6 = np.array([2.5, 33.3, 250.0])
 
     # Initial guess for k and lam
-    initial_guess = np.array([1.0, 1.0])
-
+    """
+    k_app = math.pow((4*input[1])/(input[2]-input[0]),1.086)
+    initial_guess = np.array([k_app, input[1]/gamma(1+1/k_app)])
+    """
+    initial_guess = [1.0,1.0]
     # Set bounds for k and lam
     bounds = Bounds([0.01, 0.01], [np.inf, np.inf])  # Avoid zero by setting lower bound to a small positive number
 

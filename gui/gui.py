@@ -75,6 +75,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from charts import Charts
 
 database_data = {}
 
@@ -97,22 +98,31 @@ class MainWindow(QMainWindow):
         "Recommended Detectability: 9-10 (Unacceptable)",
         "Recommended Detectability: 7-8 (Severe)",
         "Recommended Detectability: 4-6 (Medium)",
-        "Recommended Detectability: 1-3 (Low)"
-        ]
+        "Recommended Detectability: 1-3 (Low)",
+    ]
     # Columns to show in the failure mode table.
-    fail_mode_columns = ["desc", "rpn", "frequency", "severity", "detection", "lower_bound",
-                         "best_estimate", "upper_bound", "mission_time"]
+    fail_mode_columns = [
+        "desc",
+        "rpn",
+        "frequency",
+        "severity",
+        "detection",
+        "lower_bound",
+        "best_estimate",
+        "upper_bound",
+        "mission_time",
+    ]
     horizontal_header_labels = [
-                "Failure Modes",
-                "RPN",
-                "Frequency",
-                "Severity",
-                "Detectability",
-                "Lower Bound (LB)",
-                "Best Estimate (BE)",
-                "Upper Bound (UB)",
-                "Mission Time"
-            ]
+        "Failure Modes",
+        "RPN",
+        "Frequency",
+        "Severity",
+        "Detectability",
+        "Lower Bound (LB)",
+        "Best Estimate (BE)",
+        "Upper Bound (UB)",
+        "Mission Time",
+    ]
 
     """
 
@@ -176,6 +186,7 @@ class MainWindow(QMainWindow):
             "Does this system have safety features, e.g. sensors, user-warnings, fail-safes?",
         ]
         self.qindex = 0
+        self.charts = Charts(self)
 
     def _init_instructions_tab(self):
         ### START OF USER INSTRUCTIONS TAB SETUP ###
@@ -296,7 +307,7 @@ class MainWindow(QMainWindow):
             lambda: (
                 self.component_name_field_stats.setCurrentText(
                     self.component_name_field.currentText()
-                )
+                ), self.update_layout()
             )
         )
         for name in self.components["name"]:
@@ -358,6 +369,7 @@ class MainWindow(QMainWindow):
         self.chart_name_field_main_tool.addItem("3D Risk Plot")
         self.chart_name_field_main_tool.addItem("Scatterplot")
         self.chart_name_field_main_tool.addItem("Bubbleplot")
+        self.chart_name_field_main_tool.activated.connect(self.generate_main_chart)
         self.right_layout.addWidget(self.chart_name_field_main_tool)
 
         # Create the matplotlib figure and canvas
@@ -469,7 +481,7 @@ class MainWindow(QMainWindow):
             lambda: (
                 self.component_name_field.setCurrentText(
                     self.component_name_field_stats.currentText()
-                )
+                ), self.update_layout()
             )
         )
         for name in self.components["name"]:
@@ -573,6 +585,12 @@ class MainWindow(QMainWindow):
 
         ### END OF STATISTICS TAB SETUP ###
 
+
+    def update_layout(self):
+        self.show_table()
+        self.show_table_stats()
+        self.generate_main_chart()
+
     """
 
     Name: generate_chart
@@ -584,9 +602,9 @@ class MainWindow(QMainWindow):
     def generate_main_chart(self):
         match (self.chart_name_field_main_tool.currentText()):
             case "Bar Chart":
-                self.bar_chart()
+                self.charts.bar_chart()
             case "Pie Chart":
-                self.pie_chart()
+                self.charts.pie_chart()
             case "3D Risk Plot":
                 self.plot_3D()
             case "Scatterplot":
@@ -898,10 +916,12 @@ class MainWindow(QMainWindow):
         # retrieve component name from text box
         component_name = self.component_name_field.currentText()
 
+        """
         # Error checking for component name
         if not self.components["name"].str.contains(component_name).any():
             error_message = "Error: Please re-enter a component name that's present in the database."
             QMessageBox.critical(self, "Name Error", error_message)
+        """
 
         # Update the column header for "Failure Mode"
         table_widget.setHorizontalHeaderLabels(
@@ -934,7 +954,7 @@ class MainWindow(QMainWindow):
 
     def show_table_stats(self) -> None:
         self.populate_table(self.table_widget_stats)
-       
+
     """
     Records the location of a cell when it's clicked.
     """
@@ -948,7 +968,6 @@ class MainWindow(QMainWindow):
     """
 
     def values(self):
-        print("generating values")
         component_name = self.component_name_field.currentText()
 
         values1 = np.array(
@@ -1149,69 +1168,6 @@ class MainWindow(QMainWindow):
         self.show_table_stats()
 
     """
-    Refreshes displayed chart with new changes to the table.
-    """
-
-    def bar_chart(self):
-        component_data = []
-        threshold = float(self.threshold_field.text())
-
-        for row in range(self.table_widget.rowCount()):
-            id_item = self.table_widget.item(row, 0)
-            failure_mode_item = self.table_widget.item(row, 1)
-            rpn_item = self.table_widget.item(row, 2)
-            if id_item and failure_mode_item and rpn_item:
-                component_data.append(
-                    {
-                        "id": int(id_item.text()),
-                        "failure_mode": failure_mode_item.text(),
-                        "rpn": float(rpn_item.text()),
-                    }
-                )
-
-        # Clear the existing plot
-        self.main_figure.clear()
-
-        # Adjust the subplot for spacing
-        self.main_figure.subplots_adjust(
-            left=0.18
-        )  # You can adjust the value to suit your needs
-
-        # Extract the failure modes and RPN values
-        ids = [data["id"] for data in component_data]
-        rpn_values = [data["rpn"] for data in component_data]
-
-        # Convert the IDs to integers
-        ids = list(map(int, ids))
-
-        # Create a DataFrame for seaborn
-        df = pd.DataFrame({"Failure Mode ID": ids, "RPN": rpn_values})
-
-        # Create a bar plot
-        ax = self.main_figure.add_subplot(111)
-
-        # Set the color of the bars based on RPN values
-        colors = ["#5f9ea0" if rpn < threshold else "#FF6961" for rpn in rpn_values]
-        sns.barplot(x="Failure Mode ID", y="RPN", data=df, palette=colors, ax=ax)
-
-        ax.axhline(threshold, color="#68855C", linestyle="--")
-        ax.set_ylabel("Risk Priority Number (RPN)")
-        ax.set_xlabel("Failure Mode ID")
-        component_name = self.component_name_field.currentText()
-        ax.set_title(component_name + " Risk Profile")
-        ax.tick_params(axis="x", rotation=0)
-
-        # Set the font to bold
-        font = {"weight": "bold"}
-        mpl.rc("font", **font)
-
-        # Set the x-axis ticks to integers only
-        ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
-
-        # Refresh the canvas
-        self.canvas.draw()
-
-    """
     Gives user the option to download displayed figure.
     """
 
@@ -1222,65 +1178,65 @@ class MainWindow(QMainWindow):
         self.main_figure
         figure.savefig(file_path, format="jpg", dpi=300)
 
-    """
-    Makes a pie chart of data in table.
-    """
+    # """
+    # Makes a pie chart of data in table.
+    # """
 
-    def pie_chart(self):
-        # Clear the existing plot
-        self.main_figure.clear()
+    # def pie_chart(self):
+    #     # Clear the existing plot
+    #     self.main_figure.clear()
 
-        component_data = []
-        threshold = float(self.threshold_field.text())
-        below_threshold = 0
-        above_threshold = 0
+    #     component_data = []
+    #     threshold = float(self.threshold_field.text())
+    #     below_threshold = 0
+    #     above_threshold = 0
 
-        for row in range(self.table_widget.rowCount()):
-            id_item = self.table_widget.item(row, 0)
-            failure_mode_item = self.table_widget.item(row, 1)
-            rpn_item = self.table_widget.item(row, 2)
-            if id_item and failure_mode_item and rpn_item:
-                rpn = float(rpn_item.text())
-                if rpn < threshold:
-                    below_threshold += 1
-                else:
-                    above_threshold += 1
+    #     for row in range(self.table_widget.rowCount()):
+    #         id_item = self.table_widget.item(row, 0)
+    #         failure_mode_item = self.table_widget.item(row, 1)
+    #         rpn_item = self.table_widget.item(row, 2)
+    #         if id_item and failure_mode_item and rpn_item:
+    #             rpn = float(rpn_item.text())
+    #             if rpn < threshold:
+    #                 below_threshold += 1
+    #             else:
+    #                 above_threshold += 1
 
-        # Clear the existing plot
-        self.main_figure.clear()
+    #     # Clear the existing plot
+    #     self.main_figure.clear()
 
-        # Prepare the data for the pie chart
-        labels = ["Below Risk Threshold", "Above Risk Threshold"]
-        rpn_values = [below_threshold, above_threshold]
+    #     # Prepare the data for the pie chart
+    #     labels = ["Below Risk Threshold", "Above Risk Threshold"]
+    #     rpn_values = [below_threshold, above_threshold]
 
-        # Set the color of the slices based on the categories
-        colors = ["#5f9ea0", "#FF6961"]
+    #     # Set the color of the slices based on the categories
+    #     colors = ["#5f9ea0", "#FF6961"]
 
-        # Create a pie chart
-        ax = self.main_figure.add_subplot(111)
-        wedges, texts, autotexts = ax.pie(
-            rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=1
-        )
+    #     # Create a pie chart
+    #     ax = self.main_figure.add_subplot(111)
+    #     wedges, texts, autotexts = ax.pie(
+    #         rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=1
+    #     )
 
-        # Create legend
-        legend_labels = [
-            f"Number of Green Failure Modes: {below_threshold}",
-            f"Number of Red Failure Modes: {above_threshold}",
-            f"Total Failure Modes: {below_threshold + above_threshold}",
-        ]
-        ax.legend(
-            wedges,
-            legend_labels,
-            title="Failure Modes",
-            loc="upper right",
-            bbox_to_anchor=(1, 0.5),
-        )
+    #     # Create legend
+    #     legend_labels = [
+    #         f"Number of Green Failure Modes: {below_threshold}",
+    #         f"Number of Red Failure Modes: {above_threshold}",
+    #         f"Total Failure Modes: {below_threshold + above_threshold}",
+    #     ]
+    #     ax.legend(
+    #         wedges,
+    #         legend_labels,
+    #         title="Failure Modes",
+    #         loc="upper right",
+    #         bbox_to_anchor=(1, 0.5),
+    #     )
 
-        component_name = self.component_name_field.currentText()
-        ax.set_title(component_name + " Risk Profile")
+    #     component_name = self.component_name_field.currentText()
+    #     ax.set_title(component_name + " Risk Profile")
 
-        # Refresh the canvas
-        self.canvas.draw()
+    #     # Refresh the canvas
+    #     self.canvas.draw()
 
     """
     Displays 3D plot of data in table.
@@ -1380,14 +1336,13 @@ class MainWindow(QMainWindow):
         threshold = float(self.threshold_field.text())
 
         for row in range(self.table_widget.rowCount()):
-            id_item = self.table_widget.item(row, 0)
-            frequency_item = self.table_widget.item(row, 3)
-            severity_item = self.table_widget.item(row, 4)
-            detection_item = self.table_widget.item(row, 5)
-            if id_item and severity_item and detection_item and frequency_item:
+            frequency_item = self.table_widget.item(row, 2)
+            severity_item = self.table_widget.item(row, 3)
+            detection_item = self.table_widget.item(row, 4)
+            if severity_item and detection_item and frequency_item:
                 component_data.append(
                     {
-                        "id": int(id_item.text()),
+                        "id": int(row),
                         "severity": float(severity_item.text()),
                         "detection": float(detection_item.text()),
                         "frequency": float(frequency_item.text()),
@@ -1444,14 +1399,13 @@ class MainWindow(QMainWindow):
         threshold = float(self.threshold_field.text())
 
         for row in range(self.table_widget.rowCount()):
-            id_item = self.table_widget.item(row, 0)
-            frequency_item = self.table_widget.item(row, 3)
-            severity_item = self.table_widget.item(row, 4)
-            detection_item = self.table_widget.item(row, 5)
-            if id_item and severity_item and detection_item and frequency_item:
+            frequency_item = self.table_widget.item(row, 2)
+            severity_item = self.table_widget.item(row, 3)
+            detection_item = self.table_widget.item(row, 4)
+            if severity_item and detection_item and frequency_item:
                 component_data.append(
                     {
-                        "id": int(id_item.text()),
+                        "id": int(row),
                         "severity": float(severity_item.text()),
                         "detection": float(detection_item.text()),
                         "frequency": float(frequency_item.text()),

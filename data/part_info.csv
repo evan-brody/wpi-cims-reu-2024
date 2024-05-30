@@ -52,3 +52,58 @@ Check Valve,5,Spurious operation,1,0,2.56E-03,0,0,0,0,1
 Check Valve,6,Spurious closed,1,0,5.62E-03,0,0,0,0,1
 Check Valve,7,Fail to close,1,0,1.57E+02,0,0,0,0,1
 Check Valve,8,Fail to open,1,0,9.24E+00,0,0,0,0,1
+
+Component,ID,Failure Mode,RPN,Lower Bound,Best Estimate,Upper Bound,Frequency,Severity,Detection,Mission Time
+Gas Compressor,1,High suction pressure,1,0,0,0,0,0,0,1
+Gas Compressor,2,Low suction pressure,1,0,0,0,0,0,0,1
+Gas Compressor,3,Vibration and noise during compressor operation,1,0,0,0,0,0,0,1
+Gas Compressor,4,Electric motor failure,1,0,0,0,0,0,0,1
+Gas Compressor,5,Overheat,1,0,0,0,0,0,0,1
+Gas Compressor,6,Excessive gas flow,1,0,0,0,0,0,0,1
+Gas Compressor,7,Lacking gas flow,1,0,0,0,0,0,0,1
+Gas Compressor,8,Dead head,1,0,0,0,0,0,0,1
+Gas Compressor,9,External leakage,1,0,0,0,0,0,0,1
+Gas Compressor,10,Internal leakage,1,0,0,0,0,0,0,1
+Gas Compressor,11,Excessive current flow,1,0,0,0,0,0,0,1
+Gas Compressor,12,Lacking current flow,1,0,0,0,0,0,0,1
+Electrodes,1,Anode Corrosion,1,0,0,0,0,0,0,1
+Electrodes,2,Cathode Corrosion,1,0,0,0,0,0,0,1
+Electrodes,3,Oversaturation,1,0,0,0,0,0,0,1
+Electrodes,4,Undersaturation,1,0,0,0,0,0,0,1
+Motor-Driven Pump,1,Failure to start,1,2.08E+01,1.25E+02,4.17E+00,0,0,0,1
+Motor-Driven Pump,2,Failure to run,1,1.00E+00,3.00E+01,1.00E+03,0,0,0,1
+Motor-Driven Pump,3,Unavailability due to test and maintenance,1,4.17E+00,8.33E+01,4.17E+02,0,0,0,1
+Motor-Operated Valves,1,Failure to operate,1,4.17E+01,1.25E+02,3.75E+02,0,0,0,1
+Motor-Operated Valves,2,Failure due to plugging,1,8.33E-01,4.17E-03,4.17E+00,0,0,0,1
+Motor-Operated Valves,3,Unavailability due to test and maintenance,1,2.50E+00,3.33E+01,2.50E+02,0,0,0,1
+Motor-Operated Valve,4,Large external leak,1,0,1.90E-03,0,0,0,0,1
+Motor-Operated Valve,5,Small external leak,1,0,2.71E-02,0,0,0,0,1
+Motor-Operated Valve,6,Large internal leak,1,0,1.52E-03,0,0,0,0,1
+Motor-Operated Valve,7,Small internal leak,1,0,7.58E-02,0,0,0,0,1
+Motor-Operated Valve,8,Spurious Operation,1,0,3.24E-02,0,0,0,0,1
+Solenoid-Operated Valve,1,Large external leak,1,0,1.71E-03,0,0,0,0,1
+Solenoid-Operated Valve,2,Small external leak,1,0,2.44E-02,0,0,0,0,1
+Solenoid-Operated Valve,3,Large internal leak,1,0,2.86E-03,0,0,0,0,1
+Solenoid-Operated Valve,4,Small internal leak,1,0,1.43E-01,0,0,0,0,1
+Solenoid-Operated Valve,5,Spurious operation,1,0,6.62E-02,0,0,0,0,1
+Hydraulic-Operated Valve,1,Large external leak,1,0,9.38E-03,0,0,0,0,1
+Hydraulic-Operated Valve,2,Small external leak,1,0,1.34E-01,0,0,0,0,1
+Hydraulic-Operated Valve,3,Large internal leak,1,0,9.66E-04,0,0,0,0,1
+Hydraulic-Operated Valve,4,Small internal leak,1,0,4.83E-02,0,0,0,0,1
+Hydraulic-Operated Valve,5,Spurious operation,1,0,1.88E-01,0,0,0,0,1
+Air-Operated Valve,1,Large external leak,1,0,3.14E-03,0,0,0,0,1
+Air-Operated Valve,2,Small external leak,1,0,4.49E-02,0,0,0,0,1
+Air-Operated Valve,3,Large internal leak,1,0,1.55E-03,0,0,0,0,1
+Air-Operated Valve,4,Small internal leak,1,0,7.76E-02,0,0,0,0,1
+Air-Operated Valve,5,Spurious operation,1,0,1.05E-01,0,0,0,0,1
+Pressure-Operated Relief Valve,1,Small external leak,1,0,7.20E-03,0,0,0,0,1
+Pressure-Operated Relief Valve,2,Small internal leak,1,0,2.66E-01,0,0,0,0,1
+Pressure-Operated Relief,3,Spurious operation,1,0,3.53E-01,0,0,0,0,1
+Check Valve,1,Large external leak,1,0,5.37E-04,0,0,0,0,1
+Check Valve,2,Small external leak,1,0,7.67E-03,0,0,0,0,1
+Check Valve,3,Large internal leak,1,0,4.16E-03,0,0,0,0,1
+Check Valve,4,Small internal leak,1,0,2.08E-01,0,0,0,0,1
+Check Valve,5,Spurious operation,1,0,2.56E-03,0,0,0,0,1
+Check Valve,6,Spurious closed,1,0,5.62E-03,0,0,0,0,1
+Check Valve,7,Fail to close,1,0,1.57E+02,0,0,0,0,1
+Check Valve,8,Fail to open,1,0,9.24E+00,0,0,0,0,1
