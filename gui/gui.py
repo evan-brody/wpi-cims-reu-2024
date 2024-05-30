@@ -64,13 +64,9 @@ DONE: create charts.py to hold all charting functions
 """
 
 import os, sys, csv, sqlite3, stats
-import seaborn as sns
-import matplotlib as mpl
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import plotly.graph_objects as go
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -279,7 +275,7 @@ class MainWindow(QMainWindow):
         self.database_view_layout = QVBoxLayout(self.database_view_tab)
 
         # Create and add the read database button
-        self.read_database_button = QPushButton("Read Database")
+        self.read_database_button = QPushButton("Refresh Database")
         self.read_database_button.clicked.connect(self.read_database)
         self.database_view_layout.addWidget(self.read_database_button)
 
@@ -287,6 +283,7 @@ class MainWindow(QMainWindow):
         self.database_table_widget = QTableWidget()
         self.database_view_layout.addWidget(self.database_table_widget)
 
+        self.read_database()
         ### END OF DATABASE VIEW TAB SETUP ###
 
     def _init_main_tab(self):

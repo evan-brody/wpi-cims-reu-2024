@@ -7,7 +7,6 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import seaborn as sns
 from PyQt5.QtWidgets import QMessageBox
 
-
 class Charts:
     def __init__(self, main_window):
         self.main_window = main_window
@@ -54,7 +53,7 @@ class Charts:
 
         # Set the color of the bars based on RPN values
         colors = ["#5f9ea0" if rpn < threshold else "#FF6961" for rpn in rpn_values]
-        sns.barplot(x="Failure Mode ID", y="RPN", data=df, palette=colors, ax=ax)
+        sns.barplot(x="Failure Mode ID", y="RPN", data=df, hue=colors, ax=ax)
 
         ax.axhline(threshold, color="#68855C", linestyle="--")
         ax.set_ylabel("Risk Priority Number (RPN)")
@@ -87,10 +86,9 @@ class Charts:
         above_threshold = 0
 
         for row in range(self.main_window.table_widget.rowCount()):
-            id_item = self.main_window.table_widget.item(row, 0)
             failure_mode_item = self.main_window.table_widget.item(row, 1)
             rpn_item = self.main_window.table_widget.item(row, 2)
-            if id_item and failure_mode_item and rpn_item:
+            if failure_mode_item and rpn_item:
                 rpn = float(rpn_item.text())
                 if rpn < threshold:
                     below_threshold += 1
