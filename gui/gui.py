@@ -33,7 +33,7 @@ TODO: UI Bug fixes
     TODO: Tables are same size so labels are cut off
     DONE: generating weibull distribution in stats tab crashes
     DONE: generating rayleigh distribution in stats tab crashes
-    TODO: generate table in stats distribution crashes app unless you modify something
+    TODO: generate plot in stats distribution crashes app unless you modify something first
     TODO: Source Plot1,2,3 from database instead of hardcoded
     TODO: Variable plot sizes in stats tab
     TODO: Download chart button downloads blank jpeg
