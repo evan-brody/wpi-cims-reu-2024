@@ -50,6 +50,8 @@ TODO: UI Bug fixes
 
 TODO: bubbleplot should open to app and not browser
 TODO: Search for components
+DONE: generate_chart() if block to switch case
+TODO: values() design fix
 
 """
 
@@ -553,22 +555,23 @@ class MainWindow(QMainWindow):
     """
 
     def generate_chart(self):
-        if self.chart_name_field_main_tool.currentText() == "Bar Chart":
-            self.update_chart()
-        if self.chart_name_field_main_tool.currentText() == "Pie Chart":
-            self.pie_chart()
-        if self.chart_name_field_main_tool.currentText() == "3D Risk Plot":
-            self.plot_3D()
-        if self.chart_name_field_main_tool.currentText() == "Scatterplot":
-            self.scatterplot()
-        if self.chart_name_field_main_tool.currentText() == "Bubbleplot":
-            self.bubble_plot()
-        if self.chart_name_field_stats.currentText() == "Weibull Distribution":
-            self.updateWeibullCanvas()
-        if self.chart_name_field_stats.currentText() == "Rayleigh Distribution":
-            self.updateRayleighCanvas()
-        if self.chart_name_field_stats.currentText() == "Bathtub Curve":
-            self.bathtub()
+        match (self.chart_name_field_main_tool.currentText()):
+            case "Bar Chart":
+                self.update_chart()
+            case "Pie Chart":
+                self.pie_chart()
+            case "3D Risk Plot":
+                self.plot_3D()
+            case "Scatterplot":
+                self.scatterplot()
+            case "Bubbleplot":
+                self.bubble_plot()
+            case "Weibull Distribution":
+                self.updateWeibullCanvas()
+            case "Rayleigh Distribution":
+                self.updateRayleighCanvas()
+            case "Bathtub Curve":
+                self.bathtub()
 
     """
 
