@@ -285,5 +285,69 @@ class Charts:
         # Refresh the canvas
         self.main_window.canvas.draw()
 
-    # def bubble_plot(self):
-    #     # Copy the bubble_plot method code from your main GUI file here
+    """
+    Makes a bubble chart of data in table. Builds upon the scatterplot function by altering bubbles to size according to RPN
+    """
+
+    def bubble_plot(self):
+        component_data = []
+        threshold = float(self.main_window.threshold_field.text())
+
+        for row in range(self.main_window.table_widget.rowCount()):
+            frequency_item = self.main_window.table_widget.item(row, 2)
+            severity_item = self.main_window.table_widget.item(row, 3)
+            detection_item = self.main_window.table_widget.item(row, 4)
+            if severity_item and detection_item and frequency_item:
+                component_data.append(
+                    {
+                        "id": int(row),
+                        "severity": float(severity_item.text()),
+                        "detection": float(detection_item.text()),
+                        "frequency": float(frequency_item.text()),
+                    }
+                )
+
+        ids = [data["id"] for data in component_data]
+        severity_values = [data["severity"] for data in component_data]
+        detection_values = [data["detection"] for data in component_data]
+        frequency_values = [data["frequency"] for data in component_data]
+
+        rpn_values = [
+            data["severity"] * data["detection"] * data["frequency"]
+            for data in component_data
+        ]
+
+        rpn_scaled = [
+            np.cbrt(val) * 30 for val in rpn_values
+        ]  # Adjust scaling factor as needed
+
+        # Create a 3D plot
+        self.main_window.main_figure.clear()
+        ax = self.main_window.main_figure.add_subplot(111, projection="3d")
+
+        bubble = ax.scatter(
+            frequency_values,
+            severity_values,
+            detection_values,
+            s=rpn_scaled,
+            c=rpn_scaled,
+            cmap="viridis",
+            edgecolors="black",
+            alpha=0.6,
+        )
+
+        # Adding titles and labels
+        component_name = self.main_window.component_name_field.currentText()
+        ax.set_title(component_name + " 3D Bubble Plot")
+        ax.set_xlabel("Frequency")
+        ax.set_ylabel("Severity")
+        ax.set_zlabel("Detection")
+
+        # Color bar which maps values to colors.
+        cbar = self.main_window.main_figure.colorbar(
+            bubble, ax=ax, shrink=0.5, aspect=5
+        )
+        cbar.set_label("Risk Priority Number (RPN)")
+
+        # plt.show()
+        self.main_window.canvas.draw()
