@@ -29,7 +29,7 @@ TODO: FSD should be Ints
 TODO: Change database type from csv to SQL Lite
 
 TODO: UI Bug fixes
-    TODO: Not putting in risk acceptance threshold makes main tool crash when try to generate
+    DONE: Not putting in risk acceptance threshold makes main tool crash when try to generate
     TODO: Tables are same size so labels are cut off
     DONE: generating weibull distribution in stats tab crashes
     DONE: generating rayleigh distribution in stats tab crashes
@@ -261,7 +261,7 @@ class MainWindow(QMainWindow):
         ### END OF DATABASE VIEW TAB SETUP ###
 
     def _init_main_tab(self):
-                ### START OF MAIN TAB SETUP ###
+        ### START OF MAIN TAB SETUP ###
 
         # Create the main layout for the Main Tool tab
         self.main_layout = QHBoxLayout(self.main_tool_tab)
