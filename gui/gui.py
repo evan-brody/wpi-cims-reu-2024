@@ -44,8 +44,8 @@ TODO: UI Bug fixes
     TODO: FMEA and FMECA buttons exist but don't do anything 
     TODO: risk acceptance should autocolor when table is generated
     TODO: detectability recommendation should reset when selected component is changed
-    TODO: read database at startup
-    TODO: automatically update database
+    DONE: read database at startup
+    DONE: automatically update database
     DONE: stats show table without selecting crashes
     DONE: synced component select between tabs
     
