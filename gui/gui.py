@@ -55,7 +55,7 @@ TODO: values() design fix
 
 """
 
-import stats as statistics
+import stats
 
 import os
 import sys
@@ -577,7 +577,7 @@ class MainWindow(QMainWindow):
 
     Name: bathtub
     Type: function
-    Description: Invokes the bathtub function in Statistics.py to populate the canvas with a histogram PDF plot.
+    Description: Invokes the bathtub function in stats.py to populate the canvas with a histogram PDF plot.
 
     """
 
@@ -593,9 +593,9 @@ class MainWindow(QMainWindow):
 
         self.stats_tab.clear()
 
-        fig1 = statistics.bathtub(N, T, t1, t2)
-        fig2 = statistics.bathtub(N, T, t1, t2)
-        fig3 = statistics.bathtub(N, T, t1, t2)
+        fig1 = stats.bathtub(N, T, t1, t2)
+        fig2 = stats.bathtub(N, T, t1, t2)
+        fig3 = stats.bathtub(N, T, t1, t2)
 
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
@@ -616,7 +616,7 @@ class MainWindow(QMainWindow):
     
     Name: updateRayleighCanvas
     Type: function
-    Description: Invokes the rayleigh function in Statistics.py to populate the canvas with a histogram PDF plot.
+    Description: Invokes the rayleigh function in stats.py to populate the canvas with a histogram PDF plot.
     
     """
 
@@ -633,15 +633,15 @@ class MainWindow(QMainWindow):
             self.component_name_field.currentText() == "Motor-Driven Pump"
         ):  # Idealy, this would be modified to search through the list of component neames instead of the names being specificed here
             # Get new figures from weibull()
-            fig1 = statistics.rayleigh(np.array([20.8, 125.0, 4.17]))
-            fig2 = statistics.rayleigh(np.array([1.0, 30.0, 1000.0]))
-            fig3 = statistics.rayleigh(np.array([4.17, 83.3, 417.0]))
+            fig1 = stats.rayleigh(np.array([20.8, 125.0, 4.17]))
+            fig2 = stats.rayleigh(np.array([1.0, 30.0, 1000.0]))
+            fig3 = stats.rayleigh(np.array([4.17, 83.3, 417.0]))
         if (
             self.component_name_field.currentText() == "Motor-Operated Valves"
         ):  # Same here
-            fig1 = statistics.rayleigh(np.array([41.7, 125.0, 375.0]))
-            fig2 = statistics.rayleigh(np.array([83.3, 4170.0, 4.17]))
-            fig3 = statistics.rayleigh(np.array([2.5, 33.3, 250.0]))
+            fig1 = stats.rayleigh(np.array([41.7, 125.0, 375.0]))
+            fig2 = stats.rayleigh(np.array([83.3, 4170.0, 4.17]))
+            fig3 = stats.rayleigh(np.array([2.5, 33.3, 250.0]))
 
         # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
@@ -663,7 +663,7 @@ class MainWindow(QMainWindow):
     
     Name: updateWeibullCavas
     Type: function
-    Description: Invokes the weibull function in Statistics.py to populate the cavas with a histogram PDF plot.
+    Description: Invokes the weibull function in stats.py to populate the cavas with a histogram PDF plot.
     
     """
 
@@ -680,15 +680,15 @@ class MainWindow(QMainWindow):
             self.component_name_field_stats.currentText() == "Motor-Driven Pump"
         ):  # Fix to read through database
             # Get new figures from weibull()
-            fig1 = statistics.weibull(np.array([20.8, 125.0, 4.17]))
-            fig2 = statistics.weibull(np.array([1.0, 30.0, 1000.0]))
-            fig3 = statistics.weibull(np.array([4.17, 83.3, 417.0]))
+            fig1 = stats.weibull(np.array([20.8, 125.0, 4.17]))
+            fig2 = stats.weibull(np.array([1.0, 30.0, 1000.0]))
+            fig3 = stats.weibull(np.array([4.17, 83.3, 417.0]))
         if (
             self.component_name_field_stats.currentText() == "Motor-Operated Valves"
-        ):  # Fix to read through database (likely with currently unused values() function in Statistics.py)
-            fig1 = statistics.weibull(np.array([41.7, 125.0, 375.0]))
-            fig2 = statistics.weibull(np.array([83.3, 4170.0, 4.17]))
-            fig3 = statistics.weibull(np.array([2.5, 33.3, 250.0]))
+        ):  # Fix to read through database (likely with currently unused values() function in stats.py)
+            fig1 = stats.weibull(np.array([41.7, 125.0, 375.0]))
+            fig2 = stats.weibull(np.array([83.3, 4170.0, 4.17]))
+            fig3 = stats.weibull(np.array([2.5, 33.3, 250.0]))
 
             # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
