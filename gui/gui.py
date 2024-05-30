@@ -85,6 +85,7 @@ current_row = None
 current_column = None
 database_data = {}
 
+DEFAULT_RISK_THRESHOLD = 1
 """
 
 Name: MainWindow
@@ -92,7 +93,6 @@ Type: class
 Description: MainWindow class that holds all of our functions for the GUI.
 
 """
-
 
 class MainWindow(QMainWindow):
     """
@@ -139,7 +139,24 @@ class MainWindow(QMainWindow):
             self.database_view_tab, "Database View"
         )  # Add the tab to the QTabWidget
 
-        ### START OF USER INSTRUCTIONS TAB SETUP ###
+        self._init_instructions_tab()
+
+        self._init_database_view_tab()
+        
+        self._init_main_tab()
+        
+        self._init_stats_tab()
+
+        self.counter = 0
+        self.questions = [
+            "Does this system have redundancy, i.e. multiple units of the same component/subsystem in the case one fails?",
+            "Does this system have diversity, i.e. multiple components/subsystems that are responsible for the same function?",
+            "Does this system have safety features, e.g. sensors, user-warnings, fail-safes?",
+        ]
+        self.qindex = 0
+
+    def _init_instructions_tab(self):
+                ### START OF USER INSTRUCTIONS TAB SETUP ###
 
         # Create a QVBoxLayout instance
         layout = QVBoxLayout()
@@ -220,6 +237,7 @@ class MainWindow(QMainWindow):
 
         ### END OF USER INSTRUCTIONS TAB SETUP ###
 
+    def _init_database_view_tab(self):
         ### START OF DATABASE VIEW TAB SETUP ###
 
         # Create the database view layout
@@ -236,7 +254,8 @@ class MainWindow(QMainWindow):
 
         ### END OF DATABASE VIEW TAB SETUP ###
 
-        ### START OF MAIN TAB SETUP ###
+    def _init_main_tab(self):
+                ### START OF MAIN TAB SETUP ###
 
         # Create the main layout for the Main Tool tab
         self.main_layout = QHBoxLayout(self.main_tool_tab)
@@ -258,6 +277,7 @@ class MainWindow(QMainWindow):
         # Create and add the risk acceptance threshold field
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
         self.threshold_field = QLineEdit()
+        self.threshold_field.setText(str(DEFAULT_RISK_THRESHOLD))
         self.threshold_field.setToolTip(
             "Enter the maximum acceptable RPN: must be a value between [1-1000]."
         )
@@ -383,7 +403,6 @@ class MainWindow(QMainWindow):
             QDoubleValidator(0.99, 99.99, 2)
         )  # This will only accept float values
         self.x_input_field.setToolTip("Humanoid Recommendation: 9 or 10 (Unacceptable)")
-        self.left_layout.addWidget(self.x_input_field)
         self.left_layout.addWidget(self.x_input_label)
         self.left_layout.addWidget(self.x_input_field)
 
@@ -410,13 +429,9 @@ class MainWindow(QMainWindow):
         self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
         self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
 
-        # Connect QLineEdit's textChanged signal to the on_rpn_item_changed
-        self.x_input_field.textChanged.connect(self.on_rpn_item_changed)
-        self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
-        self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
-
         ### END OF MAIN TAB SETUP ###
 
+    def _init_stats_tab(self):
         ### START OF STATISTICS TAB SETUP ###
 
         # Create main layout
@@ -543,14 +558,6 @@ class MainWindow(QMainWindow):
         main_layout_stats.addLayout(right_layout_stats, 6)
 
         ### END OF STATISTICS TAB SETUP ###
-
-        self.counter = 0
-        self.questions = [
-            "Does this system have redundancy, i.e. multiple units of the same component/subsystem in the case one fails?",
-            "Does this system have diversity, i.e. multiple components/subsystems that are responsible for the same function?",
-            "Does this system have safety features, e.g. sensors, user-warnings, fail-safes?",
-        ]
-        self.qindex = 0
 
     """
 
@@ -798,6 +805,17 @@ class MainWindow(QMainWindow):
 
         return database_data
 
+    def read_risk_threshold(self):
+        try:
+            risk_threshold = float(self.threshold_field.text())
+            # error checking for risk value threshold
+            if(risk_threshold >1000 or risk_threshold <1):
+                error_message = "Error: Please re-enter a risk threshold value between 1 and 1000, inclusive."
+                QMessageBox.critical(self, "Value Error", error_message)
+        except:
+            risk_threshold = DEFAULT_RISK_THRESHOLD
+        return risk_threshold
+
     """
 
     Name: show_table
@@ -834,12 +852,7 @@ class MainWindow(QMainWindow):
         component_data = database_data.get(component_name, [])
 
         # Get risk acceptance threshold
-        risk_threshold = float(self.threshold_field.text())
-
-        # error checking for risk value threshold
-        # if risk_threshold < 1 or risk_threshold > 1000:
-        #     error_message = "Error: Please re-enter a risk threshold value between 1 and 1000, inclusive."
-        #     QMessageBox.critical(self, "Value Error", error_message)
+        risk_threshold = self.read_risk_threshold()
 
         # Update the maximum number of IDs to show
         self.max_ids = 10
@@ -908,7 +921,7 @@ class MainWindow(QMainWindow):
         component_data = database_data.get(component_name, [])
 
         # Get risk acceptance threshold
-        risk_threshold = float(self.threshold_field.text())
+        risk_threshold = self.read_risk_threshold()
 
         # error checking for risk value threshold
         # if risk_threshold < 1 or risk_threshold > 1000:
@@ -1021,7 +1034,7 @@ class MainWindow(QMainWindow):
         detection = float(self.z_input_field.text()) if self.z_input_field.text() else 0
 
         # Get the risk acceptance threshold
-        risk_threshold = float(self.threshold_field.text())
+        risk_threshold = self.read_risk_threshold()
 
         # Calculate the RPN
         rpn = probability * severity * detection
