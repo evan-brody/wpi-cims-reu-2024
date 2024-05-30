@@ -36,7 +36,7 @@ TODO: UI Bug fixes
     DONE: generate plot in stats distribution crashes app unless you modify something first
     TODO: Source Plot1,2,3 from database instead of hardcoded
     TODO: Variable plot sizes in stats tab
-    TODO: Download chart button downloads blank jpeg
+    DONE: Download chart button downloads blank jpeg
     TODO: Read database pulls from csv not local storage/current modified database
     TODO: Save RPN values should save it to a file not just locally
     TODO: modifying FSD variables should auto save to local database instead of having button do it
@@ -47,7 +47,7 @@ TODO: UI Bug fixes
     TODO: detectability recommendation should reset when selected component is changed
     TODO: read database at startup
     TODO: automatically update database
-    TODO: stats show table without selecting crashes
+    DONE: stats show table without selecting crashes
     DONE: synced component select between tabs
     
 
@@ -352,8 +352,8 @@ class MainWindow(QMainWindow):
         self.right_layout.addWidget(self.chart_name_field_main_tool)
 
         # Create the matplotlib figure and canvas
-        self.figure = plt.figure()
-        self.canvas = FigureCanvas(self.figure)
+        self.main_figure = plt.figure()
+        self.canvas = FigureCanvas(self.main_figure)
         self.right_layout.addWidget(self.canvas)
 
         # Create and add the generate chart button
@@ -363,7 +363,7 @@ class MainWindow(QMainWindow):
 
         # Create and add the download chart button
         self.download_chart_button = QPushButton("Download Chart")
-        self.download_chart_button.clicked.connect(self.download_chart)
+        self.download_chart_button.clicked.connect(lambda: self.download_chart(self.main_figure))
         self.right_layout.addWidget(self.download_chart_button)
 
         # Add a stretch to the right layout
@@ -558,7 +558,7 @@ class MainWindow(QMainWindow):
 
         # Create and add the download chart button (non-functional)
         self.download_chart_button_stats = QPushButton("Download Chart")
-        self.download_chart_button_stats.clicked.connect(self.download_chart)
+        self.download_chart_button_stats.clicked.connect(lambda: self.download_chart(self.stats_tab_canvas1.figure))
         right_layout_stats.addWidget(self.download_chart_button_stats)
 
         # Add left and right layouts to the main layout
@@ -578,7 +578,7 @@ class MainWindow(QMainWindow):
     def generate_main_chart(self):
         match (self.chart_name_field_main_tool.currentText()):
             case "Bar Chart":
-                self.update_chart()
+                self.bar_chart()
             case "Pie Chart":
                 self.pie_chart()
             case "3D Risk Plot":
@@ -1019,7 +1019,8 @@ class MainWindow(QMainWindow):
     
     Name: values
     Type: function
-    Description: uses locally defined data to generate statistical analysis data
+    Description:
+    TODO: get lower bound, geometric mean, and upper bound from dataset, for the component passed in
     
     """
 
@@ -1218,13 +1219,13 @@ class MainWindow(QMainWindow):
 
     """
 
-    Name: update_chart
+    Name: bar_chart
     Type: function
     Description: Refreshes displayed chart with new changes to the table.
 
     """
 
-    def update_chart(self):
+    def bar_chart(self):
         component_data = []
         threshold = float(self.threshold_field.text())
 
@@ -1242,10 +1243,10 @@ class MainWindow(QMainWindow):
                 )
 
         # Clear the existing plot
-        self.figure.clear()
+        self.main_figure.clear()
 
         # Adjust the subplot for spacing
-        self.figure.subplots_adjust(
+        self.main_figure.subplots_adjust(
             left=0.18
         )  # You can adjust the value to suit your needs
 
@@ -1260,7 +1261,7 @@ class MainWindow(QMainWindow):
         df = pd.DataFrame({"Failure Mode ID": ids, "RPN": rpn_values})
 
         # Create a bar plot
-        ax = self.figure.add_subplot(111)
+        ax = self.main_figure.add_subplot(111)
 
         # Set the color of the bars based on RPN values
         colors = ["#5f9ea0" if rpn < threshold else "#FF6961" for rpn in rpn_values]
@@ -1291,13 +1292,12 @@ class MainWindow(QMainWindow):
 
     """
 
-    def download_chart(self):
+    def download_chart(self,figure):
         file_path, _ = QFileDialog.getSaveFileName(
             self, "Save Image", "", "JPEG (*.jpg);;All Files (*)"
         )
-
-        if file_path:
-            self.figure.savefig(file_path, format="jpg", dpi=300)
+        self.main_figure
+        figure.savefig(file_path, format="jpg", dpi=300)
 
     """
 
@@ -1309,7 +1309,7 @@ class MainWindow(QMainWindow):
 
     def pie_chart(self):
         # Clear the existing plot
-        self.figure.clear()
+        self.main_figure.clear()
 
         component_data = []
         threshold = float(self.threshold_field.text())
@@ -1328,7 +1328,7 @@ class MainWindow(QMainWindow):
                     above_threshold += 1
 
         # Clear the existing plot
-        self.figure.clear()
+        self.main_figure.clear()
 
         # Prepare the data for the pie chart
         labels = ["Below Risk Threshold", "Above Risk Threshold"]
@@ -1338,7 +1338,7 @@ class MainWindow(QMainWindow):
         colors = ["#5f9ea0", "#FF6961"]
 
         # Create a pie chart
-        ax = self.figure.add_subplot(111)
+        ax = self.main_figure.add_subplot(111)
         wedges, texts, autotexts = ax.pie(
             rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=1
         )
@@ -1373,7 +1373,7 @@ class MainWindow(QMainWindow):
 
     def plot_3D(self):
         # Clear the existing plot
-        self.figure.clear()
+        self.main_figure.clear()
 
         # Get the X, Y, and Z values
         try:
@@ -1400,8 +1400,8 @@ class MainWindow(QMainWindow):
             color = "red"
 
         # Generate the surface plot
-        self.figure.clear()
-        ax = self.figure.add_subplot(111, projection="3d")
+        self.main_figure.clear()
+        ax = self.main_figure.add_subplot(111, projection="3d")
 
         # Create a list of 3D coordinates for the vertices of each face
         vertices = [
@@ -1484,7 +1484,7 @@ class MainWindow(QMainWindow):
                 )
 
         # Clear the existing plot
-        self.figure.clear()
+        self.main_figure.clear()
 
         # Extract the values
         ids = [data["id"] for data in component_data]
@@ -1502,7 +1502,7 @@ class MainWindow(QMainWindow):
         )
 
         # Create a 3D scatterplot
-        ax = self.figure.add_subplot(111, projection="3d")
+        ax = self.main_figure.add_subplot(111, projection="3d")
 
         sc = ax.scatter(
             df["Severity"],
@@ -1519,7 +1519,7 @@ class MainWindow(QMainWindow):
         ax.set_title(component_name + " Risk Profile")
 
         # Add a colorbar
-        self.figure.colorbar(sc, ax=ax, pad=0.02)
+        self.main_figure.colorbar(sc, ax=ax, pad=0.02)
 
         # Refresh the canvas
         self.canvas.draw()
