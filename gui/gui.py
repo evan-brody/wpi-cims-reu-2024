@@ -35,7 +35,7 @@ TODO: UI Bug fixes
     DONE: generate plot in stats distribution crashes app unless you modify something first
     TODO: Source Plot1,2,3 from database instead of hardcoded
     TODO: Variable plot sizes in stats tab
-    TODO: Download chart button downloads blank jpeg
+    DONE: Download chart button downloads blank jpeg
     TODO: Read database pulls from csv not local storage/current modified database
     TODO: Save RPN values should save it to a file not just locally
     TODO: modifying FSD variables should auto save to local database instead of having button do it
@@ -46,11 +46,11 @@ TODO: UI Bug fixes
     TODO: detectability recommendation should reset when selected component is changed
     TODO: read database at startup
     TODO: automatically update database
-    TODO: stats show table without selecting crashes
+    DONE: stats show table without selecting crashes
     DONE: synced component select between tabs
     
 
-TODO: bubbleplot should open to app and not browser
+DONE: bubbleplot should open to app and not browser
 TODO: Search for components
 DONE: generate_chart() if block to switch case
 TODO: values() design fix, also figure out what it does ???
@@ -61,15 +61,13 @@ TODO: re-implement dictionary database as pandas dataframe, populated from SQLit
 
 """
 
-import os
-import sys
-import csv
-import os
+import os, sys, csv, sqlite3, stats
 import seaborn as sns
 import matplotlib as mpl
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import plotly.graph_objects as go
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.figure import Figure
@@ -77,9 +75,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import sqlite3
-
-import stats
 
 database_data = {}
 
@@ -93,12 +88,13 @@ Description: MainWindow class that holds all of our functions for the GUI.
 
 """
 
+
 class MainWindow(QMainWindow):
     current_directory = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(os.path.dirname(__file__), "..", "data")
     default_db_name = "part_info.db"
     recommendations = [
-        "Recommended Detectability: 9-10 (Unacceptable)", 
+        "Recommended Detectability: 9-10 (Unacceptable)",
         "Recommended Detectability: 7-8 (Severe)",
         "Recommended Detectability: 4-6 (Medium)",
         "Recommended Detectability: 1-3 (Low)"
@@ -168,9 +164,9 @@ class MainWindow(QMainWindow):
         self._init_instructions_tab()
 
         self._init_database_view_tab()
-        
+
         self._init_main_tab()
-        
+
         self._init_stats_tab()
 
         self.counter = 0
@@ -182,7 +178,7 @@ class MainWindow(QMainWindow):
         self.qindex = 0
 
     def _init_instructions_tab(self):
-                ### START OF USER INSTRUCTIONS TAB SETUP ###
+        ### START OF USER INSTRUCTIONS TAB SETUP ###
 
         # Create a QVBoxLayout instance
         layout = QVBoxLayout()
@@ -296,9 +292,15 @@ class MainWindow(QMainWindow):
         # Create and add the component name dropdown menu
         self.component_name_field = QComboBox(self)
         self.component_name_field.addItem("Select a Component")
-        self.component_name_field.activated.connect(lambda: (self.component_name_field_stats.setCurrentText(self.component_name_field.currentText())))
-        for comp_name in self.components["name"]:
-            self.component_name_field.addItem(comp_name)
+        self.component_name_field.activated.connect(
+            lambda: (
+                self.component_name_field_stats.setCurrentText(
+                    self.component_name_field.currentText()
+                )
+            )
+        )
+        for key in database_data.keys():
+            self.component_name_field.addItem(key)
         self.left_layout.addWidget(self.component_name_field)
 
         # Create and add the risk acceptance threshold field
@@ -359,8 +361,8 @@ class MainWindow(QMainWindow):
         self.right_layout.addWidget(self.chart_name_field_main_tool)
 
         # Create the matplotlib figure and canvas
-        self.figure = plt.figure()
-        self.canvas = FigureCanvas(self.figure)
+        self.main_figure = plt.figure()
+        self.canvas = FigureCanvas(self.main_figure)
         self.right_layout.addWidget(self.canvas)
 
         # Create and add the generate chart button
@@ -370,7 +372,9 @@ class MainWindow(QMainWindow):
 
         # Create and add the download chart button
         self.download_chart_button = QPushButton("Download Chart")
-        self.download_chart_button.clicked.connect(self.download_chart)
+        self.download_chart_button.clicked.connect(
+            lambda: self.download_chart(self.main_figure)
+        )
         self.right_layout.addWidget(self.download_chart_button)
 
         # Add a stretch to the right layout
@@ -461,9 +465,15 @@ class MainWindow(QMainWindow):
         # Create and add the component name dropdown menu
         self.component_name_field_stats = QComboBox(self)
         self.component_name_field_stats.addItem("Select a Component")
-        self.component_name_field_stats.activated.connect(lambda: (self.component_name_field.setCurrentText(self.component_name_field_stats.currentText())))
-        for comp_name in self.components["name"]:
-            self.component_name_field_stats.addItem(comp_name)
+        self.component_name_field_stats.activated.connect(
+            lambda: (
+                self.component_name_field.setCurrentText(
+                    self.component_name_field_stats.currentText()
+                )
+            )
+        )
+        for key in database_data.keys():
+            self.component_name_field_stats.addItem(key)
         self.left_layout.addWidget(self.component_name_field_stats)
         left_layout_stats.addWidget(self.component_name_field_stats)
 
@@ -552,7 +562,9 @@ class MainWindow(QMainWindow):
 
         # Create and add the download chart button (non-functional)
         self.download_chart_button_stats = QPushButton("Download Chart")
-        self.download_chart_button_stats.clicked.connect(self.download_chart)
+        self.download_chart_button_stats.clicked.connect(
+            lambda: self.download_chart(self.stats_tab_canvas1.figure)
+        )
         right_layout_stats.addWidget(self.download_chart_button_stats)
 
         # Add left and right layouts to the main layout
@@ -572,7 +584,7 @@ class MainWindow(QMainWindow):
     def generate_main_chart(self):
         match (self.chart_name_field_main_tool.currentText()):
             case "Bar Chart":
-                self.update_chart()
+                self.bar_chart()
             case "Pie Chart":
                 self.pie_chart()
             case "3D Risk Plot":
@@ -581,7 +593,7 @@ class MainWindow(QMainWindow):
                 self.scatterplot()
             case "Bubbleplot":
                 self.bubble_plot()
-                
+
     def generate_stats_chart(self):
         match (self.chart_name_field_stats.currentText()):
             case "Weibull Distribution":
@@ -646,8 +658,11 @@ class MainWindow(QMainWindow):
 
         # Clear the existing tabs
         self.stats_tab.clear()
-        
 
+        fig1 = stats._rayleigh(self.values())
+        fig2 = stats._rayleigh(self.values())
+        fig3 = stats._rayleigh(self.values())
+        """
         if (
             self.component_name_field.currentText() == "Motor-Driven Pump"
         ):  # Idealy, this would be modified to search through the list of component neames instead of the names being specificed here
@@ -662,6 +677,7 @@ class MainWindow(QMainWindow):
             fig1 = stats._rayleigh(np.array([41.7, 125.0, 375.0]))
             fig2 = stats._rayleigh(np.array([83.3, 4170.0, 4.17]))
             fig3 = stats._rayleigh(np.array([2.5, 33.3, 250.0]))
+        """
 
         # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
@@ -696,6 +712,11 @@ class MainWindow(QMainWindow):
         # Clear the existing tabs
         self.stats_tab.clear()
 
+        fig1 = stats._weibull(self.values())
+        fig2 = stats._weibull(self.values())
+        fig3 = stats._weibull(self.values())
+
+        """
         if (
             self.component_name_field_stats.currentText() == "Motor-Driven Pump"
         ):  # Fix to read through database
@@ -709,8 +730,9 @@ class MainWindow(QMainWindow):
             fig1 = stats._weibull(np.array([41.7, 125.0, 375.0]))
             fig2 = stats._weibull(np.array([83.3, 4170.0, 4.17]))
             fig3 = stats._weibull(np.array([2.5, 33.3, 250.0]))
+        """
 
-            # Update the canvas with the new figures
+        # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
         self.stats_tab_canvas1.draw()
@@ -806,23 +828,39 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "File Not Found", error_message)
 
         return database_data
-    
+
     """
     Pulls default data from part_info.db and stores it in a pandas DataFrame.
     """
 
     def read_sql_default(self) -> None:
-        default_db_path = os.path.abspath(os.path.join(self.current_directory, self.db_path, self.default_db_name))
+        default_db_path = os.path.abspath(
+            os.path.join(self.current_directory, self.db_path, self.default_db_name)
+        )
         if not os.path.isfile(default_db_path):
             error_message = "Error: could not find part_info.db."
             QMessageBox.critical(self, "File Not Found", error_message)
             return
         self.default_conn = sqlite3.connect(default_db_path)
-        self.components = pd.read_sql_query("SELECT * FROM components", self.default_conn)
-        self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.default_conn)
-        self.comp_fails = pd.read_sql_query("SELECT * FROM comp_fails", self.default_conn)
+        self.components = pd.read_sql_query(
+            "SELECT * FROM components", self.default_conn
+        )
+        self.fail_modes = pd.read_sql_query(
+            "SELECT * FROM fail_modes", self.default_conn
+        )
+        self.comp_fails = pd.read_sql_query(
+            "SELECT * FROM comp_fails", self.default_conn
+        )
         # Calculates RPN = Frequency * Severity * Detection
-        self.comp_fails.insert(2, "rpn", [ int(row["frequency"] * row["severity"] * row["detection"]) for _, row in self.comp_fails.iterrows() ], True)
+        self.comp_fails.insert(
+            2,
+            "rpn",
+            [
+                row["frequency"] * row["severity"] * row["detection"]
+                for _, row in self.comp_fails.iterrows()
+            ],
+            True,
+        )
 
     def read_risk_threshold(self):
         try:
@@ -978,13 +1016,14 @@ class MainWindow(QMainWindow):
     
     Name: values
     Type: function
-    Description: uses locally defined data to generate statistical analysis data
+    Description:
+    TODO: get lower bound, geometric mean, and upper bound from dataset, for the component passed in
     
     """
 
     def values(self):
+        print("generating values")
         component_name = self.component_name_field.currentText()
-        id = self.current_row
 
         values1 = np.array(
             [20.8, 125.0, 4.17]
@@ -995,20 +1034,12 @@ class MainWindow(QMainWindow):
         values5 = np.array([83.3, 4170.0, 4.17])
         values6 = np.array([2.5, 33.3, 250.0])
 
-        if component_name == "Motor-Driven Pump" and id == 0:
+        if component_name == "Motor-Driven Pump":
             return values1
-        elif component_name == "Motor-Driven Pump" and id == 1:
-            return values2
-        elif component_name == "Motor-Driven Pump" and id == 2:
-            return values3
-        elif component_name == "Motor-Operated Valves" and id == 0:
+        elif component_name == "Motor-Operated Valves":
             return values4
-        elif component_name == "Motor-Operated Valves" and id == 1:
-            return values5
-        elif component_name == "Motor-Operated Valves" and id == 2:
-            return values6
         else:
-            return "Error"
+            return np.array([1, 1, 1])
 
     """
 
@@ -1053,7 +1084,7 @@ class MainWindow(QMainWindow):
                 rpn_item.setBackground(QColor(255, 102, 102))  # muted red
             else:
                 rpn_item.setBackground(QColor(102, 255, 102))  # muted green
-                
+
         if frequency_item:
             frequency_item.setText(str(probability))
         if severity_item:
@@ -1185,13 +1216,13 @@ class MainWindow(QMainWindow):
 
     """
 
-    Name: update_chart
+    Name: bar_chart
     Type: function
     Description: Refreshes displayed chart with new changes to the table.
 
     """
 
-    def update_chart(self):
+    def bar_chart(self):
         component_data = []
         threshold = float(self.threshold_field.text())
 
@@ -1209,10 +1240,10 @@ class MainWindow(QMainWindow):
                 )
 
         # Clear the existing plot
-        self.figure.clear()
+        self.main_figure.clear()
 
         # Adjust the subplot for spacing
-        self.figure.subplots_adjust(
+        self.main_figure.subplots_adjust(
             left=0.18
         )  # You can adjust the value to suit your needs
 
@@ -1227,7 +1258,7 @@ class MainWindow(QMainWindow):
         df = pd.DataFrame({"Failure Mode ID": ids, "RPN": rpn_values})
 
         # Create a bar plot
-        ax = self.figure.add_subplot(111)
+        ax = self.main_figure.add_subplot(111)
 
         # Set the color of the bars based on RPN values
         colors = ["#5f9ea0" if rpn < threshold else "#FF6961" for rpn in rpn_values]
@@ -1258,13 +1289,12 @@ class MainWindow(QMainWindow):
 
     """
 
-    def download_chart(self):
+    def download_chart(self, figure):
         file_path, _ = QFileDialog.getSaveFileName(
             self, "Save Image", "", "JPEG (*.jpg);;All Files (*)"
         )
-
-        if file_path:
-            self.figure.savefig(file_path, format="jpg", dpi=300)
+        self.main_figure
+        figure.savefig(file_path, format="jpg", dpi=300)
 
     """
 
@@ -1276,7 +1306,7 @@ class MainWindow(QMainWindow):
 
     def pie_chart(self):
         # Clear the existing plot
-        self.figure.clear()
+        self.main_figure.clear()
 
         component_data = []
         threshold = float(self.threshold_field.text())
@@ -1295,7 +1325,7 @@ class MainWindow(QMainWindow):
                     above_threshold += 1
 
         # Clear the existing plot
-        self.figure.clear()
+        self.main_figure.clear()
 
         # Prepare the data for the pie chart
         labels = ["Below Risk Threshold", "Above Risk Threshold"]
@@ -1305,7 +1335,7 @@ class MainWindow(QMainWindow):
         colors = ["#5f9ea0", "#FF6961"]
 
         # Create a pie chart
-        ax = self.figure.add_subplot(111)
+        ax = self.main_figure.add_subplot(111)
         wedges, texts, autotexts = ax.pie(
             rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=1
         )
@@ -1340,7 +1370,7 @@ class MainWindow(QMainWindow):
 
     def plot_3D(self):
         # Clear the existing plot
-        self.figure.clear()
+        self.main_figure.clear()
 
         # Get the X, Y, and Z values
         try:
@@ -1367,8 +1397,8 @@ class MainWindow(QMainWindow):
             color = "red"
 
         # Generate the surface plot
-        self.figure.clear()
-        ax = self.figure.add_subplot(111, projection="3d")
+        self.main_figure.clear()
+        ax = self.main_figure.add_subplot(111, projection="3d")
 
         # Create a list of 3D coordinates for the vertices of each face
         vertices = [
@@ -1451,7 +1481,7 @@ class MainWindow(QMainWindow):
                 )
 
         # Clear the existing plot
-        self.figure.clear()
+        self.main_figure.clear()
 
         # Extract the values
         ids = [data["id"] for data in component_data]
@@ -1469,7 +1499,7 @@ class MainWindow(QMainWindow):
         )
 
         # Create a 3D scatterplot
-        ax = self.figure.add_subplot(111, projection="3d")
+        ax = self.main_figure.add_subplot(111, projection="3d")
 
         sc = ax.scatter(
             df["Severity"],
@@ -1486,7 +1516,7 @@ class MainWindow(QMainWindow):
         ax.set_title(component_name + " Risk Profile")
 
         # Add a colorbar
-        self.figure.colorbar(sc, ax=ax, pad=0.02)
+        self.main_figure.colorbar(sc, ax=ax, pad=0.02)
 
         # Refresh the canvas
         self.canvas.draw()
@@ -1518,53 +1548,48 @@ class MainWindow(QMainWindow):
                     }
                 )
 
-        # Extract the values
         ids = [data["id"] for data in component_data]
         severity_values = [data["severity"] for data in component_data]
         detection_values = [data["detection"] for data in component_data]
         frequency_values = [data["frequency"] for data in component_data]
 
-        # Calculate RPN values for bubble sizes
         rpn_values = [
             data["severity"] * data["detection"] * data["frequency"]
             for data in component_data
         ]
 
-        # Scale the RPN values
-        rpn_scaled = [np.cbrt(val) for val in rpn_values]
+        rpn_scaled = [
+            np.cbrt(val) * 30 for val in rpn_values
+        ]  # Adjust scaling factor as needed
 
         # Create a 3D plot
-        trace = go.Scatter3d(
-            x=frequency_values,
-            y=severity_values,
-            z=detection_values,
-            mode="markers",
-            marker=dict(
-                sizemode="diameter",
-                sizeref=0.1,
-                size=rpn_scaled,
-                color=rpn_scaled,
-                colorscale="Viridis",
-                colorbar_title="RPN",
-                line_color="rgb(140, 140, 170)",
-            ),
-            text=ids,  # Display the ids when hovering over the points
-            hoverinfo="text",  # Display only the text information when hovering
+        self.main_figure.clear()
+        ax = self.main_figure.add_subplot(111, projection="3d")
+
+        bubble = ax.scatter(
+            frequency_values,
+            severity_values,
+            detection_values,
+            s=rpn_scaled,
+            c=rpn_scaled,
+            cmap="viridis",
+            edgecolors="black",
+            alpha=0.6,
         )
 
-        layout = go.Layout(
-            height=800,
-            width=800,
-            title="3D Bubble plot",
-            scene=dict(
-                xaxis=dict(title="Frequency"),
-                yaxis=dict(title="Severity"),
-                zaxis=dict(title="Detection"),
-            ),
-        )
+        # Adding titles and labels
+        component_name = self.component_name_field.currentText()
+        ax.set_title(component_name + " 3D Bubble Plot")
+        ax.set_xlabel("Frequency")
+        ax.set_ylabel("Severity")
+        ax.set_zlabel("Detection")
 
-        fig = go.Figure(data=[trace], layout=layout)
-        fig.show()
+        # Color bar which maps values to colors.
+        cbar = self.main_figure.colorbar(bubble, ax=ax, shrink=0.5, aspect=5)
+        cbar.set_label("Risk Priority Number (RPN)")
+
+        # plt.show()
+        self.canvas.draw()
 
     def ask_questions(self):
         if self.qindex < len(self.questions):
@@ -1585,7 +1610,10 @@ class MainWindow(QMainWindow):
             self.show_recommendation()
 
     def show_recommendation(self):
-        QMessageBox.information(self, "Recommendation", self.recommendations[self.counter])
+        QMessageBox.information(
+            self, "Recommendation", self.recommendations[self.counter]
+        )
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
