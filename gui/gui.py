@@ -59,16 +59,14 @@ DONE: convert .csv to sqlite .db file
 DONE: normalize database
 TODO: re-implement dictionary database as pandas dataframe, populated from SQLite database
 
+DONE: create charts.py to hold all charting functions
+
 """
 
 import os, sys, csv, sqlite3, stats
-import seaborn as sns
-import matplotlib as mpl
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import plotly.graph_objects as go
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -277,7 +275,7 @@ class MainWindow(QMainWindow):
         self.database_view_layout = QVBoxLayout(self.database_view_tab)
 
         # Create and add the read database button
-        self.read_database_button = QPushButton("Read Database")
+        self.read_database_button = QPushButton("Refresh Database")
         self.read_database_button.clicked.connect(self.read_database)
         self.database_view_layout.addWidget(self.read_database_button)
 
@@ -285,6 +283,7 @@ class MainWindow(QMainWindow):
         self.database_table_widget = QTableWidget()
         self.database_view_layout.addWidget(self.database_table_widget)
 
+        self.read_database()
         ### END OF DATABASE VIEW TAB SETUP ###
 
     def _init_main_tab(self):
@@ -307,7 +306,8 @@ class MainWindow(QMainWindow):
             lambda: (
                 self.component_name_field_stats.setCurrentText(
                     self.component_name_field.currentText()
-                ), self.update_layout()
+                ),
+                self.update_layout(),
             )
         )
         for name in self.components["name"]:
@@ -483,7 +483,8 @@ class MainWindow(QMainWindow):
             lambda: (
                 self.component_name_field.setCurrentText(
                     self.component_name_field_stats.currentText()
-                ), self.update_layout()
+                ),
+                self.update_layout(),
             )
         )
         for name in self.components["name"]:
@@ -587,7 +588,6 @@ class MainWindow(QMainWindow):
 
         ### END OF STATISTICS TAB SETUP ###
 
-
     def update_layout(self):
         if hasattr(self, "comp_data"):
             self.save_sql()
@@ -615,7 +615,7 @@ class MainWindow(QMainWindow):
             case "Scatterplot":
                 self.charts.scatterplot()
             case "Bubbleplot":
-                self.bubble_plot()
+                self.charts.bubble_plot()
 
     def generate_stats_chart(self):
         match (self.chart_name_field_stats.currentText()):
@@ -864,19 +864,13 @@ class MainWindow(QMainWindow):
         if not os.path.isfile(db_path):
             raise FileNotFoundError("could not find database file.")
         self.conn = sqlite3.connect(db_path)
-        self.components = pd.read_sql_query(
-            "SELECT * FROM components", self.conn
-        )
-        self.fail_modes = pd.read_sql_query(
-            "SELECT * FROM fail_modes", self.conn
-        )
+        self.components = pd.read_sql_query("SELECT * FROM components", self.conn)
+        self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.conn)
         # don't use defaults
         # self.comp_fails = pd.read_sql_query(
         #     "SELECT * FROM comp_fails", self.conn
         # )
-        self.comp_fails = pd.read_sql_query(
-            "SELECT * FROM local_comp_fails", self.conn
-        )
+        self.comp_fails = pd.read_sql_query("SELECT * FROM local_comp_fails", self.conn)
         # Calculates RPN = Frequency * Severity * Detection
         self.comp_fails.insert(
             2,
@@ -941,17 +935,19 @@ class MainWindow(QMainWindow):
         comp_id = np.sum(
             self.components[
                 self.components["name"] == component_name
-                ].drop_duplicates()["id"]
-                )
-        
-        self.comp_data = self.comp_fails[
-            self.comp_fails["comp_id"] == comp_id
-            ].head(self.max_ids).reset_index(drop=True)
-        
+            ].drop_duplicates()["id"]
+        )
+
+        self.comp_data = (
+            self.comp_fails[self.comp_fails["comp_id"] == comp_id]
+            .head(self.max_ids)
+            .reset_index(drop=True)
+        )
+
         self.comp_data = pd.merge(
             self.fail_modes, self.comp_data, left_on="id", right_on="fail_id"
-            )
-        
+        )
+
         self.comp_data = self.comp_data.drop(columns="id")
 
         # Get risk acceptance threshold
@@ -1194,71 +1190,6 @@ class MainWindow(QMainWindow):
         self.main_figure
         figure.savefig(file_path, format="jpg", dpi=300)
 
-    """
-    Makes a bubble chart of data in table. Builds upon the scatterplot function by altering bubbles to size according to RPN
-    """
-
-    def bubble_plot(self):
-        component_data = []
-        threshold = float(self.threshold_field.text())
-
-        for row in range(self.table_widget.rowCount()):
-            frequency_item = self.table_widget.item(row, 2)
-            severity_item = self.table_widget.item(row, 3)
-            detection_item = self.table_widget.item(row, 4)
-            if severity_item and detection_item and frequency_item:
-                component_data.append(
-                    {
-                        "id": int(row),
-                        "severity": float(severity_item.text()),
-                        "detection": float(detection_item.text()),
-                        "frequency": float(frequency_item.text()),
-                    }
-                )
-
-        ids = [data["id"] for data in component_data]
-        severity_values = [data["severity"] for data in component_data]
-        detection_values = [data["detection"] for data in component_data]
-        frequency_values = [data["frequency"] for data in component_data]
-
-        rpn_values = [
-            data["severity"] * data["detection"] * data["frequency"]
-            for data in component_data
-        ]
-
-        rpn_scaled = [
-            np.cbrt(val) * 30 for val in rpn_values
-        ]  # Adjust scaling factor as needed
-
-        # Create a 3D plot
-        self.main_figure.clear()
-        ax = self.main_figure.add_subplot(111, projection="3d")
-
-        bubble = ax.scatter(
-            frequency_values,
-            severity_values,
-            detection_values,
-            s=rpn_scaled,
-            c=rpn_scaled,
-            cmap="viridis",
-            edgecolors="black",
-            alpha=0.6,
-        )
-
-        # Adding titles and labels
-        component_name = self.component_name_field.currentText()
-        ax.set_title(component_name + " 3D Bubble Plot")
-        ax.set_xlabel("Frequency")
-        ax.set_ylabel("Severity")
-        ax.set_zlabel("Detection")
-
-        # Color bar which maps values to colors.
-        cbar = self.main_figure.colorbar(bubble, ax=ax, shrink=0.5, aspect=5)
-        cbar.set_label("Risk Priority Number (RPN)")
-
-        # plt.show()
-        self.canvas.draw()
-
     def ask_questions(self):
         if self.qindex < len(self.questions):
             reply = QMessageBox.question(
@@ -1281,6 +1212,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self, "Recommendation", self.recommendations[self.counter]
         )
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
