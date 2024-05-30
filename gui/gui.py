@@ -299,8 +299,8 @@ class MainWindow(QMainWindow):
                 )
             )
         )
-        for key in database_data.keys():
-            self.component_name_field.addItem(key)
+        for name in self.components["name"]:
+            self.component_name_field.addItem(name)
         self.left_layout.addWidget(self.component_name_field)
 
         # Create and add the risk acceptance threshold field
@@ -472,8 +472,8 @@ class MainWindow(QMainWindow):
                 )
             )
         )
-        for key in database_data.keys():
-            self.component_name_field_stats.addItem(key)
+        for name in self.components["name"]:
+            self.component_name_field_stats.addItem(name)
         self.left_layout.addWidget(self.component_name_field_stats)
         left_layout_stats.addWidget(self.component_name_field_stats)
 
@@ -882,8 +882,15 @@ class MainWindow(QMainWindow):
     """
 
     def show_table(self):
+        self.populate_table(self.table_widget)
+
+    """
+    Populates a table with failure modes associated with a specific component.
+    """
+
+    def populate_table(self, table_widget) -> None:
         # clear existing table data (does not affect underlying database)
-        self.table_widget.clearContents()
+        table_widget.clearContents()
 
         # retrieve component name from text box
         component_name = self.component_name_field.currentText()
@@ -894,7 +901,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Name Error", error_message)
 
         # Update the column header for "Failure Mode"
-        self.table_widget.setHorizontalHeaderLabels(
+        table_widget.setHorizontalHeaderLabels(
             [f"{component_name} Failure Modes"] + self.horizontal_header_labels[1:]
         )
 
@@ -911,101 +918,22 @@ class MainWindow(QMainWindow):
         risk_threshold = self.read_risk_threshold()
 
         # Set the row count of the table widget
-        self.table_widget.setRowCount(self.max_ids)
+        table_widget.setRowCount(self.max_ids)
 
         for row, data in component_data2.iterrows():
             for i, key in enumerate(self.fail_mode_columns):
-                self.table_widget.setItem(row, i, QTableWidgetItem(str(data[key])))
+                table_widget.setItem(row, i, QTableWidgetItem(str(data[key])))
+
 
     """
-
-    Name: show_table_stats
-    Type: function
-    Description: Clears table widget in stats tab and fills table in with the desired data for the input component.
-
+    Clears table widget in stats tab and fills table in with the desired data for the input component.
     """
 
-    def show_table_stats(self):
-        # clear existing table data (does not affect underlying database)
-        self.table_widget_stats.clearContents()
-
-        # retrieve component name from text box
-        component_name = self.component_name_field_stats.currentText()
-
-        # error checking for component name
-        if component_name not in database_data:
-            error_message = "Error: Please re-enter a component name that's present in the database."
-            QMessageBox.critical(self, "Name Error", error_message)
-
-        # Update the column header for "Failure Mode"
-        self.table_widget_stats.setHorizontalHeaderLabels(
-            [
-                "ID",
-                component_name + " Failure Modes",
-                "RPN",
-                "Frequency",
-                "Severity",
-                "Detectability",
-            ]
-        )
-
-        # Get data from the database
-        component_data = database_data.get(component_name, [])
-
-        # Get risk acceptance threshold
-        risk_threshold = self.read_risk_threshold()
-
-        # error checking for risk value threshold
-        # if risk_threshold < 1 or risk_threshold > 1000:
-        #     error_message = "Error: Please re-enter a risk threshold value between 1 and 1000, inclusive."
-        #     QMessageBox.critical(self, "Value Error", error_message)
-
-        # Update the maximum number of IDs to show
-        self.max_ids_stats = 10
-
-        # Set the row count of the table widget
-        self.table_widget_stats.setRowCount(self.max_ids_stats)
-
-        # Populate the table widget
-        for row, data in enumerate(
-            component_data[
-                self.selected_index_stats : self.selected_index_stats
-                + self.max_ids_stats
-            ]
-        ):
-            self.table_widget_stats.setItem(row, 0, QTableWidgetItem(str(data["id"])))
-            self.table_widget_stats.setItem(
-                row, 1, QTableWidgetItem(data["failure_mode"])
-            )
-            self.table_widget_stats.setItem(row, 2, QTableWidgetItem(str(data["rpn"])))
-            self.table_widget_stats.setItem(
-                row, 3, QTableWidgetItem(str(data["frequency"]))
-            )
-            self.table_widget_stats.setItem(
-                row, 4, QTableWidgetItem(str(data["severity"]))
-            )
-            self.table_widget_stats.setItem(
-                row, 5, QTableWidgetItem(str(data["detectability"]))
-            )
-            self.table_widget_stats.setItem(
-                row, 6, QTableWidgetItem(str(data["mission_time"]))
-            )
-            self.table_widget_stats.setItem(
-                row, 7, QTableWidgetItem(str(data["lower_bound"]))
-            )
-            self.table_widget_stats.setItem(
-                row, 8, QTableWidgetItem(str(data["best_estimate"]))
-            )
-            self.table_widget_stats.setItem(
-                row, 9, QTableWidgetItem(str(data["upper_bound"]))
-            )
-
+    def show_table_stats(self) -> None:
+        self.populate_table(self.table_widget_stats)
+       
     """
-
-    Name: cell_clicked
-    Type: function
-    Description: Records the location of a cell when it's clicked.
-
+    Records the location of a cell when it's clicked.
     """
 
     def cell_clicked(self, row, column):
@@ -1013,12 +941,7 @@ class MainWindow(QMainWindow):
         self.current_column = column
 
     """
-    
-    Name: values
-    Type: function
-    Description:
     TODO: get lower bound, geometric mean, and upper bound from dataset, for the component passed in
-    
     """
 
     def values(self):
@@ -1042,12 +965,8 @@ class MainWindow(QMainWindow):
             return np.array([1, 1, 1])
 
     """
-
-    Name: on_rpn_item_changed
-    Type: function
-    Description: Retrieves frequency, severity, and detection values and calculates new RPN which is 
+    Retrieves frequency, severity, and detection values and calculates new RPN which is 
     pushed to the table widget.
-
     """
 
     def on_rpn_item_changed(self):
@@ -1093,11 +1012,7 @@ class MainWindow(QMainWindow):
             detectability_item.setText(str(detection))
 
     """
-
-    Name: save_values
-    Type: function
-    Description: Saves RPN, frequency, severity, and detectability values to the local database.
-
+    Saves RPN, frequency, severity, and detectability values to the local database.
     """
 
     def save_values(self):
@@ -1139,11 +1054,7 @@ class MainWindow(QMainWindow):
         database_data[component_name] = component_data
 
     """
-
-    Name: show_previous
-    Type: function
-    Description: Refreshes table to the previous page.
-
+    Refreshes table to the previous page.
     """
 
     def show_previous(self):
@@ -1152,11 +1063,7 @@ class MainWindow(QMainWindow):
         self.show_table()
 
     """
-
-    Name: show_previous_stats
-    Type: function
     Description: Refreshes statistics table to the previous page.
-
     """
 
     def show_previous_stats(self):
@@ -1167,11 +1074,7 @@ class MainWindow(QMainWindow):
         self.show_table_stats()
 
     """
-
-    Name: show_next
-    Type: function
-    Description: Refreshes table to the next page.
-
+    Refreshes table to the next page.
     """
 
     def show_next(self):
@@ -1191,11 +1094,7 @@ class MainWindow(QMainWindow):
         self.show_table()
 
     """
-
-    Name: show_next_stats
-    Type: function
-    Description: Refreshes statistics table to the next page.
-
+    Refreshes statistics table to the next page.
     """
 
     def show_next_stats(self):
@@ -1215,11 +1114,7 @@ class MainWindow(QMainWindow):
         self.show_table_stats()
 
     """
-
-    Name: bar_chart
-    Type: function
-    Description: Refreshes displayed chart with new changes to the table.
-
+    Refreshes displayed chart with new changes to the table.
     """
 
     def bar_chart(self):
@@ -1282,11 +1177,7 @@ class MainWindow(QMainWindow):
         self.canvas.draw()
 
     """
-
-    Name: download_chart
-    Type: function
-    Description: Gives user the option to download displayed figure.
-
+    Gives user the option to download displayed figure.
     """
 
     def download_chart(self, figure):
@@ -1297,11 +1188,7 @@ class MainWindow(QMainWindow):
         figure.savefig(file_path, format="jpg", dpi=300)
 
     """
-
-    Name: pie_chart
-    Type: function
-    Description: Makes a pie chart of data in table.
-
+    Makes a pie chart of data in table.
     """
 
     def pie_chart(self):
@@ -1361,11 +1248,7 @@ class MainWindow(QMainWindow):
         self.canvas.draw()
 
     """
-
-    Name: plot_3d
-    Type: function
-    Description: Displays 3D plot of data in table.
-
+    Displays 3D plot of data in table.
     """
 
     def plot_3D(self):
@@ -1454,11 +1337,7 @@ class MainWindow(QMainWindow):
         self.canvas.draw()
 
     """
-
-       Name: scatterplot
-       Type: function
-       Description: Displays a 3D scatterplot of data (Frequency, Severity, Detection) in table.
-
+    Displays a 3D scatterplot of data (Frequency, Severity, Detection) in table.
     """
 
     def scatterplot(self):
@@ -1522,11 +1401,7 @@ class MainWindow(QMainWindow):
         self.canvas.draw()
 
     """
-
-       Name: bubble_plot
-       Type: function
-       Description: Makes a bubble chart of data in table. Builds upon the scatterplot function by altering bubbles to size according to RPN
-
+    Makes a bubble chart of data in table. Builds upon the scatterplot function by altering bubbles to size according to RPN
     """
 
     def bubble_plot(self):
