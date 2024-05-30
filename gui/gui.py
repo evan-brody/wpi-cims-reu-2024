@@ -296,7 +296,7 @@ class MainWindow(QMainWindow):
             lambda: (
                 self.component_name_field_stats.setCurrentText(
                     self.component_name_field.currentText()
-                )
+                ), self.show_table()
             )
         )
         for name in self.components["name"]:
@@ -358,6 +358,7 @@ class MainWindow(QMainWindow):
         self.chart_name_field_main_tool.addItem("3D Risk Plot")
         self.chart_name_field_main_tool.addItem("Scatterplot")
         self.chart_name_field_main_tool.addItem("Bubbleplot")
+        self.chart_name_field_main_tool.activated.connect(self.generate_main_chart)
         self.right_layout.addWidget(self.chart_name_field_main_tool)
 
         # Create the matplotlib figure and canvas
@@ -895,10 +896,12 @@ class MainWindow(QMainWindow):
         # retrieve component name from text box
         component_name = self.component_name_field.currentText()
 
+        """
         # Error checking for component name
         if not self.components["name"].str.contains(component_name).any():
             error_message = "Error: Please re-enter a component name that's present in the database."
             QMessageBox.critical(self, "Name Error", error_message)
+        """
 
         # Update the column header for "Failure Mode"
         table_widget.setHorizontalHeaderLabels(
@@ -913,9 +916,6 @@ class MainWindow(QMainWindow):
         comp_id = np.sum(self.components[self.components["name"] == component_name].drop_duplicates()["id"])
         component_data2 = self.comp_fails[self.comp_fails["comp_id"] == comp_id].head(self.max_ids).reset_index(drop=True)
         component_data2 = pd.merge(self.fail_modes, component_data2, left_on="id", right_on="fail_id")
-
-        # Get risk acceptance threshold
-        risk_threshold = self.read_risk_threshold()
 
         # Set the row count of the table widget
         table_widget.setRowCount(self.max_ids)
@@ -945,7 +945,6 @@ class MainWindow(QMainWindow):
     """
 
     def values(self):
-        print("generating values")
         component_name = self.component_name_field.currentText()
 
         values1 = np.array(
@@ -1122,18 +1121,16 @@ class MainWindow(QMainWindow):
         threshold = float(self.threshold_field.text())
 
         for row in range(self.table_widget.rowCount()):
-            id_item = self.table_widget.item(row, 0)
-            failure_mode_item = self.table_widget.item(row, 1)
-            rpn_item = self.table_widget.item(row, 2)
-            if id_item and failure_mode_item and rpn_item:
+            failure_mode_item = self.table_widget.item(row, 0)
+            rpn_item = self.table_widget.item(row, 1)
+            if failure_mode_item and rpn_item:
                 component_data.append(
                     {
-                        "id": int(id_item.text()),
+                        "id": int(row),
                         "failure_mode": failure_mode_item.text(),
                         "rpn": float(rpn_item.text()),
                     }
                 )
-
         # Clear the existing plot
         self.main_figure.clear()
 
@@ -1345,14 +1342,13 @@ class MainWindow(QMainWindow):
         threshold = float(self.threshold_field.text())
 
         for row in range(self.table_widget.rowCount()):
-            id_item = self.table_widget.item(row, 0)
-            frequency_item = self.table_widget.item(row, 3)
-            severity_item = self.table_widget.item(row, 4)
-            detection_item = self.table_widget.item(row, 5)
-            if id_item and severity_item and detection_item and frequency_item:
+            frequency_item = self.table_widget.item(row, 2)
+            severity_item = self.table_widget.item(row, 3)
+            detection_item = self.table_widget.item(row, 4)
+            if severity_item and detection_item and frequency_item:
                 component_data.append(
                     {
-                        "id": int(id_item.text()),
+                        "id": int(row),
                         "severity": float(severity_item.text()),
                         "detection": float(detection_item.text()),
                         "frequency": float(frequency_item.text()),
