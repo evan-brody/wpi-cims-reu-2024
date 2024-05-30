@@ -410,7 +410,7 @@ class MainWindow(QMainWindow):
 
         # Create and add the save button
         self.save_button = QPushButton("Save RPN Values")
-        self.save_button.clicked.connect(self.save_values)
+        self.save_button.clicked.connect(self.save_sql)
         self.left_layout.addWidget(self.save_button)
 
         # Create and add the X, Y, and Z input fields and 3D plot
@@ -791,6 +791,7 @@ class MainWindow(QMainWindow):
 
     """
 
+    # DEPRECATED DO NOT USE
     def read_data_from_csv(self):
         database_data.clear()
         self.database_data = {}
@@ -834,22 +835,24 @@ class MainWindow(QMainWindow):
     """
 
     def read_sql_default(self) -> None:
-        default_db_path = os.path.abspath(
+        db_path = os.path.abspath(
             os.path.join(self.current_directory, self.db_path, self.default_db_name)
         )
-        if not os.path.isfile(default_db_path):
-            error_message = "Error: could not find part_info.db."
-            QMessageBox.critical(self, "File Not Found", error_message)
-            return
-        self.default_conn = sqlite3.connect(default_db_path)
+        if not os.path.isfile(db_path):
+            raise FileNotFoundError("could not find database file.")
+        self.conn = sqlite3.connect(db_path)
         self.components = pd.read_sql_query(
-            "SELECT * FROM components", self.default_conn
+            "SELECT * FROM components", self.conn
         )
         self.fail_modes = pd.read_sql_query(
-            "SELECT * FROM fail_modes", self.default_conn
+            "SELECT * FROM fail_modes", self.conn
         )
+        # don't use defaults
+        # self.comp_fails = pd.read_sql_query(
+        #     "SELECT * FROM comp_fails", self.conn
+        # )
         self.comp_fails = pd.read_sql_query(
-            "SELECT * FROM comp_fails", self.default_conn
+            "SELECT * FROM local_comp_fails", self.conn
         )
         # Calculates RPN = Frequency * Severity * Detection
         self.comp_fails.insert(
@@ -911,8 +914,9 @@ class MainWindow(QMainWindow):
         # drop_duplicates shouldn't be necessary here, since components are unique. Just in case, though.
         # np.sum is a duct-tapey way to convert to int, since you can't directly
         comp_id = np.sum(self.components[self.components["name"] == component_name].drop_duplicates()["id"])
-        component_data2 = self.comp_fails[self.comp_fails["comp_id"] == comp_id].head(self.max_ids).reset_index(drop=True)
-        component_data2 = pd.merge(self.fail_modes, component_data2, left_on="id", right_on="fail_id")
+        self.comp_data = self.comp_fails[self.comp_fails["comp_id"] == comp_id].head(self.max_ids).reset_index(drop=True)
+        self.comp_data = pd.merge(self.fail_modes, self.comp_data, left_on="id", right_on="fail_id")
+        self.comp_data = self.comp_data.drop(columns="id")
 
         # Get risk acceptance threshold
         risk_threshold = self.read_risk_threshold()
@@ -920,10 +924,9 @@ class MainWindow(QMainWindow):
         # Set the row count of the table widget
         table_widget.setRowCount(self.max_ids)
 
-        for row, data in component_data2.iterrows():
+        for row, data in self.comp_data.iterrows():
             for i, key in enumerate(self.fail_mode_columns):
                 table_widget.setItem(row, i, QTableWidgetItem(str(data[key])))
-
 
     """
     Clears table widget in stats tab and fills table in with the desired data for the input component.
@@ -1015,6 +1018,7 @@ class MainWindow(QMainWindow):
     Saves RPN, frequency, severity, and detectability values to the local database.
     """
 
+    # DEPRECATED DO NOT USE
     def save_values(self):
         component_name = self.component_name_field.currentText()
         component_data = database_data.get(component_name, [])
@@ -1052,6 +1056,37 @@ class MainWindow(QMainWindow):
 
         # Update the database with the modified component data
         database_data[component_name] = component_data
+
+    # Executes and commits an SQL query on this window's database connection
+    def exec_SQL(self, query) -> None:
+        self.conn.execute(query)
+        self.conn.commit()
+
+    # Saves local values to the database
+    def save_sql(self):
+        for i, row in self.comp_data.iterrows():
+            frequency_item = self.table_widget.item(i, 2)
+            severity_item = self.table_widget.item(i, 3)
+            detection_item = self.table_widget.item(i, 4)
+            lb_item = self.table_widget.item(i, 5)
+            be_item = self.table_widget.item(i, 6)
+            ub_item = self.table_widget.item(i, 7)
+            mt_item = self.table_widget.item(i, 8)
+
+            self.exec_SQL(
+                f"""
+                UPDATE local_comp_fails
+                SET frequency={frequency_item.text()},
+                    severity={severity_item.text()},
+                    detection={detection_item.text()},
+                    lower_bound={lb_item.text()},
+                    best_estimate={be_item.text()},
+                    upper_bound={ub_item.text()},
+                    mission_time={mt_item.text()}
+                WHERE
+                    comp_id={row["comp_id"]} AND fail_id={row["fail_id"]}
+                """
+            )
 
     """
     Refreshes table to the previous page.
@@ -1488,7 +1523,6 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self, "Recommendation", self.recommendations[self.counter]
         )
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
