@@ -296,7 +296,7 @@ class MainWindow(QMainWindow):
             lambda: (
                 self.component_name_field_stats.setCurrentText(
                     self.component_name_field.currentText()
-                ), self.show_table()
+                ), self.update_layout()
             )
         )
         for name in self.components["name"]:
@@ -470,7 +470,7 @@ class MainWindow(QMainWindow):
             lambda: (
                 self.component_name_field.setCurrentText(
                     self.component_name_field_stats.currentText()
-                )
+                ), self.update_layout()
             )
         )
         for name in self.components["name"]:
@@ -573,6 +573,12 @@ class MainWindow(QMainWindow):
         main_layout_stats.addLayout(right_layout_stats, 6)
 
         ### END OF STATISTICS TAB SETUP ###
+
+
+    def update_layout(self):
+        self.show_table()
+        self.show_table_stats()
+        self.generate_main_chart()
 
     """
 
@@ -1154,7 +1160,7 @@ class MainWindow(QMainWindow):
 
         # Set the color of the bars based on RPN values
         colors = ["#5f9ea0" if rpn < threshold else "#FF6961" for rpn in rpn_values]
-        sns.barplot(x="Failure Mode ID", y="RPN", data=df, palette=colors, ax=ax)
+        sns.barplot(x="Failure Mode ID", y="RPN", data=df, hue=colors,legend=False,ax=ax)
 
         ax.axhline(threshold, color="#68855C", linestyle="--")
         ax.set_ylabel("Risk Priority Number (RPN)")
@@ -1405,14 +1411,13 @@ class MainWindow(QMainWindow):
         threshold = float(self.threshold_field.text())
 
         for row in range(self.table_widget.rowCount()):
-            id_item = self.table_widget.item(row, 0)
-            frequency_item = self.table_widget.item(row, 3)
-            severity_item = self.table_widget.item(row, 4)
-            detection_item = self.table_widget.item(row, 5)
-            if id_item and severity_item and detection_item and frequency_item:
+            frequency_item = self.table_widget.item(row, 2)
+            severity_item = self.table_widget.item(row, 3)
+            detection_item = self.table_widget.item(row, 4)
+            if severity_item and detection_item and frequency_item:
                 component_data.append(
                     {
-                        "id": int(id_item.text()),
+                        "id": int(row),
                         "severity": float(severity_item.text()),
                         "detection": float(detection_item.text()),
                         "frequency": float(frequency_item.text()),

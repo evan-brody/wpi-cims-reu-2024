@@ -5,7 +5,6 @@ from scipy.stats import weibull_min, rayleigh
 from scipy.special import gamma
 import matplotlib.pyplot as plt
 import seaborn as sns
-import math
 
 """
 
