@@ -52,6 +52,9 @@ TODO: bubbleplot should open to app and not browser
 TODO: Search for components
 DONE: generate_chart() if block to switch case
 TODO: values() design fix
+TODO: fix csv formatting. there shouldn't be spaces after commas
+TODO: convert .csv to sqlite .db file
+TODO: normalize database
 
 """
 
@@ -98,7 +101,6 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         # function call to read in the database.csv file before running the rest of the gui
-        #test comment for changelog
         self.read_data_from_csv()
 
         super().__init__()
