@@ -97,6 +97,12 @@ class MainWindow(QMainWindow):
     current_directory = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(os.path.dirname(__file__), "..", "data")
     default_db_name = "part_info.db"
+    recommendations = [
+        "Recommended Detectability: 9-10 (Unacceptable)", 
+        "Recommended Detectability: 7-8 (Severe)",
+        "Recommended Detectability: 4-6 (Medium)",
+        "Recommended Detectability: 1-3 (Low)"
+        ]
 
     """
 
@@ -1612,13 +1618,7 @@ class MainWindow(QMainWindow):
             self.show_recommendation()
 
     def show_recommendation(self):
-        recommendations = {
-            3: "Recommended Detectability: 1-3 (Low)",
-            2: "Recommended Detectability: 4-6 (Medium)",
-            1: "Recommended Detectability: 7-8 (Severe)",
-            0: "Recommended Detectability: 9-10 (Unacceptable)",
-        }
-        QMessageBox.information(self, "Recommendation", recommendations[self.counter])
+        QMessageBox.information(self, "Recommendation", self.recommendations[self.counter])
 
 
 if __name__ == "__main__":
