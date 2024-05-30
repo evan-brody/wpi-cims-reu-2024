@@ -8,7 +8,7 @@ import seaborn as sns
 
 """
 
-   Name: weibull
+   Name: _weibull
    Type: function
    Description: Creates a histogram PDF plot of the weibull distrubtion based on LB/BE/UB. 
    Prints shape (k) and scale (lamda) in terminal (not present in GUI).
@@ -51,9 +51,8 @@ def _weibull(values):
     # Generate a sample from the Weibull distribution with the optimized parameters
     sample = lam_opt * np.random.weibull(k_opt, 1000)
 
-    #print(f"Shape (k): {k_opt}")
+    #print(k_opt)
     #print(lam_opt)
-    #print(f"Scale (λ): {lam_opt}")
 
     # Create a Figure and Axes object
     fig = plt.figure(figsize=(8, 6))
@@ -95,7 +94,7 @@ def _weibull(values):
 #_weibull(np.array([1,2,3]))
 """
 
-   Name: rayleigh
+   Name: _rayleigh
    Type: function
    Description: Creates a histogram PDF plot of the rayleigh distrubtion based on LB/BE/UB. 
    Prints scale (sigma) in terminal (not present in GUI).
@@ -126,7 +125,6 @@ def _rayleigh(values):
 
     # Perform the optimization
     result = minimize(rayleigh_objective, initial_guess, args=(input,), bounds=bounds)
-    print(result)
 
     # Extract the optimized parameter
     sigma_opt = result.x[0]
@@ -134,7 +132,7 @@ def _rayleigh(values):
     # Generate a sample from the Rayleigh distribution with the optimized parameter
     sample = np.random.rayleigh(sigma_opt, 1000)
 
-    print(f"Scale (σ): {sigma_opt}")
+    #print(sigma_opt)
 
     # Plotting the histogram
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -160,7 +158,7 @@ def _rayleigh(values):
 
     return fig
 
-_rayleigh(np.array([1,2,3]))
+#_rayleigh(np.array([1,2,3]))
 
 def _bathtub(N, T, t1, t2):
     # Time vector
