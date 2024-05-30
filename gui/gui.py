@@ -33,7 +33,7 @@ TODO: UI Bug fixes
     TODO: Tables are same size so labels are cut off
     DONE: generating weibull distribution in stats tab crashes
     DONE: generating rayleigh distribution in stats tab crashes
-    TODO: generate plot in stats distribution crashes app unless you modify something first
+    DONE: generate plot in stats distribution crashes app unless you modify something first
     TODO: Source Plot1,2,3 from database instead of hardcoded
     TODO: Variable plot sizes in stats tab
     TODO: Download chart button downloads blank jpeg
@@ -48,7 +48,7 @@ TODO: UI Bug fixes
     TODO: read database at startup
     TODO: automatically update database
     TODO: stats show table without selecting crashes
-    TODO: synced component select between tabs
+    DONE: synced component select between tabs
     
 
 TODO: bubbleplot should open to app and not browser
@@ -282,6 +282,7 @@ class MainWindow(QMainWindow):
         # Create and add the component name dropdown menu
         self.component_name_field = QComboBox(self)
         self.component_name_field.addItem("Select a Component")
+        self.component_name_field.activated.connect(lambda: (self.component_name_field_stats.setCurrentText(self.component_name_field.currentText())))
         for key in database_data.keys():
             self.component_name_field.addItem(key)
         self.left_layout.addWidget(self.component_name_field)
@@ -459,6 +460,7 @@ class MainWindow(QMainWindow):
         # Create and add the component name dropdown menu
         self.component_name_field_stats = QComboBox(self)
         self.component_name_field_stats.addItem("Select a Component")
+        self.component_name_field_stats.activated.connect(lambda: (self.component_name_field.setCurrentText(self.component_name_field_stats.currentText())))
         for key in database_data.keys():
             self.component_name_field_stats.addItem(key)
         self.left_layout.addWidget(self.component_name_field_stats)
