@@ -45,7 +45,7 @@ TODO: UI Bug fixes
     TODO: risk acceptance should autocolor when table is generated
     TODO: detectability recommendation should reset when selected component is changed
     DONE: read database at startup
-    TODO: automatically update database
+    DONE: automatically update database
     DONE: stats show table without selecting crashes
     DONE: synced component select between tabs
     
@@ -304,7 +304,8 @@ class MainWindow(QMainWindow):
             lambda: (
                 self.component_name_field_stats.setCurrentText(
                     self.component_name_field.currentText()
-                ), self.update_layout()
+                ),
+                self.update_layout(),
             )
         )
         for name in self.components["name"]:
@@ -419,7 +420,7 @@ class MainWindow(QMainWindow):
 
         # Create and add the save button
         self.save_button = QPushButton("Save RPN Values")
-        self.save_button.clicked.connect(self.save_values)
+        self.save_button.clicked.connect(self.save_sql)
         self.left_layout.addWidget(self.save_button)
 
         # Create and add the X, Y, and Z input fields and 3D plot
@@ -478,7 +479,8 @@ class MainWindow(QMainWindow):
             lambda: (
                 self.component_name_field.setCurrentText(
                     self.component_name_field_stats.currentText()
-                ), self.update_layout()
+                ),
+                self.update_layout(),
             )
         )
         for name in self.components["name"]:
@@ -582,7 +584,6 @@ class MainWindow(QMainWindow):
 
         ### END OF STATISTICS TAB SETUP ###
 
-
     def update_layout(self):
         self.show_table()
         self.show_table_stats()
@@ -603,11 +604,11 @@ class MainWindow(QMainWindow):
             case "Pie Chart":
                 self.charts.pie_chart()
             case "3D Risk Plot":
-                self.plot_3D()
+                self.charts.plot_3D()
             case "Scatterplot":
-                self.scatterplot()
+                self.charts.scatterplot()
             case "Bubbleplot":
-                self.bubble_plot()
+                self.charts.bubble_plot()
 
     def generate_stats_chart(self):
         match (self.chart_name_field_stats.currentText()):
@@ -806,6 +807,7 @@ class MainWindow(QMainWindow):
 
     """
 
+    # DEPRECATED DO NOT USE
     def read_data_from_csv(self):
         database_data.clear()
         self.database_data = {}
@@ -849,23 +851,19 @@ class MainWindow(QMainWindow):
     """
 
     def read_sql_default(self) -> None:
-        default_db_path = os.path.abspath(
+        db_path = os.path.abspath(
             os.path.join(self.current_directory, self.db_path, self.default_db_name)
         )
-        if not os.path.isfile(default_db_path):
-            error_message = "Error: could not find part_info.db."
-            QMessageBox.critical(self, "File Not Found", error_message)
-            return
-        self.default_conn = sqlite3.connect(default_db_path)
-        self.components = pd.read_sql_query(
-            "SELECT * FROM components", self.default_conn
-        )
-        self.fail_modes = pd.read_sql_query(
-            "SELECT * FROM fail_modes", self.default_conn
-        )
-        self.comp_fails = pd.read_sql_query(
-            "SELECT * FROM comp_fails", self.default_conn
-        )
+        if not os.path.isfile(db_path):
+            raise FileNotFoundError("could not find database file.")
+        self.conn = sqlite3.connect(db_path)
+        self.components = pd.read_sql_query("SELECT * FROM components", self.conn)
+        self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.conn)
+        # don't use defaults
+        # self.comp_fails = pd.read_sql_query(
+        #     "SELECT * FROM comp_fails", self.conn
+        # )
+        self.comp_fails = pd.read_sql_query("SELECT * FROM local_comp_fails", self.conn)
         # Calculates RPN = Frequency * Severity * Detection
         self.comp_fails.insert(
             2,
@@ -932,19 +930,26 @@ class MainWindow(QMainWindow):
                 self.components["name"] == component_name
             ].drop_duplicates()["id"]
         )
-        component_data2 = (
+
+        self.comp_data = (
             self.comp_fails[self.comp_fails["comp_id"] == comp_id]
             .head(self.max_ids)
             .reset_index(drop=True)
         )
-        component_data2 = pd.merge(
-            self.fail_modes, component_data2, left_on="id", right_on="fail_id"
+
+        self.comp_data = pd.merge(
+            self.fail_modes, self.comp_data, left_on="id", right_on="fail_id"
         )
+
+        self.comp_data = self.comp_data.drop(columns="id")
+
+        # Get risk acceptance threshold
+        risk_threshold = self.read_risk_threshold()
 
         # Set the row count of the table widget
         table_widget.setRowCount(self.max_ids)
 
-        for row, data in component_data2.iterrows():
+        for row, data in self.comp_data.iterrows():
             for i, key in enumerate(self.fail_mode_columns):
                 table_widget.setItem(row, i, QTableWidgetItem(str(data[key])))
 
@@ -1037,6 +1042,7 @@ class MainWindow(QMainWindow):
     Saves RPN, frequency, severity, and detectability values to the local database.
     """
 
+    # DEPRECATED DO NOT USE
     def save_values(self):
         component_name = self.component_name_field.currentText()
         component_data = database_data.get(component_name, [])
@@ -1074,6 +1080,37 @@ class MainWindow(QMainWindow):
 
         # Update the database with the modified component data
         database_data[component_name] = component_data
+
+    # Executes and commits an SQL query on this window's database connection
+    def exec_SQL(self, query) -> None:
+        self.conn.execute(query)
+        self.conn.commit()
+
+    # Saves local values to the database
+    def save_sql(self):
+        for i, row in self.comp_data.iterrows():
+            frequency_item = self.table_widget.item(i, 2)
+            severity_item = self.table_widget.item(i, 3)
+            detection_item = self.table_widget.item(i, 4)
+            lb_item = self.table_widget.item(i, 5)
+            be_item = self.table_widget.item(i, 6)
+            ub_item = self.table_widget.item(i, 7)
+            mt_item = self.table_widget.item(i, 8)
+
+            self.exec_SQL(
+                f"""
+                UPDATE local_comp_fails
+                SET frequency={frequency_item.text()},
+                    severity={severity_item.text()},
+                    detection={detection_item.text()},
+                    lower_bound={lb_item.text()},
+                    best_estimate={be_item.text()},
+                    upper_bound={ub_item.text()},
+                    mission_time={mt_item.text()}
+                WHERE
+                    comp_id={row["comp_id"]} AND fail_id={row["fail_id"]}
+                """
+            )
 
     """
     Refreshes table to the previous page.
@@ -1145,283 +1182,6 @@ class MainWindow(QMainWindow):
         )
         self.main_figure
         figure.savefig(file_path, format="jpg", dpi=300)
-
-    # """
-    # Makes a pie chart of data in table.
-    # """
-
-    # def pie_chart(self):
-    #     # Clear the existing plot
-    #     self.main_figure.clear()
-
-    #     component_data = []
-    #     threshold = float(self.threshold_field.text())
-    #     below_threshold = 0
-    #     above_threshold = 0
-
-    #     for row in range(self.table_widget.rowCount()):
-    #         id_item = self.table_widget.item(row, 0)
-    #         failure_mode_item = self.table_widget.item(row, 1)
-    #         rpn_item = self.table_widget.item(row, 2)
-    #         if id_item and failure_mode_item and rpn_item:
-    #             rpn = float(rpn_item.text())
-    #             if rpn < threshold:
-    #                 below_threshold += 1
-    #             else:
-    #                 above_threshold += 1
-
-    #     # Clear the existing plot
-    #     self.main_figure.clear()
-
-    #     # Prepare the data for the pie chart
-    #     labels = ["Below Risk Threshold", "Above Risk Threshold"]
-    #     rpn_values = [below_threshold, above_threshold]
-
-    #     # Set the color of the slices based on the categories
-    #     colors = ["#5f9ea0", "#FF6961"]
-
-    #     # Create a pie chart
-    #     ax = self.main_figure.add_subplot(111)
-    #     wedges, texts, autotexts = ax.pie(
-    #         rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=1
-    #     )
-
-    #     # Create legend
-    #     legend_labels = [
-    #         f"Number of Green Failure Modes: {below_threshold}",
-    #         f"Number of Red Failure Modes: {above_threshold}",
-    #         f"Total Failure Modes: {below_threshold + above_threshold}",
-    #     ]
-    #     ax.legend(
-    #         wedges,
-    #         legend_labels,
-    #         title="Failure Modes",
-    #         loc="upper right",
-    #         bbox_to_anchor=(1, 0.5),
-    #     )
-
-    #     component_name = self.component_name_field.currentText()
-    #     ax.set_title(component_name + " Risk Profile")
-
-    #     # Refresh the canvas
-    #     self.canvas.draw()
-
-    """
-    Displays 3D plot of data in table.
-    """
-
-    def plot_3D(self):
-        # Clear the existing plot
-        self.main_figure.clear()
-
-        # Get the X, Y, and Z values
-        try:
-            length = float(self.x_input_field.text())
-            width = float(self.y_input_field.text())
-            height = float(self.z_input_field.text())
-        except ValueError:
-            QMessageBox.critical(
-                self,
-                "Value Error",
-                "Please enter valid numbers for Frequency, Severity, and Detection.",
-            )
-            return
-
-        # Calculate RPN
-        rpn = length * width * height
-
-        # Determine color
-        if rpn < 560:
-            color = "green"
-        elif 560 <= rpn < 840:
-            color = "yellow"
-        else:
-            color = "red"
-
-        # Generate the surface plot
-        self.main_figure.clear()
-        ax = self.main_figure.add_subplot(111, projection="3d")
-
-        # Create a list of 3D coordinates for the vertices of each face
-        vertices = [
-            [
-                (0, 0, 0),
-                (0, width, 0),
-                (length, width, 0),
-                (length, 0, 0),
-            ],  # Bottom face
-            [
-                (0, 0, 0),
-                (0, 0, height),
-                (length, 0, height),
-                (length, 0, 0),
-            ],  # Front face
-            [(0, 0, 0), (0, 0, height), (0, width, height), (0, width, 0)],  # Left face
-            [
-                (length, 0, 0),
-                (length, 0, height),
-                (length, width, height),
-                (length, width, 0),
-            ],  # Right face
-            [
-                (0, 0, height),
-                (0, width, height),
-                (length, width, height),
-                (length, 0, height),
-            ],  # Top face
-            [
-                (0, width, 0),
-                (0, width, height),
-                (length, width, height),
-                (length, width, 0),
-            ],  # Rear face
-        ]
-
-        # Add the faces to the plot
-        for face in vertices:
-            ax.add_collection3d(
-                Poly3DCollection(
-                    [face], alpha=0.25, linewidths=1, edgecolors="r", facecolors=color
-                )
-            )
-
-        ax.set_xlabel("Frequency")
-        ax.set_ylabel("Severity")
-        ax.set_zlabel("Detection")
-
-        ax.set_xlim([0, length])
-        ax.set_ylim([0, width])
-        ax.set_zlim([0, height])
-
-        self.canvas.draw()
-
-    """
-    Displays a 3D scatterplot of data (Frequency, Severity, Detection) in table.
-    """
-
-    def scatterplot(self):
-        component_data = []
-        threshold = float(self.threshold_field.text())
-
-        for row in range(self.table_widget.rowCount()):
-            frequency_item = self.table_widget.item(row, 2)
-            severity_item = self.table_widget.item(row, 3)
-            detection_item = self.table_widget.item(row, 4)
-            if severity_item and detection_item and frequency_item:
-                component_data.append(
-                    {
-                        "id": int(row),
-                        "severity": float(severity_item.text()),
-                        "detection": float(detection_item.text()),
-                        "frequency": float(frequency_item.text()),
-                    }
-                )
-
-        # Clear the existing plot
-        self.main_figure.clear()
-
-        # Extract the values
-        ids = [data["id"] for data in component_data]
-        severity_values = [data["severity"] for data in component_data]
-        detection_values = [data["detection"] for data in component_data]
-        frequency_values = [data["frequency"] for data in component_data]
-
-        df = pd.DataFrame(
-            {
-                "Failure Mode ID": ids,
-                "Severity": severity_values,
-                "Detection": detection_values,
-                "Frequency": frequency_values,
-            }
-        )
-
-        # Create a 3D scatterplot
-        ax = self.main_figure.add_subplot(111, projection="3d")
-
-        sc = ax.scatter(
-            df["Severity"],
-            df["Detection"],
-            df["Frequency"],
-            c=df["Failure Mode ID"],
-            cmap="viridis",
-        )
-
-        ax.set_xlabel("Severity")
-        ax.set_ylabel("Detection")
-        ax.set_zlabel("Frequency")
-        component_name = self.component_name_field.currentText()
-        ax.set_title(component_name + " Risk Profile")
-
-        # Add a colorbar
-        self.main_figure.colorbar(sc, ax=ax, pad=0.02)
-
-        # Refresh the canvas
-        self.canvas.draw()
-
-    """
-    Makes a bubble chart of data in table. Builds upon the scatterplot function by altering bubbles to size according to RPN
-    """
-
-    def bubble_plot(self):
-        component_data = []
-        threshold = float(self.threshold_field.text())
-
-        for row in range(self.table_widget.rowCount()):
-            frequency_item = self.table_widget.item(row, 2)
-            severity_item = self.table_widget.item(row, 3)
-            detection_item = self.table_widget.item(row, 4)
-            if severity_item and detection_item and frequency_item:
-                component_data.append(
-                    {
-                        "id": int(row),
-                        "severity": float(severity_item.text()),
-                        "detection": float(detection_item.text()),
-                        "frequency": float(frequency_item.text()),
-                    }
-                )
-
-        ids = [data["id"] for data in component_data]
-        severity_values = [data["severity"] for data in component_data]
-        detection_values = [data["detection"] for data in component_data]
-        frequency_values = [data["frequency"] for data in component_data]
-
-        rpn_values = [
-            data["severity"] * data["detection"] * data["frequency"]
-            for data in component_data
-        ]
-
-        rpn_scaled = [
-            np.cbrt(val) * 30 for val in rpn_values
-        ]  # Adjust scaling factor as needed
-
-        # Create a 3D plot
-        self.main_figure.clear()
-        ax = self.main_figure.add_subplot(111, projection="3d")
-
-        bubble = ax.scatter(
-            frequency_values,
-            severity_values,
-            detection_values,
-            s=rpn_scaled,
-            c=rpn_scaled,
-            cmap="viridis",
-            edgecolors="black",
-            alpha=0.6,
-        )
-
-        # Adding titles and labels
-        component_name = self.component_name_field.currentText()
-        ax.set_title(component_name + " 3D Bubble Plot")
-        ax.set_xlabel("Frequency")
-        ax.set_ylabel("Severity")
-        ax.set_zlabel("Detection")
-
-        # Color bar which maps values to colors.
-        cbar = self.main_figure.colorbar(bubble, ax=ax, shrink=0.5, aspect=5)
-        cbar.set_label("Risk Priority Number (RPN)")
-
-        # plt.show()
-        self.canvas.draw()
 
     def ask_questions(self):
         if self.qindex < len(self.questions):

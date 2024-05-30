@@ -97,6 +97,37 @@ def main():
 
         all_rows_select(conn, "SELECT * FROM comp_fails")
 
+        query = """
+        CREATE TABLE local_comp_fails (
+            comp_id INT NOT NULL,
+            fail_id INT NOT NULL,
+            frequency INT DEFAULT 1,
+            severity INT DEFAULT 1,
+            detection INT DEFAULT 1,
+            lower_bound REAL DEFAULT 0,
+            best_estimate REAL DEFAULT 0,
+            upper_bound REAL DEFAULT 0,
+            mission_time REAL DEFAULT 1,
+            FOREIGN KEY(comp_id) REFERENCES components(id),
+            FOREIGN KEY(fail_id) REFERENCES fail_modes(id),
+            PRIMARY KEY (comp_id, fail_id)
+        )
+        """
+
+        exec_SQL(conn, query)
+
+        for _, row in whole_df.iterrows():
+            comp_id = comps[comps == row["Component"]].index.astype(int)
+            comp_id = sum(comp_id)
+            fail_id = fails[fails == row["Failure Mode"]].index.astype(int)
+            fail_id = sum(fail_id)
+            query = f"""
+            INSERT INTO local_comp_fails (comp_id, fail_id)
+            VALUES ({comp_id}, {fail_id})"""
+            exec_SQL(conn, query)
+
+        all_rows_select(conn, "SELECT * FROM local_comp_fails")
+
     comp_setup()
     fail_setup()
     comp_fails_setup()
