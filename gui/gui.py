@@ -51,7 +51,7 @@ TODO: UI Bug fixes
     DONE: synced component select between tabs
     
 
-TODO: bubbleplot should open to app and not browser
+DONE: bubbleplot should open to app and not browser
 TODO: Search for components
 DONE: generate_chart() if block to switch case
 TODO: values() design fix, also figure out what it does ???
@@ -1564,74 +1564,7 @@ class MainWindow(QMainWindow):
        Type: function
        Description: Makes a bubble chart of data in table. Builds upon the scatterplot function by altering bubbles to size according to RPN
 
-    # """
-
-    # def bubble_plot(self):
-    #     component_data = []
-    #     threshold = float(self.threshold_field.text())
-
-    #     for row in range(self.table_widget.rowCount()):
-    #         id_item = self.table_widget.item(row, 0)
-    #         frequency_item = self.table_widget.item(row, 3)
-    #         severity_item = self.table_widget.item(row, 4)
-    #         detection_item = self.table_widget.item(row, 5)
-    #         if id_item and severity_item and detection_item and frequency_item:
-    #             component_data.append(
-    #                 {
-    #                     "id": int(id_item.text()),
-    #                     "severity": float(severity_item.text()),
-    #                     "detection": float(detection_item.text()),
-    #                     "frequency": float(frequency_item.text()),
-    #                 }
-    #             )
-
-    #     # Extract the values
-    #     ids = [data["id"] for data in component_data]
-    #     severity_values = [data["severity"] for data in component_data]
-    #     detection_values = [data["detection"] for data in component_data]
-    #     frequency_values = [data["frequency"] for data in component_data]
-
-    #     # Calculate RPN values for bubble sizes
-    #     rpn_values = [
-    #         data["severity"] * data["detection"] * data["frequency"]
-    #         for data in component_data
-    #     ]
-
-    #     # Scale the RPN values
-    #     rpn_scaled = [np.cbrt(val) for val in rpn_values]
-
-    #     # Create a 3D plot
-    #     trace = go.Scatter3d(
-    #         x=frequency_values,
-    #         y=severity_values,
-    #         z=detection_values,
-    #         mode="markers",
-    #         marker=dict(
-    #             sizemode="diameter",
-    #             sizeref=0.1,
-    #             size=rpn_scaled,
-    #             color=rpn_scaled,
-    #             colorscale="Viridis",
-    #             colorbar_title="RPN",
-    #             line_color="rgb(140, 140, 170)",
-    #         ),
-    #         text=ids,  # Display the ids when hovering over the points
-    #         hoverinfo="text",  # Display only the text information when hovering
-    #     )
-
-    #     layout = go.Layout(
-    #         height=800,
-    #         width=800,
-    #         title="3D Bubble plot",
-    #         scene=dict(
-    #             xaxis=dict(title="Frequency"),
-    #             yaxis=dict(title="Severity"),
-    #             zaxis=dict(title="Detection"),
-    #         ),
-    #     )
-
-    #     fig = go.Figure(data=[trace], layout=layout)
-    #     fig.show()
+    """
 
     def bubble_plot(self):
         component_data = []
