@@ -94,7 +94,8 @@ Description: MainWindow class that holds all of our functions for the GUI.
 """
 
 class MainWindow(QMainWindow):
-    db_path = "\\data\\"
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(os.path.dirname(__file__), "..", "data")
     default_db_name = "part_info.db"
 
     """
@@ -107,7 +108,6 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         # Initializes DataFrames with default values.
-        self.current_directory = os.path.dirname(os.path.abspath(__file__))
         self.read_sql_default()
 
         # function call to read in the database.csv file before running the rest of the gui
@@ -816,11 +816,10 @@ class MainWindow(QMainWindow):
     """
 
     def read_sql_default(self) -> None:
-        self.default_conn = sqlite3.connect(self.current_directory + self.db_path + self.default_db_name)
+        self.default_conn = sqlite3.connect(os.path.abspath(os.path.join(self.current_directory, self.db_path, self.default_db_name)))
         self.components = pd.read_sql_query("SELECT * FROM components", self.default_conn)
         self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.default_conn)
         self.comp_fails = pd.read_sql_query("SELECT * FROM comp_fails", self.default_conn)
-        print(self.comp_fails)
 
     def read_risk_threshold(self):
         try:

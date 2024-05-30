@@ -8,6 +8,6 @@ Repository for the WPI Industrial Mathematics & Statistics REU (DMS-2244306) spo
 
 2024 Collaborators: Evan Brody (New York University), Karl Ramus (Worcester Polytechnic Institute), Esther Wu (Cornell University)
 
-Subproject 1 - AI-based Tool Design & Development
+Subproject 1: AI-Based Tool Design & Development
 
-Subproject 2 - Statistical Analysis and Methodology
+Subproject 2: Statistical Analysis and Methodology
