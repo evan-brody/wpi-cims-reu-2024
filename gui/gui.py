@@ -208,6 +208,9 @@ class MainWindow(QMainWindow):
         self.qindex = 0
         self.charts = Charts(self)
 
+    def __del__(self):
+        self.save_sql()
+
     def _init_instructions_tab(self):
         ### START OF USER INSTRUCTIONS TAB SETUP ###
 
@@ -390,7 +393,6 @@ class MainWindow(QMainWindow):
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
-        self.table_widget.itemChanged.connect(self.table_changed_main)
         self.left_layout.addWidget(self.table_widget)
 
         # Add the left layout to the main layout
@@ -635,9 +637,6 @@ class MainWindow(QMainWindow):
 
     def update_layout(self):
         self.refreshing_table = True
-        if hasattr(self, "comp_data"):
-            self.save_sql()
-        self.read_sql_default()
         self.show_table()
         self.show_table_stats()
         self.generate_main_chart()
@@ -650,15 +649,6 @@ class MainWindow(QMainWindow):
         else:
             rpn_item.setBackground(QColor(102, 255, 102))  # muted green
         """
-
-    def table_changed_main(self):
-        if(not self.refreshing_table):
-            self.comp_fails.iloc[self.current_row,self.current_column] = float(self.table_widget.item(
-                self.current_row,self.current_column).text())
-            print(self.current_row)
-            print(self.current_column)
-            print(self.comp_fails.iloc[self.current_row,self.current_column])
-            return
             
     """
 
@@ -1162,45 +1152,36 @@ class MainWindow(QMainWindow):
 
     # Saves individual values in the UI to self.comp_fails
     def save_to_df(self, item) -> None:
-        print(item)
-        print(item.row(), item.column())
+        if self.refreshing_table: return
+        if not hasattr(self, "comp_data"): return
         i, j = item.row(), item.column()
         # In case the user is editing a cell below the displayed information.
-        if i >= self.comp_data.shape[0]: return
+        if i >= len(self.comp_data.index): return
         new_val = item.text()
         column = self.fail_mode_columns[j]
 
-        self.comp_fails[
+        self.comp_fails.loc[
             (self.comp_fails["comp_id"] == self.comp_id)
-            & (self.comp_fails["fail_id"] == self.comp_data.iloc[i]["fail_id"])
-            ][column] = self.fail_mode_column_types[j](new_val)
+            & (self.comp_fails["fail_id"] == self.comp_data.iloc[i]["fail_id"]),
+            column] = self.fail_mode_column_types[j](new_val)
 
     # Saves local values to the database
     def save_sql(self) -> None:
-        for i, row in self.comp_data.iterrows():
-            frequency_item = self.table_widget.item(i, 2)
-            severity_item = self.table_widget.item(i, 3)
-            detection_item = self.table_widget.item(i, 4)
-            rpn_item = int(frequency_item * severity_item * detection_item)
-            lb_item = self.table_widget.item(i, 5)
-            be_item = self.table_widget.item(i, 6)
-            ub_item = self.table_widget.item(i, 7)
-            mt_item = self.table_widget.item(i, 8)
-
-            # self.exec_SQL(
-            #     f"""
-            #     UPDATE local_comp_fails
-            #     SET frequency={frequency_item.text()},
-            #         severity={severity_item.text()},
-            #         detection={detection_item.text()},
-            #         lower_bound={lb_item.text()},
-            #         best_estimate={be_item.text()},
-            #         upper_bound={ub_item.text()},
-            #         mission_time={mt_item.text()}
-            #     WHERE
-            #         comp_id={row["comp_id"]} AND fail_id={row["fail_id"]}
-            #     """
-            # )
+        for _, row in self.comp_fails.iterrows():
+            self.exec_SQL(
+                f"""
+                UPDATE local_comp_fails
+                SET frequency={row["frequency"]},
+                    severity={row["severity"]},
+                    detection={row["detection"]},
+                    lower_bound={row["lower_bound"]},
+                    best_estimate={row["best_estimate"]},
+                    upper_bound={row["upper_bound"]},
+                    mission_time={row["mission_time"]}
+                WHERE
+                    comp_id={row["comp_id"]} AND fail_id={row["fail_id"]}
+                """
+            )
 
     """
     Refreshes table to the previous page.
