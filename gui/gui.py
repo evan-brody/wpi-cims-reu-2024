@@ -373,6 +373,7 @@ class MainWindow(QMainWindow):
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
         self.table_widget.itemChanged.connect(lambda item: (self.save_to_df(item),self.table_changed_main(item)))
+        self.table_widget.cellClicked.connect(self.cell_clicked)
         self.left_layout.addWidget(self.table_widget)
 
         # Add the left layout to the main layout
@@ -447,44 +448,47 @@ class MainWindow(QMainWindow):
         # Add the nav_button_layout to the left layout
         self.left_layout.addLayout(self.nav_button_layout)
 
+        
         # Create and add the save button
-        self.save_button = QPushButton("Save RPN Values")
-        self.save_button.clicked.connect(self.save_sql)
-        self.left_layout.addWidget(self.save_button)
+        
+        # self.save_button = QPushButton("Save RPN Values")
+        # self.save_button.clicked.connect(self.save_sql)
+        # self.left_layout.addWidget(self.save_button)
 
+        
         # Create and add the X, Y, and Z input fields and 3D plot
         # self.input_and_plot_layout = QVBoxLayout()
-        self.x_input_label = QLabel("Probability :")
-        self.x_input_field = QLineEdit()
-        self.x_input_field.setValidator(
-            QDoubleValidator(0.99, 99.99, 2)
-        )  # This will only accept float values
-        self.x_input_field.setToolTip("Humanoid Recommendation: 9 or 10 (Unacceptable)")
-        self.left_layout.addWidget(self.x_input_label)
-        self.left_layout.addWidget(self.x_input_field)
+        # self.x_input_label = QLabel("Probability :")
+        # self.x_input_field = QLineEdit()
+        # self.x_input_field.setValidator(
+        #     QDoubleValidator(0.99, 99.99, 2)
+        # )  # This will only accept float values
+        # self.x_input_field.setToolTip("Humanoid Recommendation: 9 or 10 (Unacceptable)")
+        # self.left_layout.addWidget(self.x_input_label)
+        # self.left_layout.addWidget(self.x_input_field)
 
-        self.y_input_label = QLabel("Severity:")
-        self.y_input_field = QLineEdit()
-        self.y_input_field.setValidator(
-            QDoubleValidator(0.99, 99.99, 2)
-        )  # This will only accept float values
-        self.left_layout.addWidget(self.y_input_label)
-        self.left_layout.addWidget(self.y_input_field)
+        # self.y_input_label = QLabel("Severity:")
+        # self.y_input_field = QLineEdit()
+        # self.y_input_field.setValidator(
+        #     QDoubleValidator(0.99, 99.99, 2)
+        # )  # This will only accept float values
+        # self.left_layout.addWidget(self.y_input_label)
+        # self.left_layout.addWidget(self.y_input_field)
 
-        self.z_input_label = QLabel("Detection:")
-        self.z_input_field = QLineEdit()
-        self.z_input_field.setValidator(
-            QDoubleValidator(0.99, 99.99, 2)
-        )  # This will only accept float values
-        self.left_layout.addWidget(self.z_input_label)
-        self.left_layout.addWidget(self.z_input_field)
+        # self.z_input_label = QLabel("Detection:")
+        # self.z_input_field = QLineEdit()
+        # self.z_input_field.setValidator(
+        #     QDoubleValidator(0.99, 99.99, 2)
+        # )  # This will only accept float values
+        # self.left_layout.addWidget(self.z_input_label)
+        # self.left_layout.addWidget(self.z_input_field)
+        # self.x_input_field.textChanged.connect(self.on_rpn_item_changed)
+        # self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
+        # self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
+        
 
-        self.table_widget.cellClicked.connect(self.cell_clicked)
 
         # Connect QLineEdit's textChanged signal to the on_rpn_item_changed
-        self.x_input_field.textChanged.connect(self.on_rpn_item_changed)
-        self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
-        self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
 
         ### END OF MAIN TAB SETUP ###
 
@@ -1020,7 +1024,7 @@ class MainWindow(QMainWindow):
     """
 
     def values(self):
-        print(self.comp_data)
+        #print(self.comp_data)
         component_name = self.component_name_field.currentText()
 
         values1 = np.array(
@@ -1043,46 +1047,49 @@ class MainWindow(QMainWindow):
     Retrieves frequency, severity, and detection values and calculates new RPN which is 
     pushed to the table widget.
     """
-
+    
     # Deprecated, callback for fsd boxes in main
-    def on_rpn_item_changed(self):
-        # Get the Frequency, Severity, and Detection values
-        probability = (
-            float(self.x_input_field.text()) if self.x_input_field.text() else 0
-        )
-        severity = float(self.y_input_field.text()) if self.y_input_field.text() else 0
-        detection = float(self.z_input_field.text()) if self.z_input_field.text() else 0
+    
+    # def on_rpn_item_changed(self):
+    #     # Get the Frequency, Severity, and Detection values
+    #     probability = (
+    #         float(self.x_input_field.text()) if self.x_input_field.text() else 0
+    #     )
+    #     severity = float(self.y_input_field.text()) if self.y_input_field.text() else 0
+    #     detection = float(self.z_input_field.text()) if self.z_input_field.text() else 0
 
-        # Calculate the RPN
-        rpn = probability * severity * detection
+    #     # Calculate the RPN
+    #     rpn = probability * severity * detection
 
-        # error checking for RPN value
-        if (probability or severity or detection) < 1 or (
-            probability or severity or detection
-        ) > 10:
-            error_message = "Error: Please re-enter values between 1 and 10, inclusive."
-            QMessageBox.critical(self, "Value Error", error_message)
-            return
+    #     # error checking for RPN value
+    #     if (probability or severity or detection) < 1 or (
+    #         probability or severity or detection
+    #     ) > 10:
+    #         error_message = "Error: Please re-enter values between 1 and 10, inclusive."
+    #         QMessageBox.critical(self, "Value Error", error_message)
+    #         return
 
-        # Update the RPN value in the table/chart
-        rpn_item = self.table_widget.item(self.current_row, 1)
-        frequency_item = self.table_widget.item(self.current_row, 2)
-        severity_item = self.table_widget.item(self.current_row, 3)
-        detectability_item = self.table_widget.item(self.current_row, 4)
+    #     # Update the RPN value in the table/chart
+    #     rpn_item = self.table_widget.item(self.current_row, 1)
+    #     frequency_item = self.table_widget.item(self.current_row, 2)
+    #     severity_item = self.table_widget.item(self.current_row, 3)
+    #     detectability_item = self.table_widget.item(self.current_row, 4)
 
-        if rpn_item:
-            rpn_item.setText(str(rpn))
-            if rpn > self.risk_threshold:
-                rpn_item.setBackground(QColor(255, 102, 102))  # muted red
-            else:
-                rpn_item.setBackground(QColor(102, 255, 102))  # muted green
+    #     if rpn_item:
+    #         rpn_item.setText(str(rpn))
+    #         if rpn > self.risk_threshold:
+    #             rpn_item.setBackground(QColor(255, 102, 102))  # muted red
+    #         else:
+    #             rpn_item.setBackground(QColor(102, 255, 102))  # muted green
 
-        if frequency_item:
-            frequency_item.setText(str(probability))
-        if severity_item:
-            severity_item.setText(str(severity))
-        if detectability_item:
-            detectability_item.setText(str(detection))
+    #     if frequency_item:
+    #         frequency_item.setText(str(probability))
+    #     if severity_item:
+    #         severity_item.setText(str(severity))
+    #     if detectability_item:
+    #         detectability_item.setText(str(detection))
+    
+    
 
     """
     Saves RPN, frequency, severity, and detectability values to the local database.
