@@ -100,6 +100,7 @@ class MainWindow(QMainWindow):
         "Recommended Detectability: 1-3 (Low)",
     ]
     # Columns to show in the failure mode table.
+    # These are DataFrame columns.
     fail_mode_columns = [
         "desc",
         "rpn",
@@ -111,6 +112,19 @@ class MainWindow(QMainWindow):
         "upper_bound",
         "mission_time",
     ]
+    # The types associated with each.
+    fail_mode_column_types = [
+        str,
+        int,
+        int,
+        int,
+        int,
+        float,
+        float,
+        float,
+        float
+    ]
+    # These are the actual labels to show.
     horizontal_header_labels = [
         "Failure Modes",
         "RPN",
@@ -132,6 +146,9 @@ class MainWindow(QMainWindow):
     """
 
     def __init__(self):
+        # These need to match one-to-one
+        assert len(self.fail_mode_columns) == len(self.fail_mode_column_types)
+
         # Initializes DataFrames with default values.
         self.read_sql_default()
 
@@ -487,7 +504,7 @@ class MainWindow(QMainWindow):
         self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
         self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
 
-        # self.table_widget.cellChanged.connect(self.save_sql)
+        self.table_widget.itemChanged.connect(self.save_to_df)
 
         ### END OF MAIN TAB SETUP ###
 
@@ -984,14 +1001,14 @@ class MainWindow(QMainWindow):
 
         # drop_duplicates shouldn't be necessary here, since components are unique. Just in case, though.
         # np.sum is a duct-tapey way to convert to int, since you can't directly
-        comp_id = np.sum(
+        self.comp_id = np.sum(
             self.components[
                 self.components["name"] == component_name
             ].drop_duplicates()["id"]
         )
 
         self.comp_data = (
-            self.comp_fails[self.comp_fails["comp_id"] == comp_id]
+            self.comp_fails[self.comp_fails["comp_id"] == self.comp_id]
             .head(self.max_ids)
             .reset_index(drop=True)
         )
@@ -1000,10 +1017,12 @@ class MainWindow(QMainWindow):
             self.fail_modes, self.comp_data, left_on="id", right_on="fail_id"
         )
 
+        # id column is identical to fail_id column, so we can drop it.
         self.comp_data = self.comp_data.drop(columns="id")
 
-        # Get risk acceptance threshold
-        risk_threshold = self.read_risk_threshold()
+        # Get risk acceptance threshold.
+        # Commenting this out because it's unused.
+        # risk_threshold = self.read_risk_threshold()
 
         # Set the row count of the table widget
         table_widget.setRowCount(self.max_ids)
@@ -1102,74 +1121,90 @@ class MainWindow(QMainWindow):
     """
 
     # DEPRECATED DO NOT USE
-    def save_values(self):
-        component_name = self.component_name_field.currentText()
-        component_data = database_data.get(component_name, [])
+    # def save_values(self):
+    #     component_name = self.component_name_field.currentText()
+    #     component_data = database_data.get(component_name, [])
 
-        for row in range(self.table_widget.rowCount()):
-            rpn_item = self.table_widget.item(row, 2)
-            frequency_item = self.table_widget.item(row, 3)
-            severity_item = self.table_widget.item(row, 4)
-            detectability_item = self.table_widget.item(row, 5)
-            mission_time = self.table_widget.item(row, 6)
+    #     for row in range(self.table_widget.rowCount()):
+    #         rpn_item = self.table_widget.item(row, 2)
+    #         frequency_item = self.table_widget.item(row, 3)
+    #         severity_item = self.table_widget.item(row, 4)
+    #         detectability_item = self.table_widget.item(row, 5)
+    #         mission_time = self.table_widget.item(row, 6)
 
-            if rpn_item:
-                component_data[row + self.selected_index]["rpn"] = (
-                    float(frequency_item.text())
-                    * float(mission_time.text())
-                    * float(severity_item.text())
-                    * float(detectability_item.text())
-                )
-            if frequency_item:
-                component_data[row + self.selected_index]["frequency"] = float(
-                    frequency_item.text()
-                )
-            if severity_item:
-                component_data[row + self.selected_index]["severity"] = float(
-                    severity_item.text()
-                )
-            if detectability_item:
-                component_data[row + self.selected_index]["detectability"] = float(
-                    detectability_item.text()
-                )
-            if mission_time:
-                component_data[row + self.selected_index]["mission_time"] = float(
-                    mission_time.text()
-                )
+    #         if rpn_item:
+    #             component_data[row + self.selected_index]["rpn"] = (
+    #                 float(frequency_item.text())
+    #                 * float(mission_time.text())
+    #                 * float(severity_item.text())
+    #                 * float(detectability_item.text())
+    #             )
+    #         if frequency_item:
+    #             component_data[row + self.selected_index]["frequency"] = float(
+    #                 frequency_item.text()
+    #             )
+    #         if severity_item:
+    #             component_data[row + self.selected_index]["severity"] = float(
+    #                 severity_item.text()
+    #             )
+    #         if detectability_item:
+    #             component_data[row + self.selected_index]["detectability"] = float(
+    #                 detectability_item.text()
+    #             )
+    #         if mission_time:
+    #             component_data[row + self.selected_index]["mission_time"] = float(
+    #                 mission_time.text()
+    #             )
 
-        # Update the database with the modified component data
-        database_data[component_name] = component_data
+    #     # Update the database with the modified component data
+    #     database_data[component_name] = component_data
 
     # Executes and commits an SQL query on this window's database connection
     def exec_SQL(self, query) -> None:
         self.conn.execute(query)
         self.conn.commit()
 
+    # Saves individual values in the UI to self.comp_fails
+    def save_to_df(self, item) -> None:
+        print(item)
+        print(item.row(), item.column())
+        i, j = item.row(), item.column()
+        # In case the user is editing a cell below the displayed information.
+        if i >= self.comp_data.shape[0]: return
+        new_val = item.text()
+        column = self.fail_mode_columns[j]
+
+        self.comp_fails[
+            (self.comp_fails["comp_id"] == self.comp_id)
+            & (self.comp_fails["fail_id"] == self.comp_data.iloc[i]["fail_id"])
+            ][column] = self.fail_mode_column_types[j](new_val)
+
     # Saves local values to the database
-    def save_sql(self):
+    def save_sql(self) -> None:
         for i, row in self.comp_data.iterrows():
             frequency_item = self.table_widget.item(i, 2)
             severity_item = self.table_widget.item(i, 3)
             detection_item = self.table_widget.item(i, 4)
+            rpn_item = int(frequency_item * severity_item * detection_item)
             lb_item = self.table_widget.item(i, 5)
             be_item = self.table_widget.item(i, 6)
             ub_item = self.table_widget.item(i, 7)
             mt_item = self.table_widget.item(i, 8)
 
-            self.exec_SQL(
-                f"""
-                UPDATE local_comp_fails
-                SET frequency={frequency_item.text()},
-                    severity={severity_item.text()},
-                    detection={detection_item.text()},
-                    lower_bound={lb_item.text()},
-                    best_estimate={be_item.text()},
-                    upper_bound={ub_item.text()},
-                    mission_time={mt_item.text()}
-                WHERE
-                    comp_id={row["comp_id"]} AND fail_id={row["fail_id"]}
-                """
-            )
+            # self.exec_SQL(
+            #     f"""
+            #     UPDATE local_comp_fails
+            #     SET frequency={frequency_item.text()},
+            #         severity={severity_item.text()},
+            #         detection={detection_item.text()},
+            #         lower_bound={lb_item.text()},
+            #         best_estimate={be_item.text()},
+            #         upper_bound={ub_item.text()},
+            #         mission_time={mt_item.text()}
+            #     WHERE
+            #         comp_id={row["comp_id"]} AND fail_id={row["fail_id"]}
+            #     """
+            # )
 
     """
     Refreshes table to the previous page.
