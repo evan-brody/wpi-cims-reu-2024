@@ -54,7 +54,7 @@ TODO: UI Bug fixes
     
 
 DONE: bubbleplot should open to app and not browser
-TODO: Search for components
+DONE: Search for components
 DONE: generate_chart() if block to switch case
 TODO: values() design fix, also figure out what it does ???
 DONE: fix csv formatting. there shouldn't be spaces after commas
@@ -115,17 +115,7 @@ class MainWindow(QMainWindow):
         "mission_time",
     ]
     # The types associated with each.
-    fail_mode_column_types = [
-        str,
-        int,
-        int,
-        int,
-        int,
-        float,
-        float,
-        float,
-        float
-    ]
+    fail_mode_column_types = [str, int, int, int, int, float, float, float, float]
     # These are the actual labels to show.
     horizontal_header_labels = [
         "Failure Modes",
@@ -156,7 +146,7 @@ class MainWindow(QMainWindow):
 
         # function call to read in the database.csv file before running the rest of the gui
         # self.read_data_from_csv()
-        
+
         self.current_row = 0
         self.current_column = 0
         self.refreshing_table = False
@@ -327,14 +317,14 @@ class MainWindow(QMainWindow):
         self.component_selection = QLabel("Component Selection: ")
         self.left_layout.addWidget(self.component_selection)
 
-        #######################################TESTING############################################
+        # Create and add the component name dropdown menu
+        search_and_dropdown_layout = QHBoxLayout()
 
         self.component_search_field = QLineEdit(self)
-        self.component_search_field.setPlaceholderText("Search for a component...")
+        self.component_search_field.setPlaceholderText("Find the component...")
         self.component_search_field.textChanged.connect(self.filter_components)
-        self.left_layout.addWidget(self.component_search_field)
+        search_and_dropdown_layout.addWidget(self.component_search_field)
 
-        # Create and add the component name dropdown menu
         self.component_name_field = QComboBox(self)
         self.component_name_field.activated.connect(
             lambda: (
@@ -345,24 +335,9 @@ class MainWindow(QMainWindow):
             )
         )
         self.populate_component_dropdown(self.components["name"])
-        self.left_layout.addWidget(self.component_name_field)
+        search_and_dropdown_layout.addWidget(self.component_name_field)
 
-        ##########################################################################################
-
-        # # Create and add the component name dropdown menu
-        # self.component_name_field = QComboBox(self)
-        # self.component_name_field.addItem("Select a Component")
-        # self.component_name_field.activated.connect(
-        #     lambda: (
-        #         self.component_name_field_stats.setCurrentText(
-        #             self.component_name_field.currentText()
-        #         ),
-        #         self.update_layout(),
-        #     )
-        # )
-        # for name in self.components["name"]:
-        #     self.component_name_field.addItem(name)
-        # self.left_layout.addWidget(self.component_name_field)
+        self.left_layout.addLayout(search_and_dropdown_layout)
 
         # Create and add the risk acceptance threshold field
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
@@ -393,7 +368,7 @@ class MainWindow(QMainWindow):
         self.table_widget.setColumnWidth(7, 150)  # Mission Time
         self.table_widget.setColumnWidth(8, 150)  # Lower Bound
         self.table_widget.setColumnWidth(9, 150)  # Best Estimate
-        self.table_widget.setColumnWidth(10, 150) # Upper Bound
+        self.table_widget.setColumnWidth(10, 150)  # Upper Bound
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
@@ -510,8 +485,6 @@ class MainWindow(QMainWindow):
         self.x_input_field.textChanged.connect(self.on_rpn_item_changed)
         self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
         self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
-
-        
 
         ### END OF MAIN TAB SETUP ###
 
@@ -645,17 +618,15 @@ class MainWindow(QMainWindow):
         self.show_table()
         self.show_table_stats()
         self.generate_main_chart()
-        
+
         for row in range(len(self.comp_data.index)):
             rpn_item = self.table_widget.item(row, 1)
             if int(rpn_item.text()) > self.risk_threshold:
                 rpn_item.setBackground(QColor(255, 102, 102))  # muted red
             else:
                 rpn_item.setBackground(QColor(102, 255, 102))  # muted green
-            
+
         self.refreshing_table = False
-        
-        
 
     def table_changed_main(self, item):
         if self.refreshing_table: return
@@ -679,7 +650,7 @@ class MainWindow(QMainWindow):
             case "Pie Chart":
                 self.charts.pie_chart()
             case "3D Risk Plot":
-                self.charts.plot_3D([self.current_row,self.current_column])
+                self.charts.plot_3D([self.current_row, self.current_column])
             case "Scatterplot":
                 self.charts.scatterplot()
             case "Bubbleplot":
@@ -845,6 +816,7 @@ class MainWindow(QMainWindow):
     Description: Function that initially clears the table and then repopulates it.
 
     """
+
     ### READS FROM CSV
     def read_database(self):
         self.database_table_widget.clear()
@@ -1162,25 +1134,32 @@ class MainWindow(QMainWindow):
 
     # Saves individual values in the UI to self.comp_fails
     def save_to_df(self, item) -> None:
-        if self.refreshing_table: return
-        if not hasattr(self, "comp_data"): return
+        if self.refreshing_table:
+            return
+        if not hasattr(self, "comp_data"):
+            return
         i, j = item.row(), item.column()
         # In case the user is editing a cell below the displayed information.
-        if i >= len(self.comp_data.index): return
+        if i >= len(self.comp_data.index):
+            return
         new_val = item.text()
         column = self.fail_mode_columns[j]
 
-        row = ((self.comp_fails["comp_id"] == self.comp_id)
-                         & (self.comp_fails["fail_id"] == self.comp_data.iloc[i]["fail_id"]))
+        row = (self.comp_fails["comp_id"] == self.comp_id) & (
+            self.comp_fails["fail_id"] == self.comp_data.iloc[i]["fail_id"]
+        )
 
         self.comp_fails.loc[row, column] = self.fail_mode_column_types[j](new_val)
-        
-        
+
         # If the user is updating FSD
         if 2 <= j <= 4:
-            new_rpn = int((self.comp_fails.loc[row, "frequency"] * 
-                    self.comp_fails.loc[row, "severity"] *
-                    self.comp_fails.loc[row, "detection"]).iloc[0])
+            new_rpn = int(
+                (
+                    self.comp_fails.loc[row, "frequency"]
+                    * self.comp_fails.loc[row, "severity"]
+                    * self.comp_fails.loc[row, "detection"]
+                ).iloc[0]
+            )
             self.comp_fails.loc[row, "rpn"] = new_rpn
             self.table_widget.setItem(i, 1, QTableWidgetItem(str(new_rpn)))
             i,j = item.row(), item.column()
