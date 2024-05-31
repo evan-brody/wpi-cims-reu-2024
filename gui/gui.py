@@ -51,6 +51,7 @@ TODO: UI Bug fixes
     DONE: stats show table without selecting crashes
     DONE: synced component select between tabs
     TODO: fix crash on invalid cell input
+    TODO: auto refresh on statistics page
     
 
 DONE: bubbleplot should open to app and not browser
@@ -372,7 +373,9 @@ class MainWindow(QMainWindow):
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
-        self.table_widget.itemChanged.connect(lambda item: (self.save_to_df(item),self.table_changed_main(item)))
+        self.table_widget.itemChanged.connect(lambda item: (self.save_to_df(item),
+                                                            self.table_changed_main(item)))
+
         self.table_widget.cellClicked.connect(self.cell_clicked)
         self.left_layout.addWidget(self.table_widget)
 
