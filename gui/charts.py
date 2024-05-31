@@ -133,13 +133,19 @@ class Charts:
 
     """
     Displays 3D plot of data in table.
+    Takes in 2 element array with x and y coordinates of cell
     """
 
-    def plot_3D(self):
+    def plot_3D(self, cell_location):
         # Clear the existing plot
         self.main_window.main_figure.clear()
+        length = float(self.main_window.table_widget.item(cell_location[0], 2).text())
+        width = float(self.main_window.table_widget.item(cell_location[0], 3).text())
+        height = float(self.main_window.table_widget.item(cell_location[0], 4).text())
 
         # Get the X, Y, and Z values
+        
+        """
         try:
             length = float(self.main_window.x_input_field.text())
             width = float(self.main_window.y_input_field.text())
@@ -151,6 +157,7 @@ class Charts:
                 "Please enter valid numbers for Frequency, Severity, and Detection.",
             )
             return
+        """
 
         # Calculate RPN
         rpn = length * width * height
