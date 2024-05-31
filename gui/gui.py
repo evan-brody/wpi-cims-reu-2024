@@ -595,6 +595,14 @@ class MainWindow(QMainWindow):
         self.show_table()
         self.show_table_stats()
         self.generate_main_chart()
+        
+        """
+        rpn_item = self.table_widget.item(self.current_row, 1)
+        if int(rpn_item.text()) > self.read_risk_threshold():
+            rpn_item.setBackground(QColor(255, 102, 102))  # muted red
+        else:
+            rpn_item.setBackground(QColor(102, 255, 102))  # muted green
+        """
 
     """
 
@@ -866,10 +874,11 @@ class MainWindow(QMainWindow):
         self.conn = sqlite3.connect(db_path)
         self.components = pd.read_sql_query("SELECT * FROM components", self.conn)
         self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.conn)
-        # don't use defaults
+        # pulls from defaults
         # self.comp_fails = pd.read_sql_query(
         #     "SELECT * FROM comp_fails", self.conn
         # )
+        # pulls from modified
         self.comp_fails = pd.read_sql_query("SELECT * FROM local_comp_fails", self.conn)
         # Calculates RPN = Frequency * Severity * Detection
         self.comp_fails.insert(
@@ -1026,10 +1035,10 @@ class MainWindow(QMainWindow):
             return
 
         # Update the RPN value in the table/chart
-        rpn_item = self.table_widget.item(self.current_row, 2)
-        frequency_item = self.table_widget.item(self.current_row, 3)
-        severity_item = self.table_widget.item(self.current_row, 4)
-        detectability_item = self.table_widget.item(self.current_row, 5)
+        rpn_item = self.table_widget.item(self.current_row, 1)
+        frequency_item = self.table_widget.item(self.current_row, 2)
+        severity_item = self.table_widget.item(self.current_row, 3)
+        detectability_item = self.table_widget.item(self.current_row, 4)
 
         if rpn_item:
             rpn_item.setText(str(rpn))
