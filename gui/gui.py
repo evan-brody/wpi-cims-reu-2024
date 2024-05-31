@@ -50,6 +50,7 @@ TODO: UI Bug fixes
     DONE: automatically update database
     DONE: stats show table without selecting crashes
     DONE: synced component select between tabs
+    TODO: fix crash on invalid cell input
     
 
 DONE: bubbleplot should open to app and not browser
@@ -1175,11 +1176,20 @@ class MainWindow(QMainWindow):
         new_val = item.text()
         column = self.fail_mode_columns[j]
 
-        self.comp_fails.loc[
-            (self.comp_fails["comp_id"] == self.comp_id)
-            & (self.comp_fails["fail_id"] == self.comp_data.iloc[i]["fail_id"]),
-            column] = self.fail_mode_column_types[j](new_val)
+        row = ((self.comp_fails["comp_id"] == self.comp_id)
+                         & (self.comp_fails["fail_id"] == self.comp_data.iloc[i]["fail_id"]))
 
+        self.comp_fails.loc[row, column] = self.fail_mode_column_types[j](new_val)
+        
+        # If the user is updating FSD
+        if 2 <= j <= 4:
+            new_rpn = int((self.comp_fails.loc[row, "frequency"] * 
+                    self.comp_fails.loc[row, "severity"] *
+                    self.comp_fails.loc[row, "detection"]).iloc[0])
+            self.comp_fails.loc[row, "rpn"] = new_rpn
+            self.table_widget.setItem(i, 1, QTableWidgetItem(str(new_rpn)))
+
+            
     # Saves local values to the database
     def save_sql(self) -> None:
         for _, row in self.comp_fails.iterrows():
