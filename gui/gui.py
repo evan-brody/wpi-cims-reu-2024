@@ -140,6 +140,7 @@ class MainWindow(QMainWindow):
         
         self.current_row = 0
         self.current_column = 0
+        self.refreshing_table = False
 
         super().__init__()
         self.setWindowTitle("Component Failure Modes and Effects Analysis (FMEA)")
@@ -372,6 +373,7 @@ class MainWindow(QMainWindow):
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
+        self.table_widget.itemChanged.connect(self.table_changed_main)
         self.left_layout.addWidget(self.table_widget)
 
         # Add the left layout to the main layout
@@ -615,12 +617,14 @@ class MainWindow(QMainWindow):
         ### END OF STATISTICS TAB SETUP ###
 
     def update_layout(self):
+        self.refreshing_table = True
         if hasattr(self, "comp_data"):
             self.save_sql()
         self.read_sql_default()
         self.show_table()
         self.show_table_stats()
         self.generate_main_chart()
+        self.refreshing_table = False
         
         """
         rpn_item = self.table_widget.item(self.current_row, 1)
@@ -630,6 +634,15 @@ class MainWindow(QMainWindow):
             rpn_item.setBackground(QColor(102, 255, 102))  # muted green
         """
 
+    def table_changed_main(self):
+        if(not self.refreshing_table):
+            self.comp_fails.iloc[self.current_row,self.current_column] = float(self.table_widget.item(
+                self.current_row,self.current_column).text())
+            print(self.current_row)
+            print(self.current_column)
+            print(self.comp_fails.iloc[self.current_row,self.current_column])
+            return
+            
     """
 
     Name: generate_chart
