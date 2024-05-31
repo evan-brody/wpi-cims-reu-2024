@@ -160,6 +160,7 @@ class MainWindow(QMainWindow):
         self.current_row = 0
         self.current_column = 0
         self.refreshing_table = False
+        self.risk_threshold = DEFAULT_RISK_THRESHOLD
 
         super().__init__()
         self.setWindowTitle("Component Failure Modes and Effects Analysis (FMEA)")
@@ -367,6 +368,7 @@ class MainWindow(QMainWindow):
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
         self.threshold_field = QLineEdit()
         self.threshold_field.setText(str(DEFAULT_RISK_THRESHOLD))
+        self.threshold_field.editingFinished.connect(lambda: (self.read_risk_threshold(),self.update_layout()))
         self.threshold_field.setToolTip(
             "Enter the maximum acceptable RPN: must be a value between [1-1000]."
         )
@@ -374,8 +376,8 @@ class MainWindow(QMainWindow):
         self.left_layout.addWidget(self.threshold_field)
 
         # Create and add the submit button
-        self.submit_button = QPushButton("Generate Table")
-        self.submit_button.clicked.connect(self.show_table)
+        self.submit_button = QPushButton("Refresh Table")
+        self.submit_button.clicked.connect(self.update_layout)
         self.left_layout.addWidget(self.submit_button)
 
         # Create and add the table widget
@@ -395,7 +397,7 @@ class MainWindow(QMainWindow):
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
-        self.table_widget.itemChanged.connect(lambda item: (self.save_to_df(item),self.table_changed_main()))
+        self.table_widget.itemChanged.connect(lambda item: (self.save_to_df(item),self.table_changed_main(item)))
         self.left_layout.addWidget(self.table_widget)
 
         # Add the left layout to the main layout
@@ -646,7 +648,7 @@ class MainWindow(QMainWindow):
         
         for row in range(len(self.comp_data.index)):
             rpn_item = self.table_widget.item(row, 1)
-            if int(rpn_item.text()) > self.read_risk_threshold():
+            if int(rpn_item.text()) > self.risk_threshold:
                 rpn_item.setBackground(QColor(255, 102, 102))  # muted red
             else:
                 rpn_item.setBackground(QColor(102, 255, 102))  # muted green
@@ -655,21 +657,11 @@ class MainWindow(QMainWindow):
         
         
 
-    def table_changed_main(self):
-        if(not self.refreshing_table):
-            self.refreshing_table = True
-            self.show_table_stats()
-            self.generate_main_chart()
-            
-            rpn_item = self.table_widget.item(self.current_row, 1)
-            rpn_item.setText(str(int(self.table_widget.item(self.current_row, 2).text()) * (
-                int(self.table_widget.item(self.current_row, 3).text()) * int(self.table_widget.item(self.current_row, 4).text()))))
-            if int(rpn_item.text()) > self.read_risk_threshold():
-                rpn_item.setBackground(QColor(255, 102, 102))  # muted red
-            else:
-                rpn_item.setBackground(QColor(102, 255, 102))  # muted green
-                
-            self.refreshing_table = False
+    def table_changed_main(self, item):
+        if self.refreshing_table: return
+        self.show_table_stats()
+        self.generate_main_chart()
+        
            
      
     """
@@ -968,6 +960,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Value Error", error_message)
         except:
             risk_threshold = DEFAULT_RISK_THRESHOLD
+        self.risk_threshold = risk_threshold
         return risk_threshold
 
     """
@@ -1027,10 +1020,6 @@ class MainWindow(QMainWindow):
 
         # id column is identical to fail_id column, so we can drop it.
         self.comp_data = self.comp_data.drop(columns="id")
-
-        # Get risk acceptance threshold.
-        # Commenting this out because it's unused.
-        # risk_threshold = self.read_risk_threshold()
 
         # Set the row count of the table widget
         table_widget.setRowCount(self.max_ids)
@@ -1092,9 +1081,6 @@ class MainWindow(QMainWindow):
         severity = float(self.y_input_field.text()) if self.y_input_field.text() else 0
         detection = float(self.z_input_field.text()) if self.z_input_field.text() else 0
 
-        # Get the risk acceptance threshold
-        risk_threshold = self.read_risk_threshold()
-
         # Calculate the RPN
         rpn = probability * severity * detection
 
@@ -1114,7 +1100,7 @@ class MainWindow(QMainWindow):
 
         if rpn_item:
             rpn_item.setText(str(rpn))
-            if rpn > risk_threshold:
+            if rpn > self.risk_threshold:
                 rpn_item.setBackground(QColor(255, 102, 102))  # muted red
             else:
                 rpn_item.setBackground(QColor(102, 255, 102))  # muted green
@@ -1189,6 +1175,7 @@ class MainWindow(QMainWindow):
 
         self.comp_fails.loc[row, column] = self.fail_mode_column_types[j](new_val)
         
+        
         # If the user is updating FSD
         if 2 <= j <= 4:
             new_rpn = int((self.comp_fails.loc[row, "frequency"] * 
@@ -1196,6 +1183,14 @@ class MainWindow(QMainWindow):
                     self.comp_fails.loc[row, "detection"]).iloc[0])
             self.comp_fails.loc[row, "rpn"] = new_rpn
             self.table_widget.setItem(i, 1, QTableWidgetItem(str(new_rpn)))
+            i,j = item.row(), item.column()
+            
+            rpn_item = self.table_widget.item(i, 1)
+            if int(rpn_item.text()) > self.risk_threshold:
+                rpn_item.setBackground(QColor(255, 102, 102))  # muted red
+            else:
+                rpn_item.setBackground(QColor(102, 255, 102))  # muted green
+        
 
             
     # Saves local values to the database
