@@ -300,9 +300,15 @@ class MainWindow(QMainWindow):
         self.component_selection = QLabel("Component Selection: ")
         self.left_layout.addWidget(self.component_selection)
 
+        #######################################TESTING############################################
+
+        self.component_search_field = QLineEdit(self)
+        self.component_search_field.setPlaceholderText("Search for a component...")
+        self.component_search_field.textChanged.connect(self.filter_components)
+        self.left_layout.addWidget(self.component_search_field)
+
         # Create and add the component name dropdown menu
         self.component_name_field = QComboBox(self)
-        self.component_name_field.addItem("Select a Component")
         self.component_name_field.activated.connect(
             lambda: (
                 self.component_name_field_stats.setCurrentText(
@@ -311,9 +317,25 @@ class MainWindow(QMainWindow):
                 self.update_layout(),
             )
         )
-        for name in self.components["name"]:
-            self.component_name_field.addItem(name)
+        self.populate_component_dropdown(self.components["name"])
         self.left_layout.addWidget(self.component_name_field)
+
+        ##########################################################################################
+
+        # # Create and add the component name dropdown menu
+        # self.component_name_field = QComboBox(self)
+        # self.component_name_field.addItem("Select a Component")
+        # self.component_name_field.activated.connect(
+        #     lambda: (
+        #         self.component_name_field_stats.setCurrentText(
+        #             self.component_name_field.currentText()
+        #         ),
+        #         self.update_layout(),
+        #     )
+        # )
+        # for name in self.components["name"]:
+        #     self.component_name_field.addItem(name)
+        # self.left_layout.addWidget(self.component_name_field)
 
         # Create and add the risk acceptance threshold field
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
@@ -460,7 +482,7 @@ class MainWindow(QMainWindow):
         self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
         self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
 
-        #self.table_widget.cellChanged.connect(self.save_sql)
+        # self.table_widget.cellChanged.connect(self.save_sql)
 
         ### END OF MAIN TAB SETUP ###
 
@@ -596,6 +618,14 @@ class MainWindow(QMainWindow):
         self.show_table()
         self.show_table_stats()
         self.generate_main_chart()
+        
+        """
+        rpn_item = self.table_widget.item(self.current_row, 1)
+        if int(rpn_item.text()) > self.read_risk_threshold():
+            rpn_item.setBackground(QColor(255, 102, 102))  # muted red
+        else:
+            rpn_item.setBackground(QColor(102, 255, 102))  # muted green
+        """
 
     """
 
@@ -867,10 +897,11 @@ class MainWindow(QMainWindow):
         self.conn = sqlite3.connect(db_path)
         self.components = pd.read_sql_query("SELECT * FROM components", self.conn)
         self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.conn)
-        # don't use defaults
+        # pulls from defaults
         # self.comp_fails = pd.read_sql_query(
         #     "SELECT * FROM comp_fails", self.conn
         # )
+        # pulls from modified
         self.comp_fails = pd.read_sql_query("SELECT * FROM local_comp_fails", self.conn)
         # Calculates RPN = Frequency * Severity * Detection
         self.comp_fails.insert(
@@ -1027,10 +1058,10 @@ class MainWindow(QMainWindow):
             return
 
         # Update the RPN value in the table/chart
-        rpn_item = self.table_widget.item(self.current_row, 2)
-        frequency_item = self.table_widget.item(self.current_row, 3)
-        severity_item = self.table_widget.item(self.current_row, 4)
-        detectability_item = self.table_widget.item(self.current_row, 5)
+        rpn_item = self.table_widget.item(self.current_row, 1)
+        frequency_item = self.table_widget.item(self.current_row, 2)
+        severity_item = self.table_widget.item(self.current_row, 3)
+        detectability_item = self.table_widget.item(self.current_row, 4)
 
         if rpn_item:
             rpn_item.setText(str(rpn))
@@ -1213,6 +1244,20 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self, "Recommendation", self.recommendations[self.counter]
         )
+
+    def filter_components(self, search_query):
+        filtered_components = [
+            component
+            for component in self.components["name"]
+            if search_query.lower() in component.lower()
+        ]
+        self.populate_component_dropdown(filtered_components)
+
+    def populate_component_dropdown(self, components):
+        self.component_name_field.clear()
+        self.component_name_field.addItem("Select a Component")
+        for name in components:
+            self.component_name_field.addItem(name)
 
 
 if __name__ == "__main__":
