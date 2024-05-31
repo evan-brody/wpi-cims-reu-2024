@@ -58,7 +58,7 @@ TODO: values() design fix, also figure out what it does ???
 DONE: fix csv formatting. there shouldn't be spaces after commas
 DONE: convert .csv to sqlite .db file
 DONE: normalize database
-TODO: re-implement dictionary database as pandas dataframe, populated from SQLite database
+DONE: re-implement dictionary database as pandas dataframe, populated from SQLite database
 
 DONE: create charts.py to hold all charting functions
 
