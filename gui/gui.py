@@ -882,43 +882,43 @@ class MainWindow(QMainWindow):
     """
 
     # DEPRECATED DO NOT USE
-    def read_data_from_csv(self):
-        database_data.clear()
-        self.database_data = {}
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(script_dir, "database.csv")
+    # def read_data_from_csv(self):
+    #     database_data.clear()
+    #     self.database_data = {}
+    #     script_dir = os.path.dirname(os.path.abspath(__file__))
+    #     file_path = os.path.join(script_dir, "database.csv")
 
-        # error checking for the existence of a database.csv file
-        try:
-            with open(file_path, newline="") as csvfile:
-                reader = csv.reader(csvfile)
-                next(reader)  # skip the header row
-                for row in reader:
-                    # setting component name to be the element at position [X , ...]
-                    component_name = row[0]
-                    # creating the element in the database for a new component if not already present
-                    if component_name not in database_data:
-                        database_data[component_name] = []
-                    # filling the list for holding information for a component's failure modes
-                    database_data[component_name].append(
-                        {
-                            "id": int(row[1]),
-                            "failure_mode": row[2],
-                            "rpn": float(row[3]),
-                            "lower_bound": float(row[4]),
-                            "best_estimate": float(row[5]),
-                            "upper_bound": float(row[6]),
-                            "frequency": float(row[7]),
-                            "severity": float(row[8]),
-                            "detectability": float(row[9]),
-                            "mission_time": float(row[10]),
-                        }
-                    )
-        except FileNotFoundError:
-            error_message = "Error: Could not find the database.csv file."
-            QMessageBox.critical(self, "File Not Found", error_message)
+    #     # error checking for the existence of a database.csv file
+    #     try:
+    #         with open(file_path, newline="") as csvfile:
+    #             reader = csv.reader(csvfile)
+    #             next(reader)  # skip the header row
+    #             for row in reader:
+    #                 # setting component name to be the element at position [X , ...]
+    #                 component_name = row[0]
+    #                 # creating the element in the database for a new component if not already present
+    #                 if component_name not in database_data:
+    #                     database_data[component_name] = []
+    #                 # filling the list for holding information for a component's failure modes
+    #                 database_data[component_name].append(
+    #                     {
+    #                         "id": int(row[1]),
+    #                         "failure_mode": row[2],
+    #                         "rpn": float(row[3]),
+    #                         "lower_bound": float(row[4]),
+    #                         "best_estimate": float(row[5]),
+    #                         "upper_bound": float(row[6]),
+    #                         "frequency": float(row[7]),
+    #                         "severity": float(row[8]),
+    #                         "detectability": float(row[9]),
+    #                         "mission_time": float(row[10]),
+    #                     }
+    #                 )
+    #     except FileNotFoundError:
+    #         error_message = "Error: Could not find the database.csv file."
+    #         QMessageBox.critical(self, "File Not Found", error_message)
 
-        return database_data
+    #     return database_data
 
     """
     Pulls default data from part_info.db and stores it in a pandas DataFrame.
