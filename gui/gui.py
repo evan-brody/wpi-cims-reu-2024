@@ -54,7 +54,7 @@ TODO: UI Bug fixes
     
 
 DONE: bubbleplot should open to app and not browser
-TODO: Search for components
+DONE: Search for components
 DONE: generate_chart() if block to switch case
 TODO: values() design fix, also figure out what it does ???
 DONE: fix csv formatting. there shouldn't be spaces after commas
