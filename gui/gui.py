@@ -394,6 +394,7 @@ class MainWindow(QMainWindow):
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
+        self.table_widget.itemChanged.connect(lambda item: (self.save_to_df(item),self.table_changed_main()))
         self.left_layout.addWidget(self.table_widget)
 
         # Add the left layout to the main layout
@@ -507,7 +508,7 @@ class MainWindow(QMainWindow):
         self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
         self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
 
-        self.table_widget.itemChanged.connect(self.save_to_df)
+        
 
         ### END OF MAIN TAB SETUP ###
 
@@ -655,15 +656,21 @@ class MainWindow(QMainWindow):
 
     def table_changed_main(self):
         if(not self.refreshing_table):
-            """
-            self.comp_fails.iloc[self.current_row,self.current_column] = float(self.table_widget.item(
-                self.current_row,self.current_column).text())
-            print(self.current_row)
-            print(self.current_column)
-            print(self.comp_fails.iloc[self.current_row,self.current_column])
-            """
-            return
+            self.refreshing_table = True
+            self.show_table_stats()
+            self.generate_main_chart()
             
+            rpn_item = self.table_widget.item(self.current_row, 1)
+            rpn_item.setText(str(int(self.table_widget.item(self.current_row, 2).text()) * (
+                int(self.table_widget.item(self.current_row, 3).text()) * int(self.table_widget.item(self.current_row, 4).text()))))
+            if int(rpn_item.text()) > self.read_risk_threshold():
+                rpn_item.setBackground(QColor(255, 102, 102))  # muted red
+            else:
+                rpn_item.setBackground(QColor(102, 255, 102))  # muted green
+                
+            self.refreshing_table = False
+           
+     
     """
 
     Name: generate_chart
@@ -1075,6 +1082,7 @@ class MainWindow(QMainWindow):
     pushed to the table widget.
     """
 
+    # Deprecated, callback for fsd boxes in main
     def on_rpn_item_changed(self):
         # Get the Frequency, Severity, and Detection values
         probability = (
