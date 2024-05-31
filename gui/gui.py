@@ -135,7 +135,10 @@ class MainWindow(QMainWindow):
         self.read_sql_default()
 
         # function call to read in the database.csv file before running the rest of the gui
-        self.read_data_from_csv()
+        # self.read_data_from_csv()
+        
+        self.current_row = 0
+        self.current_column = 0
 
         super().__init__()
         self.setWindowTitle("Component Failure Modes and Effects Analysis (FMEA)")
@@ -641,7 +644,7 @@ class MainWindow(QMainWindow):
             case "Pie Chart":
                 self.charts.pie_chart()
             case "3D Risk Plot":
-                self.charts.plot_3D()
+                self.charts.plot_3D([self.current_row,self.current_column])
             case "Scatterplot":
                 self.charts.scatterplot()
             case "Bubbleplot":
@@ -807,7 +810,7 @@ class MainWindow(QMainWindow):
     Description: Function that initially clears the table and then repopulates it.
 
     """
-
+    ### READS FROM CSV
     def read_database(self):
         self.database_table_widget.clear()
 
