@@ -37,8 +37,9 @@ TODO: UI Bug fixes
     TODO: Variable plot sizes in stats tab
     DONE: Download chart button downloads blank jpeg
     TODO: Read database pulls from csv not local storage/current modified database
-    TODO: Save RPN values should save it to a file not just locally
-    TODO: modifying FSD variables should auto save to local database instead of having button do it
+    TODO: Auto-update RPN
+    DONE: Save RPN values should save it to a file not just locally
+    DONE: modifying FSD variables should auto save to local database instead of having button do it
     TODO: modifying FSD variables should wait till you leave the text box to throw out of bounds errors
     TODO: all data modification should just be in the table, no need for textboxes
     TODO: FMEA and FMECA buttons exist but don't do anything 
@@ -367,7 +368,7 @@ class MainWindow(QMainWindow):
         self.table_widget.setColumnWidth(7, 150)  # Mission Time
         self.table_widget.setColumnWidth(8, 150)  # Lower Bound
         self.table_widget.setColumnWidth(9, 150)  # Best Estimate
-        self.table_widget.setColumnWidth(10, 150)  # Upper Bound
+        self.table_widget.setColumnWidth(10, 150) # Upper Bound
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
