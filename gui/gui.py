@@ -640,15 +640,28 @@ class MainWindow(QMainWindow):
         self.show_table()
         self.show_table_stats()
         self.generate_main_chart()
+        
+        for row in range(len(self.comp_data.index)):
+            rpn_item = self.table_widget.item(row, 1)
+            if int(rpn_item.text()) > self.read_risk_threshold():
+                rpn_item.setBackground(QColor(255, 102, 102))  # muted red
+            else:
+                rpn_item.setBackground(QColor(102, 255, 102))  # muted green
+            
         self.refreshing_table = False
         
-        """
-        rpn_item = self.table_widget.item(self.current_row, 1)
-        if int(rpn_item.text()) > self.read_risk_threshold():
-            rpn_item.setBackground(QColor(255, 102, 102))  # muted red
-        else:
-            rpn_item.setBackground(QColor(102, 255, 102))  # muted green
-        """
+        
+
+    def table_changed_main(self):
+        if(not self.refreshing_table):
+            """
+            self.comp_fails.iloc[self.current_row,self.current_column] = float(self.table_widget.item(
+                self.current_row,self.current_column).text())
+            print(self.current_row)
+            print(self.current_column)
+            print(self.comp_fails.iloc[self.current_row,self.current_column])
+            """
+            return
             
     """
 
