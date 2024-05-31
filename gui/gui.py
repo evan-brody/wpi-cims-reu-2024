@@ -36,14 +36,15 @@ TODO: UI Bug fixes
     TODO: Source Plot1,2,3 from database instead of hardcoded
     TODO: Variable plot sizes in stats tab
     DONE: Download chart button downloads blank jpeg
-    TODO: Read database pulls from csv not local storage/current modified database
+    DONE: Read database pulls from csv not local storage/current modified database
     TODO: Auto-update RPN
     DONE: Save RPN values should save it to a file not just locally
     DONE: modifying FSD variables should auto save to local database instead of having button do it
     TODO: modifying FSD variables should wait till you leave the text box to throw out of bounds errors
     TODO: all data modification should just be in the table, no need for textboxes
     TODO: FMEA and FMECA buttons exist but don't do anything 
-    TODO: risk acceptance should autocolor when table is generated
+    DONE: risk acceptance should autocolor when table is generated
+    TODO: risk acceptance should autocolor when table is updated
     TODO: detectability recommendation should reset when selected component is changed
     DONE: read database at startup
     DONE: automatically update database
@@ -1050,6 +1051,7 @@ class MainWindow(QMainWindow):
     """
 
     def values(self):
+        print(self.comp_data)
         component_name = self.component_name_field.currentText()
 
         values1 = np.array(
