@@ -42,7 +42,7 @@ TODO: UI Bug fixes
     DONE: modifying FSD variables should auto save to local database instead of having button do it
     TODO: invalid FSD variables should throw out of bounds warnings
     DONE: all data modification should just be in the table, no need for textboxes
-    TODO: FMEA and FMECA buttons exist but don't do anything 
+    DONE: FMEA and FMECA buttons exist but don't do anything 
     DONE: risk acceptance should autocolor when table is generated
     DONE: risk acceptance should autocolor when table is updated
     TODO: detectability recommendation should reset when selected component is changed
@@ -273,8 +273,8 @@ class MainWindow(QMainWindow):
         header_layout.addWidget(logo2)
 
         # adding fmea/fmeca buttons to layout
-        fmea_button = QPushButton("FMEA")
-        fmeca_button = QPushButton("FMECA")
+        # fmea_button = QPushButton("FMEA")
+        # fmeca_button = QPushButton("FMECA")
         logos_buttons_layout = QVBoxLayout()
         logos_buttons_layout.addWidget(fmea_button)
         logos_buttons_layout.addWidget(fmeca_button)
