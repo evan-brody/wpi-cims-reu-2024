@@ -1,11 +1,11 @@
 """
 
-Project: AI-Based FMEA Tool
+Project: AI-Based FMECA Tool
 2023 Contributor(s): Nicholas Grabill, Stephanie Wang
 2024 Contributor(s): Evan Brody, Karl Ramus, Esther Yu
-Description: Blah, blah. Blah.
+Description: Implements the tool's GUI
 Industry Mentor(s): Dr. Yehia Khalil
-Academic Mentor(s): Dr. Frank Zou, Dr. Tharindu DeAlwis, Hammed Olayinka
+Academic Mentor(s): Dr. Frank Zou, Dr. Tharindu De Alwis, Hammed Olayinka
 
 File(s):
 1) gui.py
