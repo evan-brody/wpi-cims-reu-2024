@@ -350,7 +350,7 @@ class MainWindow(QMainWindow):
             (self.read_risk_threshold(), self.update_layout())
         )
         self.threshold_field.setToolTip(
-            "Enter the maximum acceptable RPN: must be a value between [1-1000]."
+            "Enter the maximum acceptable RPN: must be an integer value in [1-1000]."
         )
         self.left_layout.addWidget(self.threshold_label)
         self.left_layout.addWidget(self.threshold_field)
