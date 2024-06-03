@@ -17,6 +17,9 @@ class Charts:
     """
 
     def bar_chart(self):
+        # Clear the existing plot
+        self.main_window.main_figure.clear()
+
         component_data = []
         threshold = float(self.main_window.threshold_field.text())
 
@@ -31,8 +34,6 @@ class Charts:
                         "rpn": float(rpn_item.text()),
                     }
                 )
-        # Clear the existing plot
-        self.main_window.main_figure.clear()
 
         # Adjust the subplot for spacing
         self.main_window.main_figure.subplots_adjust(
@@ -91,7 +92,7 @@ class Charts:
         self.main_window.canvas.draw()
 
     """
-    Makes a pie chart of data in table.
+    Displays a pie chart of data in table.
     """
 
     def pie_chart(self):
@@ -113,9 +114,6 @@ class Charts:
                 else:
                     above_threshold += 1
 
-        # Clear the existing plot
-        self.main_window.main_figure.clear()
-
         # Prepare the data for the pie chart
         labels = ["Below Risk Threshold", "Above Risk Threshold"]
         rpn_values = [below_threshold, above_threshold]
@@ -126,22 +124,21 @@ class Charts:
         # Create a pie chart
         ax = self.main_window.main_figure.add_subplot(111)
         wedges, texts, autotexts = ax.pie(
-            rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=1
+            rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=0.7
         )
 
-        # Create legend
-        legend_labels = [
-            f"Number of Green Failure Modes: {below_threshold}",
-            f"Number of Red Failure Modes: {above_threshold}",
-            f"Total Failure Modes: {below_threshold + above_threshold}",
+        # Directly label the numbers on the pie chart
+        total_failure_modes = below_threshold + above_threshold
+        labels = [
+            f"{below_threshold} ({below_threshold / total_failure_modes:.1%})",
+            f"{above_threshold} ({above_threshold / total_failure_modes:.1%})",
         ]
-        ax.legend(
-            wedges,
-            legend_labels,
-            title="Failure Modes",
-            loc="upper right",
-            bbox_to_anchor=(1, 0.5),
-        )
+        for i, autotext in enumerate(autotexts):
+            autotext.set_text(labels[i])
+            autotext.set_fontsize(10)  # Adjust the font size as needed
+
+        for text in texts:
+            text.set_fontsize(10)
 
         component_name = self.main_window.component_name_field.currentText()
         ax.set_title(component_name + " Risk Profile")
