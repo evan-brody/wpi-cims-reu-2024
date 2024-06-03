@@ -52,6 +52,7 @@ TODO: UI Bug fixes
     DONE: synced component select between tabs
     TODO: fix crash on invalid cell input
     TODO: auto refresh on statistics page
+    DONE: Make "Refresh Table" reset to default values
     
 
 DONE: bubbleplot should open to app and not browser
@@ -60,7 +61,7 @@ DONE: generate_chart() if block to switch case
 TODO: values() design fix, also figure out what it does ???
 DONE: fix csv formatting. there shouldn't be spaces after commas
 DONE: convert .csv to sqlite .db file
-DONE: normalize database
+DONE: normalize database (in 4NF now i think?)
 DONE: re-implement dictionary database as pandas dataframe, populated from SQLite database
 
 DONE: create charts.py to hold all charting functions
@@ -142,8 +143,8 @@ class MainWindow(QMainWindow):
         # These need to match one-to-one
         assert len(self.fail_mode_columns) == len(self.fail_mode_column_types)
 
-        # Initializes DataFrames with default values.
-        self.read_sql_default()
+        # Initializes DataFrames.
+        self.read_sql()
 
         # function call to read in the database.csv file before running the rest of the gui
         # self.read_data_from_csv()
@@ -237,7 +238,7 @@ class MainWindow(QMainWindow):
         self.instructions2 = QWidget
         self.instructions2 = QTextEdit()
         self.instructions2.setText(
-            """
+        """
         Please choose whether you want to complete an FMEA or FMECA analysis by clicking one of the buttons on the right!
         
         Here is some information regarding use:
@@ -322,7 +323,7 @@ class MainWindow(QMainWindow):
         search_and_dropdown_layout = QHBoxLayout()
 
         self.component_search_field = QLineEdit(self)
-        self.component_search_field.setPlaceholderText("Find the component...")
+        self.component_search_field.setPlaceholderText("Search for a component...")
         self.component_search_field.textChanged.connect(self.filter_components)
         search_and_dropdown_layout.addWidget(self.component_search_field)
 
@@ -344,7 +345,11 @@ class MainWindow(QMainWindow):
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
         self.threshold_field = QLineEdit()
         self.threshold_field.setText(str(DEFAULT_RISK_THRESHOLD))
-        self.threshold_field.editingFinished.connect(lambda: (self.read_risk_threshold(),self.update_layout()))
+        self.threshold_field.editingFinished.connect(lambda: (
+            self.read_risk_threshold(),
+            self.update_layout()
+            )
+        )
         self.threshold_field.setToolTip(
             "Enter the maximum acceptable RPN: must be a value between [1-1000]."
         )
@@ -353,7 +358,11 @@ class MainWindow(QMainWindow):
 
         # Create and add the submit button
         self.submit_button = QPushButton("Refresh Table")
-        self.submit_button.clicked.connect(self.update_layout)
+        self.submit_button.clicked.connect(lambda: (
+            self.reset_df(),
+            self.update_layout()
+            )
+        )
         self.left_layout.addWidget(self.submit_button)
 
         # Create and add the table widget
@@ -516,7 +525,7 @@ class MainWindow(QMainWindow):
                 self.component_name_field.setCurrentText(
                     self.component_name_field_stats.currentText()
                 ),
-                self.update_layout(),
+                self.update_layout()
             )
         )
         for name in self.components["name"]:
@@ -526,7 +535,9 @@ class MainWindow(QMainWindow):
 
         # Create and add the submit button
         self.stat_submit_button = QPushButton("Show Table")
-        self.stat_submit_button.clicked.connect(self.show_table_stats)
+        self.stat_submit_button.clicked.connect(lambda: 
+            self.populate_table(self.table_widget_stats, self.comp_fails)
+        )
         left_layout_stats.addWidget(self.stat_submit_button)
 
         # Create button for detectability recommendation
@@ -622,8 +633,8 @@ class MainWindow(QMainWindow):
 
     def update_layout(self):
         self.refreshing_table = True
-        self.show_table()
-        self.show_table_stats()
+        self.populate_table(self.table_widget, self.comp_fails)
+        self.populate_table(self.table_widget_stats, self.comp_fails)
         self.generate_main_chart()
 
         for row in range(len(self.comp_data.index)):
@@ -637,11 +648,10 @@ class MainWindow(QMainWindow):
 
     def table_changed_main(self, item):
         if self.refreshing_table: return
-        self.show_table_stats()
+        self.populate_table(self.table_widget_stats, self.comp_fails)
         self.generate_main_chart()
         
            
-     
     """
 
     Name: generate_chart
@@ -904,7 +914,7 @@ class MainWindow(QMainWindow):
     Pulls default data from part_info.db and stores it in a pandas DataFrame.
     """
 
-    def read_sql_default(self) -> None:
+    def read_sql(self) -> None:
         db_path = os.path.abspath(
             os.path.join(self.current_directory, self.db_path, self.default_db_name)
         )
@@ -913,22 +923,32 @@ class MainWindow(QMainWindow):
         self.conn = sqlite3.connect(db_path)
         self.components = pd.read_sql_query("SELECT * FROM components", self.conn)
         self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.conn)
-        # pulls from defaults
-        # self.comp_fails = pd.read_sql_query(
-        #     "SELECT * FROM comp_fails", self.conn
-        # )
-        # pulls from modified
+        self.default_comp_fails = pd.read_sql_query("SELECT * FROM comp_fails", self.conn)
         self.comp_fails = pd.read_sql_query("SELECT * FROM local_comp_fails", self.conn)
         # Calculates RPN = Frequency * Severity * Detection
-        self.comp_fails.insert(
-            2,
+        self.default_comp_fails.insert(
+            3,
             "rpn",
             [
                 int(row["frequency"] * row["severity"] * row["detection"])
                 for _, row in self.comp_fails.iterrows()
             ],
-            True,
+            True
         )
+        self.comp_fails.insert(
+            3,
+            "rpn",
+            [
+                int(row["frequency"] * row["severity"] * row["detection"])
+                for _, row in self.comp_fails.iterrows()
+            ],
+            True
+        )
+
+    def reset_df(self) -> None:
+        if not (hasattr(self, "comp_fails") and hasattr(self, "default_comp_fails")):
+            return
+        self.comp_fails = self.default_comp_fails.copy()
 
     def read_risk_threshold(self):
         try:
@@ -943,33 +963,15 @@ class MainWindow(QMainWindow):
         return risk_threshold
 
     """
-
-    Name: show_table
-    Type: function
-    Description: Clears table widget and fills table in with the desired data for the input component.
-
-    """
-
-    def show_table(self):
-        self.populate_table(self.table_widget)
-
-    """
     Populates a table with failure modes associated with a specific component.
     """
 
-    def populate_table(self, table_widget) -> None:
+    def populate_table(self, table_widget, data_source) -> None:
         # clear existing table data (does not affect underlying database)
         table_widget.clearContents()
 
         # retrieve component name from text box
         component_name = self.component_name_field.currentText()
-
-        """
-        # Error checking for component name
-        if not self.components["name"].str.contains(component_name).any():
-            error_message = "Error: Please re-enter a component name that's present in the database."
-            QMessageBox.critical(self, "Name Error", error_message)
-        """
 
         # Update the column header for "Failure Mode"
         table_widget.setHorizontalHeaderLabels(
@@ -988,7 +990,7 @@ class MainWindow(QMainWindow):
         )
 
         self.comp_data = (
-            self.comp_fails[self.comp_fails["comp_id"] == self.comp_id]
+            data_source[data_source["comp_id"] == self.comp_id]
             .head(self.max_ids)
             .reset_index(drop=True)
         )
@@ -1006,13 +1008,6 @@ class MainWindow(QMainWindow):
         for row, data in self.comp_data.iterrows():
             for i, key in enumerate(self.fail_mode_columns):
                 table_widget.setItem(row, i, QTableWidgetItem(str(data[key])))
-
-    """
-    Clears table widget in stats tab and fills table in with the desired data for the input component.
-    """
-
-    def show_table_stats(self) -> None:
-        self.populate_table(self.table_widget_stats)
 
     """
     Records the location of a cell when it's clicked.
@@ -1155,9 +1150,7 @@ class MainWindow(QMainWindow):
         new_val = item.text()
         column = self.fail_mode_columns[j]
 
-        row = (self.comp_fails["comp_id"] == self.comp_id) & (
-            self.comp_fails["fail_id"] == self.comp_data.iloc[i]["fail_id"]
-        )
+        row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
 
         self.comp_fails.loc[row, column] = self.fail_mode_column_types[j](new_val)
 
@@ -1207,7 +1200,7 @@ class MainWindow(QMainWindow):
     def show_previous(self):
         # so that it doesn't go below 0
         self.selected_index = max(0, self.selected_index - self.max_ids)
-        self.show_table()
+        self.populate_table(self.table_widget, self.comp_fails)
 
     """
     Description: Refreshes statistics table to the previous page.
@@ -1218,7 +1211,7 @@ class MainWindow(QMainWindow):
         self.selected_index_stats = max(
             0, self.selected_index_stats - self.max_ids_stats
         )
-        self.show_table_stats()
+        self.populate_table(self.table_widget_stats, self.comp_fails)
 
     """
     Refreshes table to the next page.
@@ -1238,7 +1231,7 @@ class MainWindow(QMainWindow):
             and self.selected_index // self.max_ids < total_pages - 1
         ):
             self.selected_index = (total_pages - 1) * self.max_ids
-        self.show_table()
+        self.populate_table(self.table_widget, self.comp_fails)
 
     """
     Refreshes statistics table to the next page.
@@ -1258,7 +1251,7 @@ class MainWindow(QMainWindow):
             and self.selected_index_stats // self.max_ids_stats < total_pages - 1
         ):
             self.selected_index_stats = (total_pages - 1) * self.max_ids_stats
-        self.show_table_stats()
+        self.populate_table(self.table_widget_stats, self.comp_fails)
 
     """
     Gives user the option to download displayed figure.

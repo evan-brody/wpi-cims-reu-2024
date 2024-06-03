@@ -2,12 +2,14 @@
 # @author Evan Brody
 # @brief Generates a normalized SQL database based on part_info.csv
 
+import os
 import sqlite3
 import pandas as pd
 
 def main():
-    whole_df = pd.read_csv("part_info.csv")
-    conn = sqlite3.connect("part_info.db")
+    db_path = os.path.dirname(os.path.abspath(__file__))
+    whole_df = pd.read_csv(os.path.join(db_path, "part_info.csv"))
+    conn = sqlite3.connect(os.path.join(db_path, "part_info.db"))
 
     def exec_SQL(conn, query):
         conn.execute(query)
@@ -26,6 +28,7 @@ def main():
     comps = whole_df["Component"].drop_duplicates().reset_index(drop=True)
     comps = pd.Series(sorted(comps))
 
+    exec_SQL(conn, "DROP TABLE IF EXISTS local_comp_fails")
     exec_SQL(conn, "DROP TABLE IF EXISTS comp_fails")
     exec_SQL(conn, "DROP TABLE IF EXISTS fail_modes")
     exec_SQL(conn, "DROP TABLE IF EXISTS components")
@@ -68,6 +71,7 @@ def main():
 
         query = """
         CREATE TABLE comp_fails (
+            cf_id INTEGER PRIMARY KEY AUTOINCREMENT,
             comp_id INT NOT NULL,
             fail_id INT NOT NULL,
             frequency INT DEFAULT 1,
@@ -78,8 +82,7 @@ def main():
             upper_bound REAL DEFAULT 0,
             mission_time REAL DEFAULT 1,
             FOREIGN KEY(comp_id) REFERENCES components(id),
-            FOREIGN KEY(fail_id) REFERENCES fail_modes(id),
-            PRIMARY KEY (comp_id, fail_id)
+            FOREIGN KEY(fail_id) REFERENCES fail_modes(id)
         )
         """
 
@@ -99,6 +102,7 @@ def main():
 
         query = """
         CREATE TABLE local_comp_fails (
+            cf_id INTEGER PRIMARY KEY AUTOINCREMENT,
             comp_id INT NOT NULL,
             fail_id INT NOT NULL,
             frequency INT DEFAULT 1,
@@ -109,8 +113,7 @@ def main():
             upper_bound REAL DEFAULT 0,
             mission_time REAL DEFAULT 1,
             FOREIGN KEY(comp_id) REFERENCES components(id),
-            FOREIGN KEY(fail_id) REFERENCES fail_modes(id),
-            PRIMARY KEY (comp_id, fail_id)
+            FOREIGN KEY(fail_id) REFERENCES fail_modes(id)
         )
         """
 
