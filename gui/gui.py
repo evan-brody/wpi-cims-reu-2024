@@ -222,6 +222,8 @@ class MainWindow(QMainWindow):
                 event.accept()
             case QMessageBox.Cancel:
                 event.ignore()
+            case _:
+                event.ignore()
                 
     def _init_instructions_tab(self):
         ### START OF USER INSTRUCTIONS TAB SETUP ###
