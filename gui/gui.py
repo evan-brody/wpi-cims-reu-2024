@@ -1,11 +1,12 @@
 """
 
 Project: AI-Based FMECA Tool
-2023 Contributor(s): Nicholas Grabill, Stephanie Wang
-2024 Contributor(s): Evan Brody, Karl Ramus, Esther Yu
+2023 Contributors: Nicholas Grabill, Stephanie Wang
+2024 Contributors: Evan Brody, Karl Ramus, Esther Yu
 Description: Implements the tool's GUI
-Industry Mentor(s): Dr. Yehia Khalil
-Academic Mentor(s): Dr. Frank Zou, Dr. Tharindu De Alwis, Hammed Olayinka
+Industry Mentor: Dr. Yehia Khalil
+2023 Academic Mentors: Dr. Frank Zou, Dr. Tharindu De Alwis, Hammed Olayinka
+2024 Academic Mentors: Dr. Frank Zou, Dr. Tharindu De Alwis, Yanping Pei, Grace Cao
 
 File(s):
 1) gui.py
