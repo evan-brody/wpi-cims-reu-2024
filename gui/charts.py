@@ -109,7 +109,7 @@ class Charts:
             rpn_item = self.main_window.table_widget.item(row, 1)
             if failure_mode_item and rpn_item:
                 rpn = float(rpn_item.text())
-                if rpn < threshold:
+                if rpn <= threshold:
                     below_threshold += 1
                 else:
                     above_threshold += 1
