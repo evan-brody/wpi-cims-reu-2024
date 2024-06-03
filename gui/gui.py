@@ -85,8 +85,6 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 database_data = {}
 
-DEFAULT_RISK_THRESHOLD = 1
-
 """
 
 Name: MainWindow
@@ -97,18 +95,19 @@ Description: MainWindow class that holds all of our functions for the GUI.
 
 
 class MainWindow(QMainWindow):
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(os.path.dirname(__file__), "..", "data")
-    default_db_name = "part_info.db"
-    recommendations = [
+    DEFAULT_RISK_THRESHOLD = 1
+    CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+    DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data")
+    DB_NAME = "part_info.db"
+    RECOMMENDATIONS = (
         "Recommended Detectability: 9-10 (Unacceptable)",
         "Recommended Detectability: 7-8 (Severe)",
         "Recommended Detectability: 4-6 (Medium)",
-        "Recommended Detectability: 1-3 (Low)",
-    ]
+        "Recommended Detectability: 1-3 (Low)"
+    )
     # Columns to show in the failure mode table.
     # These are DataFrame columns.
-    fail_mode_columns = [
+    FAIL_MODE_COLUMNS = (
         "desc",
         "rpn",
         "frequency",
@@ -117,12 +116,12 @@ class MainWindow(QMainWindow):
         "lower_bound",
         "best_estimate",
         "upper_bound",
-        "mission_time",
-    ]
+        "mission_time"
+    )
     # The types associated with each.
-    fail_mode_column_types = [str, int, int, int, int, float, float, float, float]
+    FAIL_MODE_COLUMN_TYPES = (str, int, int, int, int, float, float, float, float)
     # These are the actual labels to show.
-    horizontal_header_labels = [
+    HORIZONTAL_HEADER_LABELS = [
         "Failure Modes",
         "RPN",
         "Frequency",
@@ -131,7 +130,7 @@ class MainWindow(QMainWindow):
         "Lower Bound (LB)",
         "Best Estimate (BE)",
         "Upper Bound (UB)",
-        "Mission Time",
+        "Mission Time"
     ]
 
     """
@@ -144,7 +143,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         # These need to match one-to-one
-        assert len(self.fail_mode_columns) == len(self.fail_mode_column_types)
+        assert len(self.FAIL_MODE_COLUMNS) == len(self.FAIL_MODE_COLUMN_TYPES)
 
         # Initializes DataFrames.
         self.read_sql()
@@ -155,7 +154,7 @@ class MainWindow(QMainWindow):
         self.current_row = 0
         self.current_column = 0
         self.refreshing_table = False
-        self.risk_threshold = DEFAULT_RISK_THRESHOLD
+        self.risk_threshold = self.DEFAULT_RISK_THRESHOLD
 
         super().__init__()
         self.setWindowTitle("Component Failure Modes and Effects Analysis (FMEA)")
@@ -275,14 +274,14 @@ class MainWindow(QMainWindow):
         header_layout.addWidget(logo2)
 
         # adding fmea/fmeca buttons to layout
-        fmea_button = QPushButton("FMEA")
-        fmeca_button = QPushButton("FMECA")
-        logos_buttons_layout = QVBoxLayout()
-        logos_buttons_layout.addWidget(fmea_button)
-        logos_buttons_layout.addWidget(fmeca_button)
+        # fmea_button = QPushButton("FMEA")
+        # fmeca_button = QPushButton("FMECA")
+        # logos_buttons_layout = QVBoxLayout()
+        # logos_buttons_layout.addWidget(fmea_button)
+        # logos_buttons_layout.addWidget(fmeca_button)
 
         # Add the header layout and the instructions2 widget to the main layout
-        header_layout.addLayout(logos_buttons_layout)
+        # header_layout.addLayout(logos_buttons_layout)
         layout.addLayout(header_layout)
         layout.addWidget(self.instructions2)
 
@@ -347,12 +346,12 @@ class MainWindow(QMainWindow):
         # Create and add the risk acceptance threshold field
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
         self.threshold_field = QLineEdit()
-        self.threshold_field.setText(str(DEFAULT_RISK_THRESHOLD))
-        self.threshold_field.editingFinished.connect(
-            lambda: (self.read_risk_threshold(), self.update_layout())
+        self.threshold_field.setText(str(self.DEFAULT_RISK_THRESHOLD))
+        self.threshold_field.editingFinished.connect(lambda: 
+            (self.read_risk_threshold(), self.update_layout())
         )
         self.threshold_field.setToolTip(
-            "Enter the maximum acceptable RPN: must be a value between [1-1000]."
+            "Enter the maximum acceptable RPN: must be an integer value in [1-1000]."
         )
         self.left_layout.addWidget(self.threshold_label)
         self.left_layout.addWidget(self.threshold_field)
@@ -366,8 +365,8 @@ class MainWindow(QMainWindow):
 
         # Create and add the table widget
         self.table_widget = QTableWidget()
-        self.table_widget.setColumnCount(len(self.horizontal_header_labels))
-        self.table_widget.setHorizontalHeaderLabels(self.horizontal_header_labels)
+        self.table_widget.setColumnCount(len(self.HORIZONTAL_HEADER_LABELS))
+        self.table_widget.setHorizontalHeaderLabels(self.HORIZONTAL_HEADER_LABELS)
         self.table_widget.setColumnWidth(0, 150)  # ID
         self.table_widget.setColumnWidth(1, 150)  # Failure Mode
         self.table_widget.setColumnWidth(3, 150)  # RPN
@@ -549,8 +548,8 @@ class MainWindow(QMainWindow):
 
         # Create and add the table widget
         self.table_widget_stats = QTableWidget()
-        self.table_widget_stats.setColumnCount(len(self.horizontal_header_labels))
-        self.table_widget_stats.setHorizontalHeaderLabels(self.horizontal_header_labels)
+        self.table_widget_stats.setColumnCount(len(self.HORIZONTAL_HEADER_LABELS))
+        self.table_widget_stats.setHorizontalHeaderLabels(self.HORIZONTAL_HEADER_LABELS)
         self.table_widget_stats.setColumnWidth(0, 150)  # ID
         self.table_widget_stats.setColumnWidth(1, 150)  # Failure Mode
         self.table_widget_stats.setColumnWidth(3, 150)  # RPN
@@ -915,12 +914,12 @@ class MainWindow(QMainWindow):
     """
 
     def read_sql(self) -> None:
-        db_path = os.path.abspath(
-            os.path.join(self.current_directory, self.db_path, self.default_db_name)
+        DB_PATH = os.path.abspath(
+            os.path.join(self.CURRENT_DIRECTORY, self.DB_PATH, self.DB_NAME)
         )
-        if not os.path.isfile(db_path):
+        if not os.path.isfile(DB_PATH):
             raise FileNotFoundError("could not find database file.")
-        self.conn = sqlite3.connect(db_path)
+        self.conn = sqlite3.connect(DB_PATH)
         self.components = pd.read_sql_query("SELECT * FROM components", self.conn)
         self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.conn)
         self.default_comp_fails = pd.read_sql_query(
@@ -960,7 +959,7 @@ class MainWindow(QMainWindow):
                 error_message = "Error: Please re-enter a risk threshold value between 1 and 1000, inclusive."
                 QMessageBox.critical(self, "Value Error", error_message)
         except:
-            risk_threshold = DEFAULT_RISK_THRESHOLD
+            risk_threshold = self.DEFAULT_RISK_THRESHOLD
         self.risk_threshold = risk_threshold
         return risk_threshold
 
@@ -976,8 +975,9 @@ class MainWindow(QMainWindow):
         component_name = self.component_name_field.currentText()
 
         # Update the column header for "Failure Mode"
+        header_labels_static = self.HORIZONTAL_HEADER_LABELS[1:]
         table_widget.setHorizontalHeaderLabels(
-            [f"{component_name} Failure Modes"] + self.horizontal_header_labels[1:]
+            [f"{component_name} Failure Modes"] + header_labels_static
         )
 
         # Update the maximum number of IDs to show
@@ -1008,7 +1008,7 @@ class MainWindow(QMainWindow):
         table_widget.setRowCount(self.max_ids)
 
         for row, data in self.comp_data.iterrows():
-            for i, key in enumerate(self.fail_mode_columns):
+            for i, key in enumerate(self.FAIL_MODE_COLUMNS):
                 table_widget.setItem(row, i, QTableWidgetItem(str(data[key])))
 
     """
@@ -1148,11 +1148,11 @@ class MainWindow(QMainWindow):
         if i >= len(self.comp_data.index):
             return
         new_val = item.text()
-        column = self.fail_mode_columns[j]
+        column = self.FAIL_MODE_COLUMNS[j]
 
         row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
 
-        self.comp_fails.loc[row, column] = self.fail_mode_column_types[j](new_val)
+        self.comp_fails.loc[row, column] = self.FAIL_MODE_COLUMN_TYPES[j](new_val)
 
         # If the user is updating FSD
         if 2 <= j <= 4:
@@ -1282,7 +1282,7 @@ class MainWindow(QMainWindow):
 
     def show_recommendation(self):
         QMessageBox.information(
-            self, "Recommendation", self.recommendations[self.counter]
+            self, "Recommendation", self.RECOMMENDATIONS[self.counter]
         )
 
     def filter_components(self, search_query):
