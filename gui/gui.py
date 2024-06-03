@@ -37,14 +37,14 @@ TODO: UI Bug fixes
     TODO: Variable plot sizes in stats tab
     DONE: Download chart button downloads blank jpeg
     DONE: Read database pulls from csv not local storage/current modified database
-    TODO: Auto-update RPN
+    DONE: Auto-update RPN
     DONE: Save RPN values should save it to a file not just locally
     DONE: modifying FSD variables should auto save to local database instead of having button do it
-    TODO: modifying FSD variables should wait till you leave the text box to throw out of bounds errors
-    TODO: all data modification should just be in the table, no need for textboxes
+    TODO: invalid FSD variables should throw out of bounds warnings
+    DONE: all data modification should just be in the table, no need for textboxes
     TODO: FMEA and FMECA buttons exist but don't do anything 
     DONE: risk acceptance should autocolor when table is generated
-    TODO: risk acceptance should autocolor when table is updated
+    DONE: risk acceptance should autocolor when table is updated
     TODO: detectability recommendation should reset when selected component is changed
     DONE: read database at startup
     DONE: automatically update database
@@ -52,6 +52,7 @@ TODO: UI Bug fixes
     DONE: synced component select between tabs
     TODO: fix crash on invalid cell input
     TODO: auto refresh on statistics page
+    TODO: make pie chart work
     
 
 DONE: bubbleplot should open to app and not browser
