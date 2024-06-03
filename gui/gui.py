@@ -346,10 +346,8 @@ class MainWindow(QMainWindow):
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
         self.threshold_field = QLineEdit()
         self.threshold_field.setText(str(self.DEFAULT_RISK_THRESHOLD))
-        self.threshold_field.editingFinished.connect(lambda: (
-            self.read_risk_threshold(),
-            self.update_layout()
-            )
+        self.threshold_field.editingFinished.connect(lambda: 
+            (self.read_risk_threshold(), self.update_layout())
         )
         self.threshold_field.setToolTip(
             "Enter the maximum acceptable RPN: must be a value between [1-1000]."
