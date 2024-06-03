@@ -141,6 +141,8 @@ class MainWindow(QMainWindow):
     """
 
     def __init__(self):
+        super().__init__()
+
         # These need to match one-to-one
         assert len(self.FAIL_MODE_COLUMNS) == len(self.FAIL_MODE_COLUMN_TYPES)
 
@@ -204,9 +206,22 @@ class MainWindow(QMainWindow):
         self.qindex = 0
         self.charts = Charts(self)
 
-    def __del__(self):
-        self.save_sql()
+    def closeEvent(self, event) -> None:
+        close_confirm = QMessageBox()
+        close_confirm.setWindowTitle("Save and Exit")
+        close_confirm.setText("Save before exiting?")
+        close_confirm.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+        close_confirm = close_confirm.exec()
 
+        match close_confirm:
+            case QMessageBox.Yes:
+                self.save_sql()
+                event.accept()
+            case QMessageBox.No:
+                event.accept()
+            case QMessageBox.Cancel:
+                event.ignore()
+                
     def _init_instructions_tab(self):
         ### START OF USER INSTRUCTIONS TAB SETUP ###
 
