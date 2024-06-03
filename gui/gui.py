@@ -274,8 +274,8 @@ class MainWindow(QMainWindow):
         header_layout.addWidget(logo2)
 
         # adding fmea/fmeca buttons to layout
-        # fmea_button = QPushButton("FMEA")
-        # fmeca_button = QPushButton("FMECA")
+        fmea_button = QPushButton("FMEA")
+        fmeca_button = QPushButton("FMECA")
         logos_buttons_layout = QVBoxLayout()
         logos_buttons_layout.addWidget(fmea_button)
         logos_buttons_layout.addWidget(fmeca_button)
