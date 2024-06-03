@@ -240,7 +240,7 @@ class MainWindow(QMainWindow):
         self.instructions2 = QWidget
         self.instructions2 = QTextEdit()
         self.instructions2.setText(
-        """
+            """
         Please choose whether you want to complete an FMEA or FMECA analysis by clicking one of the buttons on the right!
         
         Here is some information regarding use:
@@ -347,10 +347,8 @@ class MainWindow(QMainWindow):
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
         self.threshold_field = QLineEdit()
         self.threshold_field.setText(str(DEFAULT_RISK_THRESHOLD))
-        self.threshold_field.editingFinished.connect(lambda: (
-            self.read_risk_threshold(),
-            self.update_layout()
-            )
+        self.threshold_field.editingFinished.connect(
+            lambda: (self.read_risk_threshold(), self.update_layout())
         )
         self.threshold_field.setToolTip(
             "Enter the maximum acceptable RPN: must be a value between [1-1000]."
@@ -359,11 +357,9 @@ class MainWindow(QMainWindow):
         self.left_layout.addWidget(self.threshold_field)
 
         # Create and add the submit button
-        self.submit_button = QPushButton("Refresh Table")
-        self.submit_button.clicked.connect(lambda: (
-            self.reset_df(),
-            self.update_layout()
-            )
+        self.submit_button = QPushButton("Reset to Default")
+        self.submit_button.clicked.connect(
+            lambda: (self.reset_df(), self.update_layout())
         )
         self.left_layout.addWidget(self.submit_button)
 
@@ -384,8 +380,9 @@ class MainWindow(QMainWindow):
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
-        self.table_widget.itemChanged.connect(lambda item: (self.save_to_df(item),
-                                                            self.table_changed_main(item)))
+        self.table_widget.itemChanged.connect(
+            lambda item: (self.save_to_df(item), self.table_changed_main(item))
+        )
 
         self.table_widget.cellClicked.connect(self.cell_clicked)
         self.left_layout.addWidget(self.table_widget)
@@ -462,14 +459,12 @@ class MainWindow(QMainWindow):
         # Add the nav_button_layout to the left layout
         self.left_layout.addLayout(self.nav_button_layout)
 
-        
         # Create and add the save button
-        
+
         # self.save_button = QPushButton("Save RPN Values")
         # self.save_button.clicked.connect(self.save_sql)
         # self.left_layout.addWidget(self.save_button)
 
-        
         # Create and add the X, Y, and Z input fields and 3D plot
         # self.input_and_plot_layout = QVBoxLayout()
         # self.x_input_label = QLabel("Probability :")
@@ -499,8 +494,6 @@ class MainWindow(QMainWindow):
         # self.x_input_field.textChanged.connect(self.on_rpn_item_changed)
         # self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
         # self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
-        
-
 
         # Connect QLineEdit's textChanged signal to the on_rpn_item_changed
 
@@ -527,7 +520,7 @@ class MainWindow(QMainWindow):
                 self.component_name_field.setCurrentText(
                     self.component_name_field_stats.currentText()
                 ),
-                self.update_layout()
+                self.update_layout(),
             )
         )
         for name in self.components["name"]:
@@ -537,8 +530,8 @@ class MainWindow(QMainWindow):
 
         # Create and add the submit button
         self.stat_submit_button = QPushButton("Show Table")
-        self.stat_submit_button.clicked.connect(lambda: 
-            self.populate_table(self.table_widget_stats, self.comp_fails)
+        self.stat_submit_button.clicked.connect(
+            lambda: self.populate_table(self.table_widget_stats, self.comp_fails)
         )
         left_layout_stats.addWidget(self.stat_submit_button)
 
@@ -649,11 +642,11 @@ class MainWindow(QMainWindow):
         self.refreshing_table = False
 
     def table_changed_main(self, item):
-        if self.refreshing_table: return
+        if self.refreshing_table:
+            return
         self.populate_table(self.table_widget_stats, self.comp_fails)
         self.generate_main_chart()
-        
-           
+
     """
 
     Name: generate_chart
@@ -925,7 +918,9 @@ class MainWindow(QMainWindow):
         self.conn = sqlite3.connect(db_path)
         self.components = pd.read_sql_query("SELECT * FROM components", self.conn)
         self.fail_modes = pd.read_sql_query("SELECT * FROM fail_modes", self.conn)
-        self.default_comp_fails = pd.read_sql_query("SELECT * FROM comp_fails", self.conn)
+        self.default_comp_fails = pd.read_sql_query(
+            "SELECT * FROM comp_fails", self.conn
+        )
         self.comp_fails = pd.read_sql_query("SELECT * FROM local_comp_fails", self.conn)
         # Calculates RPN = Frequency * Severity * Detection
         self.default_comp_fails.insert(
@@ -935,7 +930,7 @@ class MainWindow(QMainWindow):
                 int(row["frequency"] * row["severity"] * row["detection"])
                 for _, row in self.comp_fails.iterrows()
             ],
-            True
+            True,
         )
         self.comp_fails.insert(
             3,
@@ -944,7 +939,7 @@ class MainWindow(QMainWindow):
                 int(row["frequency"] * row["severity"] * row["detection"])
                 for _, row in self.comp_fails.iterrows()
             ],
-            True
+            True,
         )
 
     def reset_df(self) -> None:
@@ -1024,7 +1019,7 @@ class MainWindow(QMainWindow):
     """
 
     def values(self):
-        #print(self.comp_data)
+        # print(self.comp_data)
         component_name = self.component_name_field.currentText()
 
         values1 = np.array(
@@ -1047,9 +1042,9 @@ class MainWindow(QMainWindow):
     Retrieves frequency, severity, and detection values and calculates new RPN which is 
     pushed to the table widget.
     """
-    
+
     # Deprecated, callback for fsd boxes in main
-    
+
     # def on_rpn_item_changed(self):
     #     # Get the Frequency, Severity, and Detection values
     #     probability = (
@@ -1088,8 +1083,6 @@ class MainWindow(QMainWindow):
     #         severity_item.setText(str(severity))
     #     if detectability_item:
     #         detectability_item.setText(str(detection))
-    
-    
 
     """
     Saves RPN, frequency, severity, and detectability values to the local database.
@@ -1167,16 +1160,14 @@ class MainWindow(QMainWindow):
             )
             self.comp_fails.loc[row, "rpn"] = new_rpn
             self.table_widget.setItem(i, 1, QTableWidgetItem(str(new_rpn)))
-            i,j = item.row(), item.column()
-            
+            i, j = item.row(), item.column()
+
             rpn_item = self.table_widget.item(i, 1)
             if int(rpn_item.text()) > self.risk_threshold:
                 rpn_item.setBackground(QColor(255, 102, 102))  # muted red
             else:
                 rpn_item.setBackground(QColor(102, 255, 102))  # muted green
-        
 
-            
     # Saves local values to the database
     def save_sql(self) -> None:
         for _, row in self.comp_fails.iterrows():
