@@ -81,6 +81,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from charts import Charts
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 database_data = {}
 
@@ -420,6 +421,10 @@ class MainWindow(QMainWindow):
         self.generate_chart_button = QPushButton("Generate Chart")
         self.generate_chart_button.clicked.connect(self.generate_main_chart)
         self.right_layout.addWidget(self.generate_chart_button)
+
+        # Scrolling and zoom in/out functionality
+        # self.toolbar = NavigationToolbar(self.canvas, self)
+        # self.right_layout.addWidget(self.toolbar)
 
         # Create and add the download chart button
         self.download_chart_button = QPushButton("Download Chart")
