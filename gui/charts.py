@@ -105,8 +105,8 @@ class Charts:
         above_threshold = 0
 
         for row in range(self.main_window.table_widget.rowCount()):
-            failure_mode_item = self.main_window.table_widget.item(row, 1)
-            rpn_item = self.main_window.table_widget.item(row, 2)
+            failure_mode_item = self.main_window.table_widget.item(row, 0)
+            rpn_item = self.main_window.table_widget.item(row, 1)
             if failure_mode_item and rpn_item:
                 rpn = float(rpn_item.text())
                 if rpn < threshold:
