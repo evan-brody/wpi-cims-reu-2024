@@ -103,7 +103,7 @@ class MainWindow(QMainWindow):
         "Recommended Detectability: 9-10 (Unacceptable)",
         "Recommended Detectability: 7-8 (Severe)",
         "Recommended Detectability: 4-6 (Medium)",
-        "Recommended Detectability: 1-3 (Low)"
+        "Recommended Detectability: 1-3 (Low)",
     )
     # Columns to show in the failure mode table.
     # These are DataFrame columns.
@@ -116,7 +116,7 @@ class MainWindow(QMainWindow):
         "lower_bound",
         "best_estimate",
         "upper_bound",
-        "mission_time"
+        "mission_time",
     )
     # The types associated with each.
     FAIL_MODE_COLUMN_TYPES = (str, int, int, int, int, float, float, float, float)
@@ -130,7 +130,7 @@ class MainWindow(QMainWindow):
         "Lower Bound (LB)",
         "Best Estimate (BE)",
         "Upper Bound (UB)",
-        "Mission Time"
+        "Mission Time",
     ]
 
     """
@@ -211,7 +211,9 @@ class MainWindow(QMainWindow):
         close_confirm = QMessageBox()
         close_confirm.setWindowTitle("Save and Exit")
         close_confirm.setText("Save before exiting?")
-        close_confirm.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+        close_confirm.setStandardButtons(
+            QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
+        )
         close_confirm = close_confirm.exec()
 
         match close_confirm:
@@ -224,7 +226,7 @@ class MainWindow(QMainWindow):
                 event.ignore()
             case _:
                 event.ignore()
-                
+
     def _init_instructions_tab(self):
         ### START OF USER INSTRUCTIONS TAB SETUP ###
 
@@ -364,8 +366,8 @@ class MainWindow(QMainWindow):
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
         self.threshold_field = QLineEdit()
         self.threshold_field.setText(str(self.DEFAULT_RISK_THRESHOLD))
-        self.threshold_field.editingFinished.connect(lambda: 
-            (self.read_risk_threshold(), self.update_layout())
+        self.threshold_field.editingFinished.connect(
+            lambda: (self.read_risk_threshold(), self.update_layout())
         )
         self.threshold_field.setToolTip(
             "Enter the maximum acceptable RPN: must be an integer value in [1-1000]."
@@ -433,14 +435,14 @@ class MainWindow(QMainWindow):
         self.canvas = FigureCanvas(self.main_figure)
         self.right_layout.addWidget(self.canvas)
 
+        # Scrolling and zoom in/out functionality
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        self.right_layout.addWidget(self.toolbar)
+
         # Create and add the generate chart button
         self.generate_chart_button = QPushButton("Generate Chart")
         self.generate_chart_button.clicked.connect(self.generate_main_chart)
         self.right_layout.addWidget(self.generate_chart_button)
-
-        # Scrolling and zoom in/out functionality
-        # self.toolbar = NavigationToolbar(self.canvas, self)
-        # self.right_layout.addWidget(self.toolbar)
 
         # Create and add the download chart button
         self.download_chart_button = QPushButton("Download Chart")
