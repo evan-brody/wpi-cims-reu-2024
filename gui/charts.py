@@ -7,6 +7,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import seaborn as sns
 from PyQt5.QtWidgets import QMessageBox
 
+
 class Charts:
     def __init__(self, main_window):
         self.main_window = main_window
@@ -53,13 +54,30 @@ class Charts:
 
         # Set the color of the bars based on RPN values
         colors = ["#5f9ea0" if rpn < threshold else "#FF6961" for rpn in rpn_values]
-        sns.barplot(x="Failure Mode ID", y="RPN", data=df, hue=colors, ax=ax)
+        df["Threshold"] = [
+            "Below Threshold" if rpn < threshold else "Above Threshold"
+            for rpn in rpn_values
+        ]
+        sns.barplot(
+            x="Failure Mode ID",
+            y="RPN",
+            data=df,
+            hue="Threshold",
+            ax=ax,
+            palette={"Below Threshold": "#5f9ea0", "Above Threshold": "#FF6961"},
+        )
+        handles, labels = ax.get_legend_handles_labels()
+        labels = [
+            "Below Threshold" if label == "Below Threshold" else "Above Threshold"
+            for label in labels
+        ]
+        ax.legend(handles, labels)
 
         ax.axhline(threshold, color="#68855C", linestyle="--")
         ax.set_ylabel("Risk Priority Number (RPN)")
         ax.set_xlabel("Failure Mode ID")
         component_name = self.main_window.component_name_field.currentText()
-        ax.set_title(component_name + " Risk Profile")
+        ax.set_title(component_name + " RPN Bar Chart")
         ax.tick_params(axis="x", rotation=0)
 
         # Set the font to bold
@@ -144,7 +162,7 @@ class Charts:
         height = float(self.main_window.table_widget.item(cell_location[0], 4).text())
 
         # Get the X, Y, and Z values
-        
+
         """
         try:
             length = float(self.main_window.x_input_field.text())
