@@ -652,6 +652,7 @@ class MainWindow(QMainWindow):
                 case "Bubbleplot":
                     self.charts.bubble_plot()
         except:
+            self.chart_name_field_main_tool.setCurrentText("Select a Chart")
             QMessageBox.warning(self, "Error", "Please select a component first.")
 
     def generate_stats_chart(self):
