@@ -288,7 +288,7 @@ class Charts:
             df["Detection"],
             df["Frequency"],
             c=df["Failure Mode ID"],
-            cmap="nipy_spectral",
+            cmap="viridis",
             vmin=1,
             vmax=df["Failure Mode ID"].max() + 1,
         )
@@ -301,7 +301,7 @@ class Charts:
 
         # Add a colorbar
         cbar = self.main_window.main_figure.colorbar(sc, ax=ax, pad=0.2)
-        cbar.set_label("Failure Mode ID", fontsize=8, labelpad=7)
+        cbar.set_label("Failure Mode ID", fontsize=8, labelpad=10)
         max_id = int(df["Failure Mode ID"].max()) + 1
         cbar.set_ticks(range(1, max_id + 1))
 
@@ -354,9 +354,9 @@ class Charts:
             detection_values,
             s=rpn_scaled,
             c=rpn_scaled,
-            cmap="summer",
+            cmap="viridis",
             edgecolors="black",
-            # alpha=0.6,
+            alpha=0.6,
         )
 
         # Adding titles and labels
@@ -367,8 +367,10 @@ class Charts:
         ax.set_zlabel("Detection")
 
         # Color bar which maps values to colors.
-        cbar = self.main_window.main_figure.colorbar(bubble, ax=ax, pad=0.2)
-        cbar.set_label("Risk Priority Number (RPN)", fontsize=8, labelpad=7)
+        cbar = self.main_window.main_figure.colorbar(
+            bubble, ax=ax, shrink=0.5, aspect=5
+        )
+        cbar.set_label("Risk Priority Number (RPN)")
 
         # plt.show()
         self.main_window.canvas.draw()

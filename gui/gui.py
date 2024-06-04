@@ -13,10 +13,10 @@ File(s):
     1a) Runs GUI implemented in Python w/ PyQt5 framework
 2) statistics.py
     2a) Statistical modeling and analysis w/ framework described in paper
-3) database.csv
-    3a) Holds data for the GUI
-4) humanoid.csv
-    4a) Holds data for the "Expert Humanoid in the Loop"
+3) charts.py
+    3a) Contains charts that can be generated 
+4) part_info.db
+    4a) Holds data for the GUI
 
 NSF REU Project under grant DMS-2244306 in Industrial Mathematics & Statistics sponsored by Collins Aerospace and
 Worcester Polytechnic Institute.
@@ -53,7 +53,7 @@ TODO: UI Bug fixes
     DONE: synced component select between tabs
     TODO: fix crash on invalid cell input
     TODO: auto refresh on statistics page
-    TODO: make pie chart work
+    DONE: make pie chart work
     DONE: Make "Refresh Table" reset to default values
     
 
@@ -63,24 +63,25 @@ DONE: generate_chart() if block to switch case
 TODO: values() design fix, also figure out what it does ???
 DONE: fix csv formatting. there shouldn't be spaces after commas
 DONE: convert .csv to sqlite .db file
-DONE: normalize database (in 4NF now i think?)
+DONE: normalize database (4NF+)
 DONE: re-implement dictionary database as pandas dataframe, populated from SQLite database
-
 DONE: create charts.py to hold all charting functions
 
 """
+import os, sys, sqlite3
+sys.path.insert(0,os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import os, sys, csv, sqlite3, stats
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from stats_and_charts import stats
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-from charts import Charts
+from stats_and_charts.charts import Charts
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 database_data = {}
@@ -97,7 +98,7 @@ Description: MainWindow class that holds all of our functions for the GUI.
 class MainWindow(QMainWindow):
     DEFAULT_RISK_THRESHOLD = 1
     CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-    DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data")
+    DB_PATH = os.path.join(os.path.dirname(__file__), os.pardir, "data")
     DB_NAME = "part_info.db"
     RECOMMENDATIONS = (
         "Recommended Detectability: 9-10 (Unacceptable)",
@@ -149,9 +150,6 @@ class MainWindow(QMainWindow):
 
         # Initializes DataFrames.
         self.read_sql()
-
-        # function call to read in the database.csv file before running the rest of the gui
-        # self.read_data_from_csv()
 
         self.current_row = 0
         self.current_column = 0
@@ -317,14 +315,14 @@ class MainWindow(QMainWindow):
 
         # Create and add the read database button
         self.read_database_button = QPushButton("Refresh Database")
-        self.read_database_button.clicked.connect(self.read_database)
+        #self.read_database_button.clicked.connect(self.read_database)
         self.database_view_layout.addWidget(self.read_database_button)
 
         # Create and add the table widget for database view
         self.database_table_widget = QTableWidget()
         self.database_view_layout.addWidget(self.database_table_widget)
 
-        self.read_database()
+        #self.read_database()
         ### END OF DATABASE VIEW TAB SETUP ###
 
     def _init_main_tab(self):
@@ -399,9 +397,7 @@ class MainWindow(QMainWindow):
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
-        self.table_widget.itemChanged.connect(
-            lambda item: (self.save_to_df(item), self.table_changed_main(item))
-        )
+        self.table_widget.itemChanged.connect(self.table_changed_main)
 
         self.table_widget.cellClicked.connect(self.cell_clicked)
         self.left_layout.addWidget(self.table_widget)
@@ -481,45 +477,7 @@ class MainWindow(QMainWindow):
 
         # Add the nav_button_layout to the left layout
         self.left_layout.addLayout(self.nav_button_layout)
-
-        # Create and add the save button
-
-        # self.save_button = QPushButton("Save RPN Values")
-        # self.save_button.clicked.connect(self.save_sql)
-        # self.left_layout.addWidget(self.save_button)
-
-        # Create and add the X, Y, and Z input fields and 3D plot
-        # self.input_and_plot_layout = QVBoxLayout()
-        # self.x_input_label = QLabel("Probability :")
-        # self.x_input_field = QLineEdit()
-        # self.x_input_field.setValidator(
-        #     QDoubleValidator(0.99, 99.99, 2)
-        # )  # This will only accept float values
-        # self.x_input_field.setToolTip("Humanoid Recommendation: 9 or 10 (Unacceptable)")
-        # self.left_layout.addWidget(self.x_input_label)
-        # self.left_layout.addWidget(self.x_input_field)
-
-        # self.y_input_label = QLabel("Severity:")
-        # self.y_input_field = QLineEdit()
-        # self.y_input_field.setValidator(
-        #     QDoubleValidator(0.99, 99.99, 2)
-        # )  # This will only accept float values
-        # self.left_layout.addWidget(self.y_input_label)
-        # self.left_layout.addWidget(self.y_input_field)
-
-        # self.z_input_label = QLabel("Detection:")
-        # self.z_input_field = QLineEdit()
-        # self.z_input_field.setValidator(
-        #     QDoubleValidator(0.99, 99.99, 2)
-        # )  # This will only accept float values
-        # self.left_layout.addWidget(self.z_input_label)
-        # self.left_layout.addWidget(self.z_input_field)
-        # self.x_input_field.textChanged.connect(self.on_rpn_item_changed)
-        # self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
-        # self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
-
-        # Connect QLineEdit's textChanged signal to the on_rpn_item_changed
-
+        
         ### END OF MAIN TAB SETUP ###
 
     def _init_stats_tab(self):
@@ -667,6 +625,7 @@ class MainWindow(QMainWindow):
     def table_changed_main(self, item):
         if self.refreshing_table:
             return
+        self.save_to_df(item)
         self.populate_table(self.table_widget_stats, self.comp_fails)
         self.generate_main_chart()
 
@@ -853,80 +812,34 @@ class MainWindow(QMainWindow):
     """
 
     ### READS FROM CSV
-    def read_database(self):
-        self.database_table_widget.clear()
+    # def read_database(self):
+    #     self.database_table_widget.clear()
 
-        try:
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            file_path = os.path.join(script_dir, "database.csv")
-
-            with open(file_path, newline="") as csvfile:
-                reader = csv.reader(csvfile)
-                rows = list(reader)
-
-                # Set the row count and column count for the table widget
-                self.database_table_widget.setRowCount(len(rows))
-                self.database_table_widget.setColumnCount(len(rows[0]))
-
-                # Set the table headers
-                headers = rows[0]
-                self.database_table_widget.setHorizontalHeaderLabels(headers)
-
-                # Populate the table widget with data
-                for row_idx, row in enumerate(rows[1:]):
-                    for col_idx, item in enumerate(row):
-                        table_item = QTableWidgetItem(item)
-                        self.database_table_widget.setItem(row_idx, col_idx, table_item)
-        except FileNotFoundError:
-            error_message = "Error: Could not find the database.csv file."
-            QMessageBox.critical(self, "File Not Found", error_message)
-
-    """
-
-    Name: read_data_from_csv
-    Type: function
-    Description: Clears local database and repopulates it.
-
-    """
-
-    # DEPRECATED DO NOT USE
-    # def read_data_from_csv(self):
-    #     database_data.clear()
-    #     self.database_data = {}
-    #     script_dir = os.path.dirname(os.path.abspath(__file__))
-    #     file_path = os.path.join(script_dir, "database.csv")
-
-    #     # error checking for the existence of a database.csv file
     #     try:
+    #         script_dir = os.path.dirname(os.path.abspath(__file__))
+    #         file_path = os.path.join(script_dir, "database.csv")
+
     #         with open(file_path, newline="") as csvfile:
     #             reader = csv.reader(csvfile)
-    #             next(reader)  # skip the header row
-    #             for row in reader:
-    #                 # setting component name to be the element at position [X , ...]
-    #                 component_name = row[0]
-    #                 # creating the element in the database for a new component if not already present
-    #                 if component_name not in database_data:
-    #                     database_data[component_name] = []
-    #                 # filling the list for holding information for a component's failure modes
-    #                 database_data[component_name].append(
-    #                     {
-    #                         "id": int(row[1]),
-    #                         "failure_mode": row[2],
-    #                         "rpn": float(row[3]),
-    #                         "lower_bound": float(row[4]),
-    #                         "best_estimate": float(row[5]),
-    #                         "upper_bound": float(row[6]),
-    #                         "frequency": float(row[7]),
-    #                         "severity": float(row[8]),
-    #                         "detectability": float(row[9]),
-    #                         "mission_time": float(row[10]),
-    #                     }
-    #                 )
+    #             rows = list(reader)
+
+    #             # Set the row count and column count for the table widget
+    #             self.database_table_widget.setRowCount(len(rows))
+    #             self.database_table_widget.setColumnCount(len(rows[0]))
+
+    #             # Set the table headers
+    #             headers = rows[0]
+    #             self.database_table_widget.setHorizontalHeaderLabels(headers)
+
+    #             # Populate the table widget with data
+    #             for row_idx, row in enumerate(rows[1:]):
+    #                 for col_idx, item in enumerate(row):
+    #                     table_item = QTableWidgetItem(item)
+    #                     self.database_table_widget.setItem(row_idx, col_idx, table_item)
     #     except FileNotFoundError:
     #         error_message = "Error: Could not find the database.csv file."
     #         QMessageBox.critical(self, "File Not Found", error_message)
 
-    #     return database_data
 
     """
     Pulls default data from part_info.db and stores it in a pandas DataFrame.
@@ -1157,7 +1070,7 @@ class MainWindow(QMainWindow):
         self.conn.commit()
 
     # Saves individual values in the UI to self.comp_fails
-    def save_to_df(self, item) -> None:
+    def save_to_df(self, item: QTableWidgetItem) -> None:
         if self.refreshing_table:
             return
         if not hasattr(self, "comp_data"):
@@ -1167,11 +1080,27 @@ class MainWindow(QMainWindow):
         if i >= len(self.comp_data.index):
             return
         new_val = item.text()
+        
+        # Catch invalid entry fields
+        if(2 <= j <=4):
+            try:
+                int(new_val)
+                if(int(new_val)>10 or int(new_val)<1): 0/0
+            except:
+                new_val = 1
+                self.table_widget.setItem(i, j, QTableWidgetItem(str(new_val)))
+        elif(5 <= j <=8):
+            try:
+                float(new_val)
+            except:
+                new_val = 0.0
+                self.table_widget.setItem(i, j, QTableWidgetItem(str(new_val)))
+                
+            
         column = self.FAIL_MODE_COLUMNS[j]
-
         row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
 
-        self.comp_fails.loc[row, column] = self.FAIL_MODE_COLUMN_TYPES[j](new_val)
+        self.comp_fails.loc[row, column] = self.FAIL_MODE_COLUMN_TYPES[j](int(float(new_val)))
 
         # If the user is updating FSD
         if 2 <= j <= 4:
@@ -1184,7 +1113,6 @@ class MainWindow(QMainWindow):
             )
             self.comp_fails.loc[row, "rpn"] = new_rpn
             self.table_widget.setItem(i, 1, QTableWidgetItem(str(new_rpn)))
-            i, j = item.row(), item.column()
 
             rpn_item = self.table_widget.item(i, 1)
             if int(rpn_item.text()) > self.risk_threshold:
@@ -1206,7 +1134,7 @@ class MainWindow(QMainWindow):
                     upper_bound={row["upper_bound"]},
                     mission_time={row["mission_time"]}
                 WHERE
-                    comp_id={row["comp_id"]} AND fail_id={row["fail_id"]}
+                    cf_id={row["cf_id"]}
                 """
             )
 
