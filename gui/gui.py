@@ -1082,6 +1082,9 @@ class MainWindow(QMainWindow):
 
         # In case the user is editing a cell below the displayed information.
         if i >= len(self.comp_data.index):
+            self.refreshing_table = True
+            item.setText('')
+            self.refreshing_table = False
             return
         
         row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
