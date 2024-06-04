@@ -53,7 +53,7 @@ TODO: UI Bug fixes
     DONE: synced component select between tabs
     TODO: fix crash on invalid cell input
     TODO: auto refresh on statistics page
-    TODO: make pie chart work
+    DONE: make pie chart work
     DONE: Make "Refresh Table" reset to default values
     
 
@@ -69,7 +69,7 @@ DONE: re-implement dictionary database as pandas dataframe, populated from SQLit
 DONE: create charts.py to hold all charting functions
 
 """
-import os, sys, csv, sqlite3
+import os, sys, sqlite3
 sys.path.insert(0,os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
@@ -480,45 +480,7 @@ class MainWindow(QMainWindow):
 
         # Add the nav_button_layout to the left layout
         self.left_layout.addLayout(self.nav_button_layout)
-
-        # Create and add the save button
-
-        # self.save_button = QPushButton("Save RPN Values")
-        # self.save_button.clicked.connect(self.save_sql)
-        # self.left_layout.addWidget(self.save_button)
-
-        # Create and add the X, Y, and Z input fields and 3D plot
-        # self.input_and_plot_layout = QVBoxLayout()
-        # self.x_input_label = QLabel("Probability :")
-        # self.x_input_field = QLineEdit()
-        # self.x_input_field.setValidator(
-        #     QDoubleValidator(0.99, 99.99, 2)
-        # )  # This will only accept float values
-        # self.x_input_field.setToolTip("Humanoid Recommendation: 9 or 10 (Unacceptable)")
-        # self.left_layout.addWidget(self.x_input_label)
-        # self.left_layout.addWidget(self.x_input_field)
-
-        # self.y_input_label = QLabel("Severity:")
-        # self.y_input_field = QLineEdit()
-        # self.y_input_field.setValidator(
-        #     QDoubleValidator(0.99, 99.99, 2)
-        # )  # This will only accept float values
-        # self.left_layout.addWidget(self.y_input_label)
-        # self.left_layout.addWidget(self.y_input_field)
-
-        # self.z_input_label = QLabel("Detection:")
-        # self.z_input_field = QLineEdit()
-        # self.z_input_field.setValidator(
-        #     QDoubleValidator(0.99, 99.99, 2)
-        # )  # This will only accept float values
-        # self.left_layout.addWidget(self.z_input_label)
-        # self.left_layout.addWidget(self.z_input_field)
-        # self.x_input_field.textChanged.connect(self.on_rpn_item_changed)
-        # self.y_input_field.textChanged.connect(self.on_rpn_item_changed)
-        # self.z_input_field.textChanged.connect(self.on_rpn_item_changed)
-
-        # Connect QLineEdit's textChanged signal to the on_rpn_item_changed
-
+        
         ### END OF MAIN TAB SETUP ###
 
     def _init_stats_tab(self):
@@ -1110,7 +1072,7 @@ class MainWindow(QMainWindow):
         self.conn.commit()
 
     # Saves individual values in the UI to self.comp_fails
-    def save_to_df(self, item) -> None:
+    def save_to_df(self, item: QTableWidgetItem) -> None:
         if self.refreshing_table:
             return
         if not hasattr(self, "comp_data"):
@@ -1120,11 +1082,30 @@ class MainWindow(QMainWindow):
         if i >= len(self.comp_data.index):
             return
         new_val = item.text()
+        
+        
+        # Catch invalid entry fields
+        if(2 <= j <=4):
+            try:
+                int(new_val)
+                if(int(new_val)>10 or int(new_val)<1): 0/0
+            except:
+                new_val = 1
+                self.table_widget.setItem(i, j, QTableWidgetItem(str(new_val)))
+        elif(5 <= j <=8):
+            try:
+                float(new_val)
+            except:
+                new_val = 0.0
+                self.table_widget.setItem(i, j, QTableWidgetItem(str(new_val)))
+                
+            
+            
+        
         column = self.FAIL_MODE_COLUMNS[j]
-
         row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
 
-        self.comp_fails.loc[row, column] = self.FAIL_MODE_COLUMN_TYPES[j](new_val)
+        self.comp_fails.loc[row, column] = self.FAIL_MODE_COLUMN_TYPES[j](int(float(new_val)))
 
         # If the user is updating FSD
         if 2 <= j <= 4:
@@ -1137,7 +1118,6 @@ class MainWindow(QMainWindow):
             )
             self.comp_fails.loc[row, "rpn"] = new_rpn
             self.table_widget.setItem(i, 1, QTableWidgetItem(str(new_rpn)))
-            i, j = item.row(), item.column()
 
             rpn_item = self.table_widget.item(i, 1)
             if int(rpn_item.text()) > self.risk_threshold:
