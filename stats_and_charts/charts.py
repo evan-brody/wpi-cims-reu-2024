@@ -113,7 +113,7 @@ class Charts:
                     above_threshold += 1
 
         # Prepare the data for the pie chart
-        labels = ["Below Risk Threshold", "Above Risk Threshold"]
+        labels = ["Below Risk\nThreshold", "Above Risk\nThreshold"]
         rpn_values = [below_threshold, above_threshold]
 
         # Set the color of the slices based on the categories
@@ -122,7 +122,7 @@ class Charts:
         # Create a pie chart
         ax = self.main_window.main_figure.add_subplot(111)
         wedges, texts, autotexts = ax.pie(
-            rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=0.7
+            rpn_values, labels=labels, colors=colors, autopct="%1.1f%%", radius=1
         )
 
         # Directly label the numbers on the pie chart
@@ -136,10 +136,10 @@ class Charts:
             autotext.set_fontsize(10)  # Adjust the font size as needed
 
         for text in texts:
-            text.set_fontsize(10)
+            text.set_fontsize(8)
 
         component_name = self.main_window.component_name_field.currentText()
-        ax.set_title(component_name + " Risk Profile")
+        ax.set_title(component_name + " Pie Chart")
 
         # Refresh the canvas
         self.main_window.canvas.draw()
