@@ -181,10 +181,10 @@ class MainWindow(QMainWindow):
         self.central_widget.addTab(
             self.statistics_tab, "Statistics"
         )  # Add the tab to the QTabWidget
-        self.database_view_tab = QWidget()  # Create a new tab
-        self.central_widget.addTab(
-            self.database_view_tab, "Database View"
-        )  # Add the tab to the QTabWidget
+        # self.database_view_tab = QWidget()  # Create a new tab
+        # self.central_widget.addTab(
+        #     self.database_view_tab, "Database View"
+        # )  # Add the tab to the QTabWidget
 
         self._init_instructions_tab()
 
