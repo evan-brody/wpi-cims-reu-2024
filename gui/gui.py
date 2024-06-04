@@ -188,7 +188,7 @@ class MainWindow(QMainWindow):
 
         self._init_instructions_tab()
 
-        self._init_database_view_tab()
+        # self._init_database_view_tab()
 
         self._init_main_tab()
 
