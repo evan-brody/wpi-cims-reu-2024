@@ -724,22 +724,6 @@ class MainWindow(QMainWindow):
         fig1 = stats._rayleigh(self.values())
         fig2 = stats._rayleigh(self.values())
         fig3 = stats._rayleigh(self.values())
-        """
-        if (
-            self.component_name_field.currentText() == "Motor-Driven Pump"
-        ):  # Idealy, this would be modified to search through the list of component neames instead of the names being specificed here
-            # Get new figures from weibull()
-            fig1 = stats._rayleigh(np.array([20.8, 125.0, 4.17]))
-            print(fig1)
-            fig2 = stats._rayleigh(np.array([1.0, 30.0, 1000.0]))
-            fig3 = stats._rayleigh(np.array([4.17, 83.3, 417.0]))
-        if (
-            self.component_name_field.currentText() == "Motor-Operated Valves"
-        ):  # Same here
-            fig1 = stats._rayleigh(np.array([41.7, 125.0, 375.0]))
-            fig2 = stats._rayleigh(np.array([83.3, 4170.0, 4.17]))
-            fig3 = stats._rayleigh(np.array([2.5, 33.3, 250.0]))
-        """
 
         # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
@@ -778,22 +762,6 @@ class MainWindow(QMainWindow):
         fig2 = stats._weibull(self.values())
         fig3 = stats._weibull(self.values())
 
-        """
-        if (
-            self.component_name_field_stats.currentText() == "Motor-Driven Pump"
-        ):  # Fix to read through database
-            # Get new figures from weibull()
-            fig1 = stats._weibull(np.array([20.8, 125.0, 4.17]))
-            fig2 = stats._weibull(np.array([1.0, 30.0, 1000.0]))
-            fig3 = stats._weibull(np.array([4.17, 83.3, 417.0]))
-        if (
-            self.component_name_field_stats.currentText() == "Motor-Operated Valves"
-        ):  # Fix to read through database (likely with currently unused values() function in stats.py)
-            fig1 = stats._weibull(np.array([41.7, 125.0, 375.0]))
-            fig2 = stats._weibull(np.array([83.3, 4170.0, 4.17]))
-            fig3 = stats._weibull(np.array([2.5, 33.3, 250.0]))
-        """
-
         # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
@@ -809,42 +777,6 @@ class MainWindow(QMainWindow):
         self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
         self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
-    """
-
-    Name: read_database
-    Type: function
-    Description: Function that initially clears the table and then repopulates it.
-
-    """
-
-    ### READS FROM CSV
-    # def read_database(self):
-    #     self.database_table_widget.clear()
-
-    #     try:
-    #         script_dir = os.path.dirname(os.path.abspath(__file__))
-    #         file_path = os.path.join(script_dir, "database.csv")
-
-    #         with open(file_path, newline="") as csvfile:
-    #             reader = csv.reader(csvfile)
-    #             rows = list(reader)
-
-    #             # Set the row count and column count for the table widget
-    #             self.database_table_widget.setRowCount(len(rows))
-    #             self.database_table_widget.setColumnCount(len(rows[0]))
-
-    #             # Set the table headers
-    #             headers = rows[0]
-    #             self.database_table_widget.setHorizontalHeaderLabels(headers)
-
-    #             # Populate the table widget with data
-    #             for row_idx, row in enumerate(rows[1:]):
-    #                 for col_idx, item in enumerate(row):
-    #                     table_item = QTableWidgetItem(item)
-    #                     self.database_table_widget.setItem(row_idx, col_idx, table_item)
-    #     except FileNotFoundError:
-    #         error_message = "Error: Could not find the database.csv file."
-    #         QMessageBox.critical(self, "File Not Found", error_message)
 
     """
     Pulls default data from part_info.db and stores it in a pandas DataFrame.
@@ -979,95 +911,6 @@ class MainWindow(QMainWindow):
             return values4
         else:
             return np.array([1, 1, 1])
-
-    """
-    Retrieves frequency, severity, and detection values and calculates new RPN which is 
-    pushed to the table widget.
-    """
-
-    # Deprecated, callback for fsd boxes in main
-
-    # def on_rpn_item_changed(self):
-    #     # Get the Frequency, Severity, and Detection values
-    #     probability = (
-    #         float(self.x_input_field.text()) if self.x_input_field.text() else 0
-    #     )
-    #     severity = float(self.y_input_field.text()) if self.y_input_field.text() else 0
-    #     detection = float(self.z_input_field.text()) if self.z_input_field.text() else 0
-
-    #     # Calculate the RPN
-    #     rpn = probability * severity * detection
-
-    #     # error checking for RPN value
-    #     if (probability or severity or detection) < 1 or (
-    #         probability or severity or detection
-    #     ) > 10:
-    #         error_message = "Error: Please re-enter values between 1 and 10, inclusive."
-    #         QMessageBox.critical(self, "Value Error", error_message)
-    #         return
-
-    #     # Update the RPN value in the table/chart
-    #     rpn_item = self.table_widget.item(self.current_row, 1)
-    #     frequency_item = self.table_widget.item(self.current_row, 2)
-    #     severity_item = self.table_widget.item(self.current_row, 3)
-    #     detectability_item = self.table_widget.item(self.current_row, 4)
-
-    #     if rpn_item:
-    #         rpn_item.setText(str(rpn))
-    #         if rpn > self.risk_threshold:
-    #             rpn_item.setBackground(QColor(255, 102, 102))  # muted red
-    #         else:
-    #             rpn_item.setBackground(QColor(102, 255, 102))  # muted green
-
-    #     if frequency_item:
-    #         frequency_item.setText(str(probability))
-    #     if severity_item:
-    #         severity_item.setText(str(severity))
-    #     if detectability_item:
-    #         detectability_item.setText(str(detection))
-
-    """
-    Saves RPN, frequency, severity, and detectability values to the local database.
-    """
-
-    # DEPRECATED DO NOT USE
-    # def save_values(self):
-    #     component_name = self.component_name_field.currentText()
-    #     component_data = database_data.get(component_name, [])
-
-    #     for row in range(self.table_widget.rowCount()):
-    #         rpn_item = self.table_widget.item(row, 2)
-    #         frequency_item = self.table_widget.item(row, 3)
-    #         severity_item = self.table_widget.item(row, 4)
-    #         detectability_item = self.table_widget.item(row, 5)
-    #         mission_time = self.table_widget.item(row, 6)
-
-    #         if rpn_item:
-    #             component_data[row + self.selected_index]["rpn"] = (
-    #                 float(frequency_item.text())
-    #                 * float(mission_time.text())
-    #                 * float(severity_item.text())
-    #                 * float(detectability_item.text())
-    #             )
-    #         if frequency_item:
-    #             component_data[row + self.selected_index]["frequency"] = float(
-    #                 frequency_item.text()
-    #             )
-    #         if severity_item:
-    #             component_data[row + self.selected_index]["severity"] = float(
-    #                 severity_item.text()
-    #             )
-    #         if detectability_item:
-    #             component_data[row + self.selected_index]["detectability"] = float(
-    #                 detectability_item.text()
-    #             )
-    #         if mission_time:
-    #             component_data[row + self.selected_index]["mission_time"] = float(
-    #                 mission_time.text()
-    #             )
-
-    #     # Update the database with the modified component data
-    #     database_data[component_name] = component_data
 
     # Executes and commits an SQL query on this window's database connection
     def exec_SQL(self, query) -> None:
