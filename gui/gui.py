@@ -97,7 +97,9 @@ Description: MainWindow class that holds all of our functions for the GUI.
 class MainWindow(QMainWindow):
     DEFAULT_RISK_THRESHOLD = 1
     CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+    print(CURRENT_DIRECTORY)
     DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data")
+    print(DB_PATH)
     DB_NAME = "part_info.db"
     RECOMMENDATIONS = (
         "Recommended Detectability: 9-10 (Unacceptable)",
