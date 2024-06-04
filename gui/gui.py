@@ -1001,13 +1001,13 @@ class MainWindow(QMainWindow):
             return
 
         # In case the user is editing something other than FSD
-        if not (2 <= j <= 4):
-            error_message = "Error: cannot edit this cell."
-            QMessageBox.critical(self, "Invalid Access", error_message)
-
+        if not (2 <= j <= 8):
             self.refreshing_table = True
             item.setText(str(self.comp_data.iloc[i][column]))
             self.refreshing_table = False
+
+            error_message = "Error: cannot edit this cell."
+            QMessageBox.critical(self, "Invalid Access", error_message)
             return
 
         row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
@@ -1023,7 +1023,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Value Error", error_message)
             return
         
-        if not (1 <= new_val <= 10):
+        if (2 <= j <= 4) and not (1 <= new_val <= 10):
             item.setText(str(self.comp_data.iloc[i, j + 3]))
             self.refreshing_table = False
 
@@ -1033,21 +1033,22 @@ class MainWindow(QMainWindow):
         
         self.comp_fails.loc[row, column] = new_val
 
-        new_rpn = int(
-            (
-                self.comp_fails.loc[row, "frequency"]
-                * self.comp_fails.loc[row, "severity"]
-                * self.comp_fails.loc[row, "detection"]
-            ).iloc[0]
-        )
-        self.comp_fails.loc[row, "rpn"] = new_rpn
-        self.table_widget.setItem(i, 1, QTableWidgetItem(str(new_rpn)))
+        if (2 <= j <= 4):
+            new_rpn = int(
+                (
+                    self.comp_fails.loc[row, "frequency"]
+                    * self.comp_fails.loc[row, "severity"]
+                    * self.comp_fails.loc[row, "detection"]
+                ).iloc[0]
+            )
+            self.comp_fails.loc[row, "rpn"] = new_rpn
+            self.table_widget.setItem(i, 1, QTableWidgetItem(str(new_rpn)))
 
-        rpn_item = self.table_widget.item(i, 1)
-        if new_rpn > self.risk_threshold:
-            rpn_item.setBackground(QColor(255, 102, 102))  # muted red
-        else:
-            rpn_item.setBackground(QColor(102, 255, 102))  # muted green
+            rpn_item = self.table_widget.item(i, 1)
+            if new_rpn > self.risk_threshold:
+                rpn_item.setBackground(QColor(255, 102, 102))  # muted red
+            else:
+                rpn_item.setBackground(QColor(102, 255, 102))  # muted green
         self.refreshing_table = False
 
     # Saves local values to the database
