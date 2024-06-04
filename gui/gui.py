@@ -145,8 +145,6 @@ class MainWindow(QMainWindow):
     """
 
     def __init__(self):
-        super().__init__()
-
         # These need to match one-to-one
         assert len(self.FAIL_MODE_COLUMNS) == len(self.FAIL_MODE_COLUMN_TYPES)
 
@@ -185,14 +183,14 @@ class MainWindow(QMainWindow):
         self.central_widget.addTab(
             self.statistics_tab, "Statistics"
         )  # Add the tab to the QTabWidget
-        self.database_view_tab = QWidget()  # Create a new tab
-        self.central_widget.addTab(
-            self.database_view_tab, "Database View"
-        )  # Add the tab to the QTabWidget
+        # self.database_view_tab = QWidget()  # Create a new tab
+        # self.central_widget.addTab(
+        #     self.database_view_tab, "Database View"
+        # )  # Add the tab to the QTabWidget
 
         self._init_instructions_tab()
 
-        self._init_database_view_tab()
+        # self._init_database_view_tab()
 
         self._init_main_tab()
 
