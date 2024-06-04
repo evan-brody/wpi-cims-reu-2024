@@ -41,7 +41,7 @@ TODO: UI Bug fixes
     DONE: Auto-update RPN
     DONE: Save RPN values should save it to a file not just locally
     DONE: modifying FSD variables should auto save to local database instead of having button do it
-    TODO: invalid FSD variables should throw out of bounds warnings
+    DONE: invalid FSD variables are ignored
     DONE: all data modification should just be in the table, no need for textboxes
     DONE: FMEA and FMECA buttons exist but don't do anything 
     DONE: risk acceptance should autocolor when table is generated
@@ -51,7 +51,7 @@ TODO: UI Bug fixes
     DONE: automatically update database
     DONE: stats show table without selecting crashes
     DONE: synced component select between tabs
-    TODO: fix crash on invalid cell input
+    DONE: fix crash on invalid cell input
     TODO: auto refresh on statistics page
     DONE: make pie chart work
     DONE: Make "Refresh Table" reset to default values
@@ -540,6 +540,7 @@ class MainWindow(QMainWindow):
         self.table_widget_stats.verticalHeader().setDefaultSectionSize(32)
         self.table_widget_stats.verticalHeader().setMaximumSectionSize(32)
         self.table_widget_stats.verticalScrollBar().setMaximum(10 * 30)
+        self.table_widget_stats.cellClicked.connect(self.cell_clicked)
         left_layout_stats.addWidget(self.table_widget_stats)
 
         # Create a QHBoxLayout for the navigation buttons
@@ -582,11 +583,11 @@ class MainWindow(QMainWindow):
         # Matplotlib canvases with tab widget (hardcoded for one component)
         self.stats_tab = QTabWidget()
         self.stats_tab_canvas1 = FigureCanvas(Figure())
-        self.stats_tab_canvas2 = FigureCanvas(Figure())
-        self.stats_tab_canvas3 = FigureCanvas(Figure())
+        # self.stats_tab_canvas2 = FigureCanvas(Figure())
+        # self.stats_tab_canvas3 = FigureCanvas(Figure())
         self.stats_tab.addTab(self.stats_tab_canvas1, "Failure Mode 1")
-        self.stats_tab.addTab(self.stats_tab_canvas2, "Failure Mode 2")
-        self.stats_tab.addTab(self.stats_tab_canvas3, "Failure Mode 3")
+        # self.stats_tab.addTab(self.stats_tab_canvas2, "Failure Mode 2")
+        # self.stats_tab.addTab(self.stats_tab_canvas3, "Failure Mode 3")
         right_layout_stats.addWidget(self.stats_tab)
 
         # Create and add the generate chart button
@@ -674,29 +675,29 @@ class MainWindow(QMainWindow):
         t2 = 10
 
         self.stats_tab_canvas1.figure.clear()
-        self.stats_tab_canvas2.figure.clear()
-        self.stats_tab_canvas3.figure.clear()
+        # self.stats_tab_canvas2.figure.clear()
+        # self.stats_tab_canvas3.figure.clear()
 
         self.stats_tab.clear()
 
         fig1 = stats._bathtub(N, T, t1, t2)
-        fig2 = stats._bathtub(N, T, t1, t2)
-        fig3 = stats._bathtub(N, T, t1, t2)
+        # fig2 = stats._bathtub(N, T, t1, t2)
+        # fig3 = stats._bathtub(N, T, t1, t2)
 
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
         self.stats_tab_canvas1.draw()
-        self.stats_tab_canvas2.figure = fig2
-        self.stats_tab_canvas2.figure.tight_layout()
-        self.stats_tab_canvas2.draw()
-        self.stats_tab_canvas3.figure = fig3
-        self.stats_tab_canvas3.figure.tight_layout()
-        self.stats_tab_canvas3.draw()
+        # self.stats_tab_canvas2.figure = fig2
+        # self.stats_tab_canvas2.figure.tight_layout()
+        # self.stats_tab_canvas2.draw()
+        # self.stats_tab_canvas3.figure = fig3
+        # self.stats_tab_canvas3.figure.tight_layout()
+        # self.stats_tab_canvas3.draw()
 
         # Add tabs after generating the graphs
         self.stats_tab.addTab(self.stats_tab_canvas1, "Plot 1")
-        self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
-        self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
+        # self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
+        # self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
     """
     
@@ -709,15 +710,15 @@ class MainWindow(QMainWindow):
     def update_rayleigh_canvas(self):
         # Clear the existing figures before displaying new ones
         self.stats_tab_canvas1.figure.clear()
-        self.stats_tab_canvas2.figure.clear()
-        self.stats_tab_canvas3.figure.clear()
+        # self.stats_tab_canvas2.figure.clear()
+        # self.stats_tab_canvas3.figure.clear()
 
         # Clear the existing tabs
         self.stats_tab.clear()
 
         fig1 = stats._rayleigh(self.values())
-        fig2 = stats._rayleigh(self.values())
-        fig3 = stats._rayleigh(self.values())
+        # fig2 = stats._rayleigh(self.values())
+        # fig3 = stats._rayleigh(self.values())
         """
         if (
             self.component_name_field.currentText() == "Motor-Driven Pump"
@@ -739,17 +740,17 @@ class MainWindow(QMainWindow):
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
         self.stats_tab_canvas1.draw()
-        self.stats_tab_canvas2.figure = fig2
-        self.stats_tab_canvas2.figure.tight_layout()
-        self.stats_tab_canvas2.draw()
-        self.stats_tab_canvas3.figure = fig3
-        self.stats_tab_canvas3.figure.tight_layout()
-        self.stats_tab_canvas3.draw()
+        # self.stats_tab_canvas2.figure = fig2
+        # self.stats_tab_canvas2.figure.tight_layout()
+        # self.stats_tab_canvas2.draw()
+        # self.stats_tab_canvas3.figure = fig3
+        # self.stats_tab_canvas3.figure.tight_layout()
+        # self.stats_tab_canvas3.draw()
 
         # Add tabs after generating the graphs
         self.stats_tab.addTab(self.stats_tab_canvas1, "Plot 1")
-        self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
-        self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
+        # self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
+        # self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
     """
     
@@ -762,15 +763,15 @@ class MainWindow(QMainWindow):
     def update_weibull_canvas(self):
         # Clear the existing figures before displaying new ones
         self.stats_tab_canvas1.figure.clear()
-        self.stats_tab_canvas2.figure.clear()
-        self.stats_tab_canvas3.figure.clear()
+        # self.stats_tab_canvas2.figure.clear()
+        # self.stats_tab_canvas3.figure.clear()
 
-        # Clear the existing tabs
+        # Clear the existing tabs;
         self.stats_tab.clear()
 
         fig1 = stats._weibull(self.values())
-        fig2 = stats._weibull(self.values())
-        fig3 = stats._weibull(self.values())
+        # fig2 = stats._weibull(self.values())
+        # fig3 = stats._weibull(self.values())
 
         """
         if (
@@ -792,16 +793,16 @@ class MainWindow(QMainWindow):
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
         self.stats_tab_canvas1.draw()
-        self.stats_tab_canvas2.figure = fig2
-        self.stats_tab_canvas2.figure.tight_layout()
-        self.stats_tab_canvas2.draw()
-        self.stats_tab_canvas3.figure = fig3
-        self.stats_tab_canvas3.figure.tight_layout()
-        self.stats_tab_canvas3.draw()
+        # self.stats_tab_canvas2.figure = fig2
+        # self.stats_tab_canvas2.figure.tight_layout()
+        # self.stats_tab_canvas2.draw()
+        # self.stats_tab_canvas3.figure = fig3
+        # self.stats_tab_canvas3.figure.tight_layout()
+        # self.stats_tab_canvas3.draw()
 
         self.stats_tab.addTab(self.stats_tab_canvas1, "Plot 1")
-        self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
-        self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
+        # self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
+        # self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
     """
 
@@ -952,117 +953,31 @@ class MainWindow(QMainWindow):
         self.current_column = column
 
     """
-    TODO: get lower bound, geometric mean, and upper bound from dataset, for the component passed in
+    DONE: get lower bound, geometric mean, and upper bound from dataset, for the component passed in
     """
 
     def values(self):
-        # print(self.comp_data)
-        component_name = self.component_name_field.currentText()
+        return np.array([self.comp_data.at[self.current_row,'lower_bound'],
+                         self.comp_data.at[self.current_row,'best_estimate'],
+                         self.comp_data.at[self.current_row,'upper_bound']])
+        #return np.array([self.comp_data.loc['lower_bound']])
+        # component_name = self.component_name_field.currentText()
 
-        values1 = np.array(
-            [20.8, 125.0, 4.17]
-        )  # lower bound, geometric mean, and upper bound
-        values2 = np.array([1.0, 30.0, 1000.0])
-        values3 = np.array([4.17, 83.3, 417.0])
-        values4 = np.array([41.7, 125.0, 375.0])
-        values5 = np.array([83.3, 4170.0, 4.17])
-        values6 = np.array([2.5, 33.3, 250.0])
+        # values1 = np.array(
+        #     [20.8, 125.0, 4.17]
+        # )  # lower bound, geometric mean, and upper bound
+        # values2 = np.array([1.0, 30.0, 1000.0])
+        # values3 = np.array([4.17, 83.3, 417.0])
+        # values4 = np.array([41.7, 125.0, 375.0])
+        # values5 = np.array([83.3, 4170.0, 4.17])
+        # values6 = np.array([2.5, 33.3, 250.0])
 
-        if component_name == "Motor-Driven Pump":
-            return values1
-        elif component_name == "Motor-Operated Valves":
-            return values4
-        else:
-            return np.array([1, 1, 1])
-
-    """
-    Retrieves frequency, severity, and detection values and calculates new RPN which is 
-    pushed to the table widget.
-    """
-
-    # Deprecated, callback for fsd boxes in main
-
-    # def on_rpn_item_changed(self):
-    #     # Get the Frequency, Severity, and Detection values
-    #     probability = (
-    #         float(self.x_input_field.text()) if self.x_input_field.text() else 0
-    #     )
-    #     severity = float(self.y_input_field.text()) if self.y_input_field.text() else 0
-    #     detection = float(self.z_input_field.text()) if self.z_input_field.text() else 0
-
-    #     # Calculate the RPN
-    #     rpn = probability * severity * detection
-
-    #     # error checking for RPN value
-    #     if (probability or severity or detection) < 1 or (
-    #         probability or severity or detection
-    #     ) > 10:
-    #         error_message = "Error: Please re-enter values between 1 and 10, inclusive."
-    #         QMessageBox.critical(self, "Value Error", error_message)
-    #         return
-
-    #     # Update the RPN value in the table/chart
-    #     rpn_item = self.table_widget.item(self.current_row, 1)
-    #     frequency_item = self.table_widget.item(self.current_row, 2)
-    #     severity_item = self.table_widget.item(self.current_row, 3)
-    #     detectability_item = self.table_widget.item(self.current_row, 4)
-
-    #     if rpn_item:
-    #         rpn_item.setText(str(rpn))
-    #         if rpn > self.risk_threshold:
-    #             rpn_item.setBackground(QColor(255, 102, 102))  # muted red
-    #         else:
-    #             rpn_item.setBackground(QColor(102, 255, 102))  # muted green
-
-    #     if frequency_item:
-    #         frequency_item.setText(str(probability))
-    #     if severity_item:
-    #         severity_item.setText(str(severity))
-    #     if detectability_item:
-    #         detectability_item.setText(str(detection))
-
-    """
-    Saves RPN, frequency, severity, and detectability values to the local database.
-    """
-
-    # DEPRECATED DO NOT USE
-    # def save_values(self):
-    #     component_name = self.component_name_field.currentText()
-    #     component_data = database_data.get(component_name, [])
-
-    #     for row in range(self.table_widget.rowCount()):
-    #         rpn_item = self.table_widget.item(row, 2)
-    #         frequency_item = self.table_widget.item(row, 3)
-    #         severity_item = self.table_widget.item(row, 4)
-    #         detectability_item = self.table_widget.item(row, 5)
-    #         mission_time = self.table_widget.item(row, 6)
-
-    #         if rpn_item:
-    #             component_data[row + self.selected_index]["rpn"] = (
-    #                 float(frequency_item.text())
-    #                 * float(mission_time.text())
-    #                 * float(severity_item.text())
-    #                 * float(detectability_item.text())
-    #             )
-    #         if frequency_item:
-    #             component_data[row + self.selected_index]["frequency"] = float(
-    #                 frequency_item.text()
-    #             )
-    #         if severity_item:
-    #             component_data[row + self.selected_index]["severity"] = float(
-    #                 severity_item.text()
-    #             )
-    #         if detectability_item:
-    #             component_data[row + self.selected_index]["detectability"] = float(
-    #                 detectability_item.text()
-    #             )
-    #         if mission_time:
-    #             component_data[row + self.selected_index]["mission_time"] = float(
-    #                 mission_time.text()
-    #             )
-
-    #     # Update the database with the modified component data
-    #     database_data[component_name] = component_data
+        # if component_name == "Motor-Driven Pump":
+        #     return values1
+        # elif component_name == "Motor-Operated Valves":
+        #     return values4
+        # else:
+        #     return np.array([1, 1, 1])
 
     # Executes and commits an SQL query on this window's database connection
     def exec_SQL(self, query) -> None:
