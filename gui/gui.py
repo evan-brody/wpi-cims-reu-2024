@@ -441,11 +441,11 @@ class MainWindow(QMainWindow):
         # self.right_layout.addWidget(self.generate_chart_button)
 
         # Create and add the download chart button
-        self.download_chart_button = QPushButton("Download Chart")
-        self.download_chart_button.clicked.connect(
-            lambda: self.download_chart(self.main_figure)
-        )
-        self.right_layout.addWidget(self.download_chart_button)
+        # self.download_chart_button = QPushButton("Download Chart")
+        # self.download_chart_button.clicked.connect(
+        #     lambda: self.download_chart(self.main_figure)
+        # )
+        # self.right_layout.addWidget(self.download_chart_button)
 
         # Add a stretch to the right layout
         self.right_layout.addStretch()
