@@ -1000,7 +1000,7 @@ class MainWindow(QMainWindow):
             self.refreshing_table = False
             return
 
-        # In case the user is editing something other than FSD
+        # In case the user is editing description or RPN
         if not (2 <= j <= 8):
             self.refreshing_table = True
             item.setText(str(self.comp_data.iloc[i][column]))
