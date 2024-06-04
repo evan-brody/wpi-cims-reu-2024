@@ -97,7 +97,6 @@ Description: MainWindow class that holds all of our functions for the GUI.
 
 """
 
-
 class MainWindow(QMainWindow):
     DEFAULT_RISK_THRESHOLD = 1
     CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
@@ -172,10 +171,10 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
 
         # Creating the tabs
-        self.user_instructions_tab = QWidget()  # Create a new tab
-        self.central_widget.addTab(
-            self.user_instructions_tab, "User Instructions"
-        )  # Add the tab to the QTabWidget
+        # self.user_instructions_tab = QWidget()  # Create a new tab
+        # self.central_widget.addTab(
+        #     self.user_instructions_tab, "User Instructions"
+        # )  # Add the tab to the QTabWidget
         self.main_tool_tab = QWidget()  # Create a new tab
         self.central_widget.addTab(
             self.main_tool_tab, "Main Tool"
@@ -189,7 +188,7 @@ class MainWindow(QMainWindow):
         #     self.database_view_tab, "Database View"
         # )  # Add the tab to the QTabWidget
 
-        self._init_instructions_tab()
+        # self._init_instructions_tab()
 
         # self._init_database_view_tab()
 
@@ -226,87 +225,87 @@ class MainWindow(QMainWindow):
             case _:
                 event.ignore()
 
-    def _init_instructions_tab(self):
-        ### START OF USER INSTRUCTIONS TAB SETUP ###
+    # def _init_instructions_tab(self):
+    #     ### START OF USER INSTRUCTIONS TAB SETUP ###
 
-        # Create a QVBoxLayout instance
-        layout = QVBoxLayout()
+    #     # Create a QVBoxLayout instance
+    #     layout = QVBoxLayout()
 
-        # Create a QLabel instance and set the text
-        instructions1 = QLabel("Welcome to the Component FMEA Risk Mitigation Tool!")
-        instructions1.setAlignment(Qt.AlignCenter)  # Center the text
-        instructions1.setStyleSheet(
-            "QLabel {font-size: 30px;}"
-        )  # Set the text color to black and increase the font size
+    #     # Create a QLabel instance and set the text
+    #     instructions1 = QLabel("Welcome to the Component FMEA Risk Mitigation Tool!")
+    #     instructions1.setAlignment(Qt.AlignCenter)  # Center the text
+    #     instructions1.setStyleSheet(
+    #         "QLabel {font-size: 30px;}"
+    #     )  # Set the text color to black and increase the font size
 
-        # Create QLabel instances for the logos
-        logo1 = QLabel()
-        logo2 = QLabel()
+    #     # Create QLabel instances for the logos
+    #     logo1 = QLabel()
+    #     logo2 = QLabel()
 
-        # Create QPixmap instances with the logo images
-        pixmap1 = QPixmap("images/Collins_Aerospace_Logo.png").scaled(
-            100, 100, Qt.KeepAspectRatio
-        )
-        pixmap2 = QPixmap("images/WPI_Inst_Prim_FulClr.png").scaled(
-            100, 100, Qt.KeepAspectRatio
-        )
+    #     # Create QPixmap instances with the logo images
+    #     pixmap1 = QPixmap("images/Collins_Aerospace_Logo.png").scaled(
+    #         100, 100, Qt.KeepAspectRatio
+    #     )
+    #     pixmap2 = QPixmap("images/WPI_Inst_Prim_FulClr.png").scaled(
+    #         100, 100, Qt.KeepAspectRatio
+    #     )
 
-        # Set the QPixmap to the QLabel
-        logo1.setPixmap(pixmap1)
-        logo2.setPixmap(pixmap2)
+    #     # Set the QPixmap to the QLabel
+    #     logo1.setPixmap(pixmap1)
+    #     logo2.setPixmap(pixmap2)
 
-        self.instructions2 = QWidget
-        self.instructions2 = QTextEdit()
-        self.instructions2.setText(
-            """
-        Please choose whether you want to complete an FMEA or FMECA analysis by clicking one of the buttons on the right!
+    #     self.instructions2 = QWidget
+    #     self.instructions2 = QTextEdit()
+    #     self.instructions2.setText(
+    #         """
+    #     Please choose whether you want to complete an FMEA or FMECA analysis by clicking one of the buttons on the right!
         
-        Here is some information regarding use:
-        1. The “Main Tool” Tab allows the user to input a component name and a risk acceptance threshold and subsequently generate a table with that component’s failure modes and associated attributes in the database. These attributes include RPN, Frequency, Severity, Detection, and Lower Bound, Best Estimate, and Upper Bound (Failures Per Million Hours), all of which may-or-may-not have previously established values and are user-editable.
-            - By filling in and saving the RPN values, the user is able to generate a bar and pie chart of those failure modes at any given time. The charts dynamically update with the table and can be regenerated via their respective buttons.
-            - By filling in and saving the Frequency, Severity, and Detection values, the user is able to generate a 3D risk profile (a cuboid) and a 3D scatterplot of those failure modes at any given time. The color of these 3D plots ranges from green, yellow, and red to respectively reflect low, medium, and high-risk classifications extrapolated from a risk matrix.
-            - The Lower Bound, Best Estimate, and Upper Bound values, given in Failures Per Million Hours (FPMH), are provided to guide the user to make an informed decision about an acceptable frequency value for its component. Furthermore, by hovering the mouse of the “Frequency” input text box, the user can receive a suggested frequency value based on the built-in “Humanoid in the Loop” mechanic.
+    #     Here is some information regarding use:
+    #     1. The “Main Tool” Tab allows the user to input a component name and a risk acceptance threshold and subsequently generate a table with that component’s failure modes and associated attributes in the database. These attributes include RPN, Frequency, Severity, Detection, and Lower Bound, Best Estimate, and Upper Bound (Failures Per Million Hours), all of which may-or-may-not have previously established values and are user-editable.
+    #         - By filling in and saving the RPN values, the user is able to generate a bar and pie chart of those failure modes at any given time. The charts dynamically update with the table and can be regenerated via their respective buttons.
+    #         - By filling in and saving the Frequency, Severity, and Detection values, the user is able to generate a 3D risk profile (a cuboid) and a 3D scatterplot of those failure modes at any given time. The color of these 3D plots ranges from green, yellow, and red to respectively reflect low, medium, and high-risk classifications extrapolated from a risk matrix.
+    #         - The Lower Bound, Best Estimate, and Upper Bound values, given in Failures Per Million Hours (FPMH), are provided to guide the user to make an informed decision about an acceptable frequency value for its component. Furthermore, by hovering the mouse of the “Frequency” input text box, the user can receive a suggested frequency value based on the built-in “Humanoid in the Loop” mechanic.
     
-        2. The “Database” tab allows the user to browse the entire database of components and their values for RPN, Frequency, Severity, Detection, Lower Bound, Best Estimate, and Upper Bound. Unestablished RPN values are automatically set to 1, while every other unestablished value is automatically set to 0. While component attribute values are editable, the user must always input a known component name from the database.
+    #     2. The “Database” tab allows the user to browse the entire database of components and their values for RPN, Frequency, Severity, Detection, Lower Bound, Best Estimate, and Upper Bound. Unestablished RPN values are automatically set to 1, while every other unestablished value is automatically set to 0. While component attribute values are editable, the user must always input a known component name from the database.
 
-        3. The “Statistics tab allows the user to generate a neural network, regression, etc. [WORK IN PROGRESS]
+    #     3. The “Statistics tab allows the user to generate a neural network, regression, etc. [WORK IN PROGRESS]
         
-        """
-        )
+    #     """
+    #     )
 
-        font = QFont()
-        font.setPointSize(16)  # Set this to the desired size
-        self.instructions2.setFont(font)
+    #     font = QFont()
+    #     font.setPointSize(16)  # Set this to the desired size
+    #     self.instructions2.setFont(font)
 
-        # Set textEdit as ReadOnly
-        self.instructions2.setReadOnly(True)
+    #     # Set textEdit as ReadOnly
+    #     self.instructions2.setReadOnly(True)
 
-        # Create a QHBoxLayout for the header
-        header_layout = QHBoxLayout()
+    #     # Create a QHBoxLayout for the header
+    #     header_layout = QHBoxLayout()
 
-        # Add the buttons to the header layout
-        header_layout.addWidget(logo1)
-        header_layout.addStretch(2)  # Add flexible space
-        header_layout.addWidget(instructions1)
-        header_layout.addStretch(2)  # Add flexible space
-        header_layout.addWidget(logo2)
+    #     # Add the buttons to the header layout
+    #     header_layout.addWidget(logo1)
+    #     header_layout.addStretch(2)  # Add flexible space
+    #     header_layout.addWidget(instructions1)
+    #     header_layout.addStretch(2)  # Add flexible space
+    #     header_layout.addWidget(logo2)
 
-        # adding fmea/fmeca buttons to layout
-        # fmea_button = QPushButton("FMEA")
-        # fmeca_button = QPushButton("FMECA")
-        # logos_buttons_layout = QVBoxLayout()
-        # logos_buttons_layout.addWidget(fmea_button)
-        # logos_buttons_layout.addWidget(fmeca_button)
+    #     # adding fmea/fmeca buttons to layout
+    #     # fmea_button = QPushButton("FMEA")
+    #     # fmeca_button = QPushButton("FMECA")
+    #     # logos_buttons_layout = QVBoxLayout()
+    #     # logos_buttons_layout.addWidget(fmea_button)
+    #     # logos_buttons_layout.addWidget(fmeca_button)
 
-        # Add the header layout and the instructions2 widget to the main layout
-        # header_layout.addLayout(logos_buttons_layout)
-        layout.addLayout(header_layout)
-        layout.addWidget(self.instructions2)
+    #     # Add the header layout and the instructions2 widget to the main layout
+    #     # header_layout.addLayout(logos_buttons_layout)
+    #     layout.addLayout(header_layout)
+    #     layout.addWidget(self.instructions2)
 
-        # Set the layout on the User Instructions tab
-        self.user_instructions_tab.setLayout(layout)
+    #     # Set the layout on the User Instructions tab
+    #     # self.user_instructions_tab.setLayout(layout)
 
-        ### END OF USER INSTRUCTIONS TAB SETUP ###
+    #     ### END OF USER INSTRUCTIONS TAB SETUP ###
 
     def _init_database_view_tab(self):
         ### START OF DATABASE VIEW TAB SETUP ###
