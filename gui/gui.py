@@ -397,9 +397,7 @@ class MainWindow(QMainWindow):
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
-        self.table_widget.itemChanged.connect(
-            lambda item: (self.save_to_df(item), self.table_changed_main(item))
-        )
+        self.table_widget.itemChanged.connect(self.table_changed_main)
 
         self.table_widget.cellClicked.connect(self.cell_clicked)
         self.left_layout.addWidget(self.table_widget)
@@ -627,6 +625,7 @@ class MainWindow(QMainWindow):
     def table_changed_main(self, item):
         if self.refreshing_table:
             return
+        self.save_to_df(item)
         self.populate_table(self.table_widget_stats, self.comp_fails)
         self.generate_main_chart()
 
@@ -1082,7 +1081,6 @@ class MainWindow(QMainWindow):
             return
         new_val = item.text()
         
-        
         # Catch invalid entry fields
         if(2 <= j <=4):
             try:
@@ -1099,8 +1097,6 @@ class MainWindow(QMainWindow):
                 self.table_widget.setItem(i, j, QTableWidgetItem(str(new_val)))
                 
             
-            
-        
         column = self.FAIL_MODE_COLUMNS[j]
         row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
 

@@ -2,10 +2,8 @@ import matplotlib as mpl
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import seaborn as sns
-from PyQt5.QtWidgets import QMessageBox
 
 
 class Charts:
