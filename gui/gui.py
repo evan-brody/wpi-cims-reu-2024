@@ -435,10 +435,10 @@ class MainWindow(QMainWindow):
         self.toolbar = NavigationToolbar(self.canvas, self)
         self.right_layout.addWidget(self.toolbar)
 
-        # Create and add the generate chart button
-        self.generate_chart_button = QPushButton("Refresh Chart")
-        self.generate_chart_button.clicked.connect(self.generate_main_chart)
-        self.right_layout.addWidget(self.generate_chart_button)
+        # Create and add the Refresh Chart button
+        # self.generate_chart_button = QPushButton("Refresh Chart")
+        # self.generate_chart_button.clicked.connect(self.generate_main_chart)
+        # self.right_layout.addWidget(self.generate_chart_button)
 
         # Create and add the download chart button
         self.download_chart_button = QPushButton("Download Chart")
