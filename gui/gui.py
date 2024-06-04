@@ -639,21 +639,22 @@ class MainWindow(QMainWindow):
     """
 
     def generate_main_chart(self):
-        try:
-            match (self.chart_name_field_main_tool.currentText()):
-                case "Bar Chart":
-                    self.charts.bar_chart()
-                case "Pie Chart":
-                    self.charts.pie_chart()
-                case "3D Risk Plot":
-                    self.charts.plot_3D([self.current_row, self.current_column])
-                case "Scatterplot":
-                    self.charts.scatterplot()
-                case "Bubbleplot":
-                    self.charts.bubble_plot()
-        except:
+        if "Select a Component" == self.component_name_field.currentText():
             self.chart_name_field_main_tool.setCurrentText("Select a Chart")
             QMessageBox.warning(self, "Error", "Please select a component first.")
+            return
+
+        match (self.chart_name_field_main_tool.currentText()):
+            case "Bar Chart":
+                self.charts.bar_chart()
+            case "Pie Chart":
+                self.charts.pie_chart()
+            case "3D Risk Plot":
+                self.charts.plot_3D([self.current_row, self.current_column])
+            case "Scatterplot":
+                self.charts.scatterplot()
+            case "Bubbleplot":
+                self.charts.bubble_plot()
 
     def generate_stats_chart(self):
         match (self.chart_name_field_stats.currentText()):
