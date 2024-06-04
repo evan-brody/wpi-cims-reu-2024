@@ -1093,6 +1093,13 @@ class MainWindow(QMainWindow):
 
         self.refreshing_table = True
         # Catch invalid entry fields
+        if j < 2:
+            item.setText(str(self.comp_data.iloc[i][column]))
+            self.refreshing_table = False
+
+            QMessageBox.warning(self, "Error", "Cannot edit these fields.")
+            return
+        
         try:
             new_val = self.FAIL_MODE_COLUMN_TYPES[j](new_val)
             if not (1 <= new_val <= 10):
