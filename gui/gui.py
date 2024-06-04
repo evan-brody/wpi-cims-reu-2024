@@ -51,7 +51,8 @@ TODO: UI Bug fixes
     DONE: automatically update database
     DONE: stats show table without selecting crashes
     DONE: synced component select between tabs
-    TODO: fix crash on invalid cell input
+    DONE: fix crash on invalid cell input
+    DONE: fix crash on chart generation without component selected
     TODO: auto refresh on statistics page
     DONE: make pie chart work
     DONE: Make "Refresh Table" reset to default values
@@ -434,16 +435,16 @@ class MainWindow(QMainWindow):
         self.right_layout.addWidget(self.toolbar)
 
         # Create and add the generate chart button
-        self.generate_chart_button = QPushButton("Generate Chart")
-        self.generate_chart_button.clicked.connect(self.generate_main_chart)
-        self.right_layout.addWidget(self.generate_chart_button)
+        # self.generate_chart_button = QPushButton("Generate Chart")
+        # self.generate_chart_button.clicked.connect(self.generate_main_chart)
+        # self.right_layout.addWidget(self.generate_chart_button)
 
         # Create and add the download chart button
-        self.download_chart_button = QPushButton("Download Chart")
-        self.download_chart_button.clicked.connect(
-            lambda: self.download_chart(self.main_figure)
-        )
-        self.right_layout.addWidget(self.download_chart_button)
+        # self.download_chart_button = QPushButton("Download Chart")
+        # self.download_chart_button.clicked.connect(
+        #     lambda: self.download_chart(self.main_figure)
+        # )
+        # self.right_layout.addWidget(self.download_chart_button)
 
         # Add a stretch to the right layout
         self.right_layout.addStretch()
@@ -636,7 +637,15 @@ class MainWindow(QMainWindow):
     """
 
     def generate_main_chart(self):
-        match (self.chart_name_field_main_tool.currentText()):
+        current_chart = self.component_name_field.currentText()
+        if "Select a Component" == current_chart:
+            self.chart_name_field_main_tool.setCurrentText("Select a Chart")
+
+            error_message = "Error: select a component first."
+            QMessageBox.critical(self, "No Component Selected", error_message)
+            return
+    
+        match current_chart:
             case "Bar Chart":
                 self.charts.bar_chart()
             case "Pie Chart":
