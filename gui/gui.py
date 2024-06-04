@@ -894,7 +894,7 @@ class MainWindow(QMainWindow):
             # error checking for risk value threshold
             if not (1 <= risk_threshold <= 1000):
                 error_message = "Error: Please re-enter a risk threshold value between 1 and 1000, inclusive."
-                QMessageBox.critical(self, "Value Error", error_message)
+                QMessageBox.warning(self, "Value Error", error_message)
         except:
             risk_threshold = self.DEFAULT_RISK_THRESHOLD
         self.risk_threshold = risk_threshold
@@ -1076,40 +1076,37 @@ class MainWindow(QMainWindow):
 
     # Saves individual values in the UI to self.comp_fails
     def save_to_df(self, item: QTableWidgetItem) -> None:
-        if self.refreshing_table:
-            return
-        if not hasattr(self, "comp_data"):
+        if self.refreshing_table or not hasattr(self, "comp_data"):
             return
         i, j = item.row(), item.column()
+
         # In case the user is editing a cell below the displayed information.
         if i >= len(self.comp_data.index):
             return
+        
+        row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
+        column = self.FAIL_MODE_COLUMNS[j]
         new_val = item.text()
 
+        self.refreshing_table = True
         # Catch invalid entry fields
-        if 2 <= j <= 4:
-            try:
-                int(new_val)
-                if int(new_val) > 10 or int(new_val) < 1:
-                    0 / 0
-            except:
-                new_val = 1
-                self.table_widget.setItem(i, j, QTableWidgetItem(str(new_val)))
-        elif 5 <= j <= 8:
-            try:
-                float(new_val)
-            except:
-                new_val = 0.0
-                self.table_widget.setItem(i, j, QTableWidgetItem(str(new_val)))
+        try:
+            new_val = self.FAIL_MODE_COLUMN_TYPES[j](new_val)
+            if not (1 <= new_val <= 10):
+                item.setText(str(self.comp_data.iloc[i, j + 3]))
+                self.refreshing_table = False
 
-        column = self.FAIL_MODE_COLUMNS[j]
-        row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
+                QMessageBox.warning(self, "Error", "Input must be an integer from 1 to 10, inclusive.")
+                return
+            self.comp_fails.loc[row, column] = new_val
+        except ValueError:
+            item.setText(str(self.comp_data.iloc[i, j + 3]))
+            self.refreshing_table = False
 
-        self.comp_fails.loc[row, column] = self.FAIL_MODE_COLUMN_TYPES[j](
-            int(float(new_val))
-        )
+            QMessageBox.warning(self, "Error", "Invalid input for cell type.")
+            return
 
-        # If the user is updating FSD
+        # If the user is updating FSD, update RPN
         if 2 <= j <= 4:
             new_rpn = int(
                 (
@@ -1126,6 +1123,7 @@ class MainWindow(QMainWindow):
                 rpn_item.setBackground(QColor(255, 102, 102))  # muted red
             else:
                 rpn_item.setBackground(QColor(102, 255, 102))  # muted green
+        self.refreshing_table = False
 
     # Saves local values to the database
     def save_sql(self) -> None:
