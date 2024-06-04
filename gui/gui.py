@@ -143,8 +143,6 @@ class MainWindow(QMainWindow):
     """
 
     def __init__(self):
-        super().__init__()
-
         # These need to match one-to-one
         assert len(self.FAIL_MODE_COLUMNS) == len(self.FAIL_MODE_COLUMN_TYPES)
 
