@@ -13,10 +13,10 @@ File(s):
     1a) Runs GUI implemented in Python w/ PyQt5 framework
 2) statistics.py
     2a) Statistical modeling and analysis w/ framework described in paper
-3) database.csv
-    3a) Holds data for the GUI
-4) humanoid.csv
-    4a) Holds data for the "Expert Humanoid in the Loop"
+3) charts.py
+    3a) Contains charts that can be generated 
+4) part_info.db
+    4a) Holds data for the GUI
 
 NSF REU Project under grant DMS-2244306 in Industrial Mathematics & Statistics sponsored by Collins Aerospace and
 Worcester Polytechnic Institute.
@@ -69,18 +69,20 @@ DONE: re-implement dictionary database as pandas dataframe, populated from SQLit
 DONE: create charts.py to hold all charting functions
 
 """
+import os, sys, csv, sqlite3
+sys.path.insert(0,os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import os, sys, csv, sqlite3, stats
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from stats_and_charts import stats
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-from charts import Charts
+from stats_and_charts.charts import Charts
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 database_data = {}
@@ -97,9 +99,7 @@ Description: MainWindow class that holds all of our functions for the GUI.
 class MainWindow(QMainWindow):
     DEFAULT_RISK_THRESHOLD = 1
     CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-    print(CURRENT_DIRECTORY)
-    DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data")
-    print(DB_PATH)
+    DB_PATH = os.path.join(os.path.dirname(__file__), os.pardir, "data")
     DB_NAME = "part_info.db"
     RECOMMENDATIONS = (
         "Recommended Detectability: 9-10 (Unacceptable)",
@@ -151,9 +151,6 @@ class MainWindow(QMainWindow):
 
         # Initializes DataFrames.
         self.read_sql()
-
-        # function call to read in the database.csv file before running the rest of the gui
-        # self.read_data_from_csv()
 
         self.current_row = 0
         self.current_column = 0
@@ -319,14 +316,14 @@ class MainWindow(QMainWindow):
 
         # Create and add the read database button
         self.read_database_button = QPushButton("Refresh Database")
-        self.read_database_button.clicked.connect(self.read_database)
+        #self.read_database_button.clicked.connect(self.read_database)
         self.database_view_layout.addWidget(self.read_database_button)
 
         # Create and add the table widget for database view
         self.database_table_widget = QTableWidget()
         self.database_view_layout.addWidget(self.database_table_widget)
 
-        self.read_database()
+        #self.read_database()
         ### END OF DATABASE VIEW TAB SETUP ###
 
     def _init_main_tab(self):
@@ -855,80 +852,34 @@ class MainWindow(QMainWindow):
     """
 
     ### READS FROM CSV
-    def read_database(self):
-        self.database_table_widget.clear()
+    # def read_database(self):
+    #     self.database_table_widget.clear()
 
-        try:
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            file_path = os.path.join(script_dir, "database.csv")
-
-            with open(file_path, newline="") as csvfile:
-                reader = csv.reader(csvfile)
-                rows = list(reader)
-
-                # Set the row count and column count for the table widget
-                self.database_table_widget.setRowCount(len(rows))
-                self.database_table_widget.setColumnCount(len(rows[0]))
-
-                # Set the table headers
-                headers = rows[0]
-                self.database_table_widget.setHorizontalHeaderLabels(headers)
-
-                # Populate the table widget with data
-                for row_idx, row in enumerate(rows[1:]):
-                    for col_idx, item in enumerate(row):
-                        table_item = QTableWidgetItem(item)
-                        self.database_table_widget.setItem(row_idx, col_idx, table_item)
-        except FileNotFoundError:
-            error_message = "Error: Could not find the database.csv file."
-            QMessageBox.critical(self, "File Not Found", error_message)
-
-    """
-
-    Name: read_data_from_csv
-    Type: function
-    Description: Clears local database and repopulates it.
-
-    """
-
-    # DEPRECATED DO NOT USE
-    # def read_data_from_csv(self):
-    #     database_data.clear()
-    #     self.database_data = {}
-    #     script_dir = os.path.dirname(os.path.abspath(__file__))
-    #     file_path = os.path.join(script_dir, "database.csv")
-
-    #     # error checking for the existence of a database.csv file
     #     try:
+    #         script_dir = os.path.dirname(os.path.abspath(__file__))
+    #         file_path = os.path.join(script_dir, "database.csv")
+
     #         with open(file_path, newline="") as csvfile:
     #             reader = csv.reader(csvfile)
-    #             next(reader)  # skip the header row
-    #             for row in reader:
-    #                 # setting component name to be the element at position [X , ...]
-    #                 component_name = row[0]
-    #                 # creating the element in the database for a new component if not already present
-    #                 if component_name not in database_data:
-    #                     database_data[component_name] = []
-    #                 # filling the list for holding information for a component's failure modes
-    #                 database_data[component_name].append(
-    #                     {
-    #                         "id": int(row[1]),
-    #                         "failure_mode": row[2],
-    #                         "rpn": float(row[3]),
-    #                         "lower_bound": float(row[4]),
-    #                         "best_estimate": float(row[5]),
-    #                         "upper_bound": float(row[6]),
-    #                         "frequency": float(row[7]),
-    #                         "severity": float(row[8]),
-    #                         "detectability": float(row[9]),
-    #                         "mission_time": float(row[10]),
-    #                     }
-    #                 )
+    #             rows = list(reader)
+
+    #             # Set the row count and column count for the table widget
+    #             self.database_table_widget.setRowCount(len(rows))
+    #             self.database_table_widget.setColumnCount(len(rows[0]))
+
+    #             # Set the table headers
+    #             headers = rows[0]
+    #             self.database_table_widget.setHorizontalHeaderLabels(headers)
+
+    #             # Populate the table widget with data
+    #             for row_idx, row in enumerate(rows[1:]):
+    #                 for col_idx, item in enumerate(row):
+    #                     table_item = QTableWidgetItem(item)
+    #                     self.database_table_widget.setItem(row_idx, col_idx, table_item)
     #     except FileNotFoundError:
     #         error_message = "Error: Could not find the database.csv file."
     #         QMessageBox.critical(self, "File Not Found", error_message)
 
-    #     return database_data
 
     """
     Pulls default data from part_info.db and stores it in a pandas DataFrame.
