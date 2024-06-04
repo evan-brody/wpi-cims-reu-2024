@@ -1110,39 +1110,60 @@ class MainWindow(QMainWindow):
 
     # Saves individual values in the UI to self.comp_fails
     def save_to_df(self, item) -> None:
-        if self.refreshing_table:
+        if self.refreshing_table or not hasattr(self, "comp_data"):
             return
-        if not hasattr(self, "comp_data"):
-            return
+
         i, j = item.row(), item.column()
-        # In case the user is editing a cell below the displayed information.
-        if i >= len(self.comp_data.index):
-            return
-        new_val = item.text()
         column = self.FAIL_MODE_COLUMNS[j]
+        new_val = item.text()
+
+        # In case the user is editing a cell below the displayed information
+        if i >= len(self.comp_data.index):
+            self.refreshing_table = True
+            item.setText('')
+            self.refreshing_table = False
+            return
+
+        # In case the user is editing something other than FSD
+        if not (2 <= j <= 4):
+            error_message = "Error: cannot edit this cell."
+            QMessageBox.critical(self, "Invalid Access", error_message)
+
+            self.refreshing_table = True
+            item.setText(str(self.comp_data.iloc[i][column]))
+            self.refreshing_table = False
+            return
 
         row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
+        self.refreshing_table = True
 
-        self.comp_fails.loc[row, column] = self.FAIL_MODE_COLUMN_TYPES[j](new_val)
+        try:
+            self.comp_fails.loc[row, column] = self.FAIL_MODE_COLUMN_TYPES[j](new_val)
+        except ValueError:
+            self.refreshing_table = True
+            item.setText(str(self.comp_data.iloc[i, j + 3]))
+            self.refreshing_table = False
 
-        # If the user is updating FSD
-        if 2 <= j <= 4:
-            new_rpn = int(
-                (
-                    self.comp_fails.loc[row, "frequency"]
-                    * self.comp_fails.loc[row, "severity"]
-                    * self.comp_fails.loc[row, "detection"]
-                ).iloc[0]
-            )
-            self.comp_fails.loc[row, "rpn"] = new_rpn
-            self.table_widget.setItem(i, 1, QTableWidgetItem(str(new_rpn)))
-            i, j = item.row(), item.column()
+            error_message = "Error: invalid input for given cell."
+            QMessageBox.critical(self, "Value Error", error_message)
+            return
 
-            rpn_item = self.table_widget.item(i, 1)
-            if int(rpn_item.text()) > self.risk_threshold:
-                rpn_item.setBackground(QColor(255, 102, 102))  # muted red
-            else:
-                rpn_item.setBackground(QColor(102, 255, 102))  # muted green
+        new_rpn = int(
+            (
+                self.comp_fails.loc[row, "frequency"]
+                * self.comp_fails.loc[row, "severity"]
+                * self.comp_fails.loc[row, "detection"]
+            ).iloc[0]
+        )
+        self.comp_fails.loc[row, "rpn"] = new_rpn
+        self.table_widget.setItem(i, 1, QTableWidgetItem(str(new_rpn)))
+
+        rpn_item = self.table_widget.item(i, 1)
+        if new_rpn > self.risk_threshold:
+            rpn_item.setBackground(QColor(255, 102, 102))  # muted red
+        else:
+            rpn_item.setBackground(QColor(102, 255, 102))  # muted green
+        self.refreshing_table = False
 
     # Saves local values to the database
     def save_sql(self) -> None:
