@@ -63,9 +63,8 @@ DONE: generate_chart() if block to switch case
 TODO: values() design fix, also figure out what it does ???
 DONE: fix csv formatting. there shouldn't be spaces after commas
 DONE: convert .csv to sqlite .db file
-DONE: normalize database (in 4NF now i think?)
+DONE: normalize database (4NF+)
 DONE: re-implement dictionary database as pandas dataframe, populated from SQLite database
-
 DONE: create charts.py to hold all charting functions
 
 """
@@ -1139,7 +1138,7 @@ class MainWindow(QMainWindow):
                     upper_bound={row["upper_bound"]},
                     mission_time={row["mission_time"]}
                 WHERE
-                    comp_id={row["comp_id"]} AND fail_id={row["fail_id"]}
+                    cf_id={row["cf_id"]}
                 """
             )
 
