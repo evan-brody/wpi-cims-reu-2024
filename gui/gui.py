@@ -69,8 +69,10 @@ DONE: re-implement dictionary database as pandas dataframe, populated from SQLit
 DONE: create charts.py to hold all charting functions
 
 """
+
 import os, sys, sqlite3
-sys.path.insert(0,os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
 import numpy as np
@@ -314,14 +316,14 @@ class MainWindow(QMainWindow):
 
         # Create and add the read database button
         self.read_database_button = QPushButton("Refresh Database")
-        #self.read_database_button.clicked.connect(self.read_database)
+        # self.read_database_button.clicked.connect(self.read_database)
         self.database_view_layout.addWidget(self.read_database_button)
 
         # Create and add the table widget for database view
         self.database_table_widget = QTableWidget()
         self.database_view_layout.addWidget(self.database_table_widget)
 
-        #self.read_database()
+        # self.read_database()
         ### END OF DATABASE VIEW TAB SETUP ###
 
     def _init_main_tab(self):
@@ -476,7 +478,7 @@ class MainWindow(QMainWindow):
 
         # Add the nav_button_layout to the left layout
         self.left_layout.addLayout(self.nav_button_layout)
-        
+
         ### END OF MAIN TAB SETUP ###
 
     def _init_stats_tab(self):
@@ -637,25 +639,20 @@ class MainWindow(QMainWindow):
     """
 
     def generate_main_chart(self):
-        current_chart = self.component_name_field.currentText()
-        if "Select a Component" == current_chart:
-            self.chart_name_field_main_tool.setCurrentText("Select a Chart")
-
-            error_message = "Error: select a component first."
-            QMessageBox.critical(self, "No Component Selected", error_message)
-            return
-    
-        match current_chart:
-            case "Bar Chart":
-                self.charts.bar_chart()
-            case "Pie Chart":
-                self.charts.pie_chart()
-            case "3D Risk Plot":
-                self.charts.plot_3D([self.current_row, self.current_column])
-            case "Scatterplot":
-                self.charts.scatterplot()
-            case "Bubbleplot":
-                self.charts.bubble_plot()
+        try:
+            match (self.chart_name_field_main_tool.currentText()):
+                case "Bar Chart":
+                    self.charts.bar_chart()
+                case "Pie Chart":
+                    self.charts.pie_chart()
+                case "3D Risk Plot":
+                    self.charts.plot_3D([self.current_row, self.current_column])
+                case "Scatterplot":
+                    self.charts.scatterplot()
+                case "Bubbleplot":
+                    self.charts.bubble_plot()
+        except:
+            QMessageBox.warning(self, "Error", "Please select a component first.")
 
     def generate_stats_chart(self):
         match (self.chart_name_field_stats.currentText()):
@@ -846,7 +843,6 @@ class MainWindow(QMainWindow):
     #     except FileNotFoundError:
     #         error_message = "Error: Could not find the database.csv file."
     #         QMessageBox.critical(self, "File Not Found", error_message)
-
 
     """
     Pulls default data from part_info.db and stores it in a pandas DataFrame.
@@ -1087,27 +1083,29 @@ class MainWindow(QMainWindow):
         if i >= len(self.comp_data.index):
             return
         new_val = item.text()
-        
+
         # Catch invalid entry fields
-        if(2 <= j <=4):
+        if 2 <= j <= 4:
             try:
                 int(new_val)
-                if(int(new_val)>10 or int(new_val)<1): 0/0
+                if int(new_val) > 10 or int(new_val) < 1:
+                    0 / 0
             except:
                 new_val = 1
                 self.table_widget.setItem(i, j, QTableWidgetItem(str(new_val)))
-        elif(5 <= j <=8):
+        elif 5 <= j <= 8:
             try:
                 float(new_val)
             except:
                 new_val = 0.0
                 self.table_widget.setItem(i, j, QTableWidgetItem(str(new_val)))
-                
-            
+
         column = self.FAIL_MODE_COLUMNS[j]
         row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
 
-        self.comp_fails.loc[row, column] = self.FAIL_MODE_COLUMN_TYPES[j](int(float(new_val)))
+        self.comp_fails.loc[row, column] = self.FAIL_MODE_COLUMN_TYPES[j](
+            int(float(new_val))
+        )
 
         # If the user is updating FSD
         if 2 <= j <= 4:
