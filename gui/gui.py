@@ -436,7 +436,7 @@ class MainWindow(QMainWindow):
         self.right_layout.addWidget(self.toolbar)
 
         # Create and add the generate chart button
-        self.generate_chart_button = QPushButton("Generate Chart")
+        self.generate_chart_button = QPushButton("Refresh Chart")
         self.generate_chart_button.clicked.connect(self.generate_main_chart)
         self.right_layout.addWidget(self.generate_chart_button)
 
