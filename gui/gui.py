@@ -84,7 +84,7 @@ from PyQt5.QtCore import *
 from stats_and_charts.charts import Charts
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
-database_data = {}
+# database_data = {}
 
 """
 
@@ -183,10 +183,10 @@ class MainWindow(QMainWindow):
         self.central_widget.addTab(
             self.statistics_tab, "Statistics"
         )  # Add the tab to the QTabWidget
-        self.database_view_tab = QWidget()  # Create a new tab
-        self.central_widget.addTab(
-            self.database_view_tab, "Database View"
-        )  # Add the tab to the QTabWidget
+        # self.database_view_tab = QWidget()  # Create a new tab
+        # self.central_widget.addTab(
+        #     self.database_view_tab, "Database View"
+        # )  # Add the tab to the QTabWidget
 
         self._init_instructions_tab()
 
@@ -1094,40 +1094,42 @@ class MainWindow(QMainWindow):
     """
 
     def show_next(self):
-        component_name = self.component_name_field.currentText()
-        component_data = database_data.get(component_name, [])
-        total_pages = len(component_data) // self.max_ids
-        if len(component_data) % self.max_ids != 0:
-            total_pages += 1
+        pass
+        # component_name = self.component_name_field.currentText()
+        # component_data = database_data.get(component_name, [])
+        # total_pages = len(component_data) // self.max_ids
+        # if len(component_data) % self.max_ids != 0:
+        #     total_pages += 1
 
-        if self.selected_index + self.max_ids < len(component_data):
-            self.selected_index += self.max_ids
-        elif (
-            self.selected_index + self.max_ids >= len(component_data)
-            and self.selected_index // self.max_ids < total_pages - 1
-        ):
-            self.selected_index = (total_pages - 1) * self.max_ids
-        self.populate_table(self.table_widget, self.comp_fails)
+        # if self.selected_index + self.max_ids < len(component_data):
+        #     self.selected_index += self.max_ids
+        # elif (
+        #     self.selected_index + self.max_ids >= len(component_data)
+        #     and self.selected_index // self.max_ids < total_pages - 1
+        # ):
+        #     self.selected_index = (total_pages - 1) * self.max_ids
+        # self.populate_table(self.table_widget, self.comp_fails)
 
     """
     Refreshes statistics table to the next page.
     """
 
     def show_next_stats(self):
-        component_name = self.component_name_field_stats.currentText()
-        component_data = database_data.get(component_name, [])
-        total_pages = len(component_data) // self.max_ids_stats
-        if len(component_data) % self.max_ids_stats != 0:
-            total_pages += 1
+        pass
+        # component_name = self.component_name_field_stats.currentText()
+        # component_data = database_data.get(component_name, [])
+        # total_pages = len(component_data) // self.max_ids_stats
+        # if len(component_data) % self.max_ids_stats != 0:
+        #     total_pages += 1
 
-        if self.selected_index_stats + self.max_ids_stats < len(component_data):
-            self.selected_index_stats += self.max_ids_stats
-        elif (
-            self.selected_index_stats + self.max_ids_stats >= len(component_data)
-            and self.selected_index_stats // self.max_ids_stats < total_pages - 1
-        ):
-            self.selected_index_stats = (total_pages - 1) * self.max_ids_stats
-        self.populate_table(self.table_widget_stats, self.comp_fails)
+        # if self.selected_index_stats + self.max_ids_stats < len(component_data):
+        #     self.selected_index_stats += self.max_ids_stats
+        # elif (
+        #     self.selected_index_stats + self.max_ids_stats >= len(component_data)
+        #     and self.selected_index_stats // self.max_ids_stats < total_pages - 1
+        # ):
+        #     self.selected_index_stats = (total_pages - 1) * self.max_ids_stats
+        # self.populate_table(self.table_widget_stats, self.comp_fails)
 
     """
     Gives user the option to download displayed figure.
