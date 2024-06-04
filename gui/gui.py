@@ -41,7 +41,7 @@ TODO: UI Bug fixes
     DONE: Auto-update RPN
     DONE: Save RPN values should save it to a file not just locally
     DONE: modifying FSD variables should auto save to local database instead of having button do it
-    TODO: invalid FSD variables should throw out of bounds warnings
+    DONE: invalid FSD variables should throw out of bounds warnings
     DONE: all data modification should just be in the table, no need for textboxes
     DONE: FMEA and FMECA buttons exist but don't do anything 
     DONE: risk acceptance should autocolor when table is generated
@@ -1096,18 +1096,27 @@ class MainWindow(QMainWindow):
             return
 
         row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
-        self.refreshing_table = True
 
+        self.refreshing_table = True
         try:
-            self.comp_fails.loc[row, column] = self.FAIL_MODE_COLUMN_TYPES[j](new_val)
+            new_val = self.FAIL_MODE_COLUMN_TYPES[j](new_val)
         except ValueError:
-            self.refreshing_table = True
             item.setText(str(self.comp_data.iloc[i, j + 3]))
             self.refreshing_table = False
 
             error_message = "Error: invalid input for given cell."
             QMessageBox.critical(self, "Value Error", error_message)
             return
+        
+        if not (1 <= new_val <= 10):
+            item.setText(str(self.comp_data.iloc[i, j + 3]))
+            self.refreshing_table = False
+
+            error_message = "Error: value outside of [1-10] range."
+            QMessageBox.critical(self, "Value Error", error_message)
+            return
+        
+        self.comp_fails.loc[row, column] = new_val
 
         new_rpn = int(
             (
