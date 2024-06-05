@@ -197,11 +197,11 @@ class MainWindow(QMainWindow):
         self._init_stats_tab()
 
         self.counter = 0
-        self.questions = [
+        self.questions = (
             "Does this system have redundancy, i.e. multiple units of the same component/subsystem in the case one fails?",
             "Does this system have diversity, i.e. multiple components/subsystems that are responsible for the same function?",
             "Does this system have safety features, e.g. sensors, user-warnings, fail-safes?",
-        ]
+        )
         self.qindex = 0
         self.charts = Charts(self)
 
