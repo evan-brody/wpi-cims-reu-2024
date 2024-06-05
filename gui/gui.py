@@ -384,16 +384,22 @@ class MainWindow(QMainWindow):
         self.table_widget = QTableWidget()
         self.table_widget.setColumnCount(len(self.HORIZONTAL_HEADER_LABELS))
         self.table_widget.setHorizontalHeaderLabels(self.HORIZONTAL_HEADER_LABELS)
-        self.table_widget.setColumnWidth(0, 150)  # ID
-        self.table_widget.setColumnWidth(1, 150)  # Failure Mode
-        self.table_widget.setColumnWidth(3, 150)  # RPN
-        self.table_widget.setColumnWidth(4, 150)  # Frequency
-        self.table_widget.setColumnWidth(5, 150)  # Severity
-        self.table_widget.setColumnWidth(6, 150)  # Detectability
-        self.table_widget.setColumnWidth(7, 150)  # Mission Time
-        self.table_widget.setColumnWidth(8, 150)  # Lower Bound
-        self.table_widget.setColumnWidth(9, 150)  # Best Estimate
-        self.table_widget.setColumnWidth(10, 150)  # Upper Bound
+        header = self.table_widget.horizontalHeader()
+        for i in range(len(self.HORIZONTAL_HEADER_LABELS)):
+            item = header.model().headerData(i, Qt.Horizontal)
+            headerItem = QTableWidgetItem(str(item))
+            headerItem.setTextAlignment(Qt.AlignLeft)
+            self.table_widget.setHorizontalHeaderItem(i, headerItem)
+        self.table_widget.setColumnWidth(0, 250)  # Failure Mode
+        self.table_widget.setColumnWidth(1, 80)  # RPN
+        self.table_widget.setColumnWidth(2, 80)  # Frequency
+        self.table_widget.setColumnWidth(3, 80)  # Severity
+        self.table_widget.setColumnWidth(4, 80)  # Detectability
+        self.table_widget.setColumnWidth(5, 110)  # Lower Bound
+        self.table_widget.setColumnWidth(6, 110)  # Best Estimate
+        self.table_widget.setColumnWidth(7, 110)  # Upper Bound
+        self.table_widget.setColumnWidth(8, 110)  # Mission Time
+        # self.table_widget.setColumnWidth(10, 150)  # Mission Time
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
@@ -776,7 +782,6 @@ class MainWindow(QMainWindow):
         self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
         self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
-
     """
     Pulls default data from part_info.db and stores it in a pandas DataFrame.
     """
@@ -925,10 +930,10 @@ class MainWindow(QMainWindow):
         # In case the user is editing a cell below the displayed information.
         if i >= len(self.comp_data.index):
             self.refreshing_table = True
-            item.setText('')
+            item.setText("")
             self.refreshing_table = False
             return
-        
+
         row = self.comp_fails["cf_id"] == self.comp_data.iloc[i]["cf_id"]
         column = self.FAIL_MODE_COLUMNS[j]
         new_val = item.text()
@@ -941,14 +946,16 @@ class MainWindow(QMainWindow):
 
             QMessageBox.warning(self, "Error", "Cannot edit these fields.")
             return
-        
+
         try:
             new_val = self.FAIL_MODE_COLUMN_TYPES[j](new_val)
             if not (1 <= new_val <= 10):
                 item.setText(str(self.comp_data.iloc[i, j + 3]))
                 self.refreshing_table = False
 
-                QMessageBox.warning(self, "Error", "Input must be an integer from 1 to 10, inclusive.")
+                QMessageBox.warning(
+                    self, "Error", "Input must be an integer from 1 to 10, inclusive."
+                )
                 return
             self.comp_fails.loc[row, column] = new_val
         except ValueError:
@@ -1105,6 +1112,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
+    # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
