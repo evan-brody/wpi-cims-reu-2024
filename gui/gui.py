@@ -188,14 +188,13 @@ class MainWindow(QMainWindow):
         #     self.database_view_tab, "Database View"
         # )  # Add the tab to the QTabWidget
 
-        self.dep_tab = QWidget()
-        self.central_widget.addTab(
-            self.dep_tab, "Dependencies"
-        )
+        # self._init_instructions_tab()
 
-        self.init_main_tab()
+        # self._init_database_view_tab()
 
-        self.init_stats_tab()
+        self._init_main_tab()
+
+        self._init_stats_tab()
 
         self.counter = 0
         self.questions = (
@@ -326,7 +325,7 @@ class MainWindow(QMainWindow):
     #     # self.read_database()
     #     ### END OF DATABASE VIEW TAB SETUP ###
 
-    def init_main_tab(self):
+    def _init_main_tab(self):
         ### START OF MAIN TAB SETUP ###
 
         # Create the main layout for the Main Tool tab
@@ -487,7 +486,7 @@ class MainWindow(QMainWindow):
 
         ### END OF MAIN TAB SETUP ###
 
-    def init_stats_tab(self):
+    def _init_stats_tab(self):
         ### START OF STATISTICS TAB SETUP ###
 
         # Create main layout
