@@ -34,14 +34,14 @@ TODO: UI Bug fixes
     DONE: generating weibull distribution in stats tab crashes
     DONE: generating rayleigh distribution in stats tab crashes
     DONE: generate plot in stats distribution crashes app unless you modify something first
-    TODO: Source Plot1,2,3 from database instead of hardcoded
+    DONE: Source Plot1,2,3 from database instead of hardcoded
     TODO: Variable plot sizes in stats tab
     DONE: Download chart button downloads blank jpeg
     DONE: Read database pulls from csv not local storage/current modified database
     DONE: Auto-update RPN
     DONE: Save RPN values should save it to a file not just locally
     DONE: modifying FSD variables should auto save to local database instead of having button do it
-    TODO: invalid FSD variables should throw out of bounds warnings
+    DONE: invalid FSD variables should throw out of bounds warnings
     DONE: all data modification should just be in the table, no need for textboxes
     DONE: FMEA and FMECA buttons exist but don't do anything 
     DONE: risk acceptance should autocolor when table is generated
