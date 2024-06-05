@@ -307,23 +307,23 @@ class MainWindow(QMainWindow):
 
     #     ### END OF USER INSTRUCTIONS TAB SETUP ###
 
-    def _init_database_view_tab(self):
-        ### START OF DATABASE VIEW TAB SETUP ###
+    # def _init_database_view_tab(self):
+    #     ### START OF DATABASE VIEW TAB SETUP ###
 
-        # Create the database view layout
-        self.database_view_layout = QVBoxLayout(self.database_view_tab)
+    #     # Create the database view layout
+    #     self.database_view_layout = QVBoxLayout(self.database_view_tab)
 
-        # Create and add the read database button
-        self.read_database_button = QPushButton("Refresh Database")
-        # self.read_database_button.clicked.connect(self.read_database)
-        self.database_view_layout.addWidget(self.read_database_button)
+    #     # Create and add the read database button
+    #     self.read_database_button = QPushButton("Refresh Database")
+    #     # self.read_database_button.clicked.connect(self.read_database)
+    #     self.database_view_layout.addWidget(self.read_database_button)
 
-        # Create and add the table widget for database view
-        self.database_table_widget = QTableWidget()
-        self.database_view_layout.addWidget(self.database_table_widget)
+    #     # Create and add the table widget for database view
+    #     self.database_table_widget = QTableWidget()
+    #     self.database_view_layout.addWidget(self.database_table_widget)
 
-        # self.read_database()
-        ### END OF DATABASE VIEW TAB SETUP ###
+    #     # self.read_database()
+    #     ### END OF DATABASE VIEW TAB SETUP ###
 
     def _init_main_tab(self):
         ### START OF MAIN TAB SETUP ###
