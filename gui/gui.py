@@ -546,6 +546,7 @@ class MainWindow(QMainWindow):
         self.table_widget_stats.verticalHeader().setDefaultSectionSize(32)
         self.table_widget_stats.verticalHeader().setMaximumSectionSize(32)
         self.table_widget_stats.verticalScrollBar().setMaximum(10 * 30)
+        self.table_widget_stats.cellClicked.connect(self.cell_clicked)
         left_layout_stats.addWidget(self.table_widget_stats)
 
         # Create a QHBoxLayout for the navigation buttons
@@ -588,11 +589,11 @@ class MainWindow(QMainWindow):
         # Matplotlib canvases with tab widget (hardcoded for one component)
         self.stats_tab = QTabWidget()
         self.stats_tab_canvas1 = FigureCanvas(Figure())
-        self.stats_tab_canvas2 = FigureCanvas(Figure())
-        self.stats_tab_canvas3 = FigureCanvas(Figure())
+        # self.stats_tab_canvas2 = FigureCanvas(Figure())
+        # self.stats_tab_canvas3 = FigureCanvas(Figure())
         self.stats_tab.addTab(self.stats_tab_canvas1, "Failure Mode 1")
-        self.stats_tab.addTab(self.stats_tab_canvas2, "Failure Mode 2")
-        self.stats_tab.addTab(self.stats_tab_canvas3, "Failure Mode 3")
+        # self.stats_tab.addTab(self.stats_tab_canvas2, "Failure Mode 2")
+        # self.stats_tab.addTab(self.stats_tab_canvas3, "Failure Mode 3")
         right_layout_stats.addWidget(self.stats_tab)
 
         # Create and add the generate chart button
@@ -685,29 +686,29 @@ class MainWindow(QMainWindow):
         t2 = 10
 
         self.stats_tab_canvas1.figure.clear()
-        self.stats_tab_canvas2.figure.clear()
-        self.stats_tab_canvas3.figure.clear()
+        # self.stats_tab_canvas2.figure.clear()
+        # self.stats_tab_canvas3.figure.clear()
 
         self.stats_tab.clear()
 
         fig1 = stats._bathtub(N, T, t1, t2)
-        fig2 = stats._bathtub(N, T, t1, t2)
-        fig3 = stats._bathtub(N, T, t1, t2)
+        # fig2 = stats._bathtub(N, T, t1, t2)
+        # fig3 = stats._bathtub(N, T, t1, t2)
 
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
         self.stats_tab_canvas1.draw()
-        self.stats_tab_canvas2.figure = fig2
-        self.stats_tab_canvas2.figure.tight_layout()
-        self.stats_tab_canvas2.draw()
-        self.stats_tab_canvas3.figure = fig3
-        self.stats_tab_canvas3.figure.tight_layout()
-        self.stats_tab_canvas3.draw()
+        # self.stats_tab_canvas2.figure = fig2
+        # self.stats_tab_canvas2.figure.tight_layout()
+        # self.stats_tab_canvas2.draw()
+        # self.stats_tab_canvas3.figure = fig3
+        # self.stats_tab_canvas3.figure.tight_layout()
+        # self.stats_tab_canvas3.draw()
 
         # Add tabs after generating the graphs
         self.stats_tab.addTab(self.stats_tab_canvas1, "Plot 1")
-        self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
-        self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
+        # self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
+        # self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
     """
     
@@ -720,31 +721,31 @@ class MainWindow(QMainWindow):
     def update_rayleigh_canvas(self):
         # Clear the existing figures before displaying new ones
         self.stats_tab_canvas1.figure.clear()
-        self.stats_tab_canvas2.figure.clear()
-        self.stats_tab_canvas3.figure.clear()
+        # self.stats_tab_canvas2.figure.clear()
+        # self.stats_tab_canvas3.figure.clear()
 
         # Clear the existing tabs
         self.stats_tab.clear()
 
         fig1 = stats._rayleigh(self.values())
-        fig2 = stats._rayleigh(self.values())
-        fig3 = stats._rayleigh(self.values())
+        # fig2 = stats._rayleigh(self.values())
+        # fig3 = stats._rayleigh(self.values())
 
         # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
         self.stats_tab_canvas1.draw()
-        self.stats_tab_canvas2.figure = fig2
-        self.stats_tab_canvas2.figure.tight_layout()
-        self.stats_tab_canvas2.draw()
-        self.stats_tab_canvas3.figure = fig3
-        self.stats_tab_canvas3.figure.tight_layout()
-        self.stats_tab_canvas3.draw()
+        # self.stats_tab_canvas2.figure = fig2
+        # self.stats_tab_canvas2.figure.tight_layout()
+        # self.stats_tab_canvas2.draw()
+        # self.stats_tab_canvas3.figure = fig3
+        # self.stats_tab_canvas3.figure.tight_layout()
+        # self.stats_tab_canvas3.draw()
 
         # Add tabs after generating the graphs
         self.stats_tab.addTab(self.stats_tab_canvas1, "Plot 1")
-        self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
-        self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
+        # self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
+        # self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
     """
     
@@ -757,30 +758,30 @@ class MainWindow(QMainWindow):
     def update_weibull_canvas(self):
         # Clear the existing figures before displaying new ones
         self.stats_tab_canvas1.figure.clear()
-        self.stats_tab_canvas2.figure.clear()
-        self.stats_tab_canvas3.figure.clear()
+        # self.stats_tab_canvas2.figure.clear()
+        # self.stats_tab_canvas3.figure.clear()
 
         # Clear the existing tabs
         self.stats_tab.clear()
 
         fig1 = stats._weibull(self.values())
-        fig2 = stats._weibull(self.values())
-        fig3 = stats._weibull(self.values())
+        # fig2 = stats._weibull(self.values())
+        # fig3 = stats._weibull(self.values())
 
         # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
         self.stats_tab_canvas1.draw()
-        self.stats_tab_canvas2.figure = fig2
-        self.stats_tab_canvas2.figure.tight_layout()
-        self.stats_tab_canvas2.draw()
-        self.stats_tab_canvas3.figure = fig3
-        self.stats_tab_canvas3.figure.tight_layout()
-        self.stats_tab_canvas3.draw()
+        # self.stats_tab_canvas2.figure = fig2
+        # self.stats_tab_canvas2.figure.tight_layout()
+        # self.stats_tab_canvas2.draw()
+        # self.stats_tab_canvas3.figure = fig3
+        # self.stats_tab_canvas3.figure.tight_layout()
+        # self.stats_tab_canvas3.draw()
 
         self.stats_tab.addTab(self.stats_tab_canvas1, "Plot 1")
-        self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
-        self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
+        # self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
+        # self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
     """
     Pulls default data from part_info.db and stores it in a pandas DataFrame.
@@ -893,28 +894,13 @@ class MainWindow(QMainWindow):
         self.current_column = column
 
     """
-    TODO: get lower bound, geometric mean, and upper bound from dataset, for the component passed in
+    DONE: get lower bound, geometric mean, and upper bound from dataset, for the component passed in
     """
 
     def values(self):
-        # print(self.comp_data)
-        component_name = self.component_name_field.currentText()
-
-        values1 = np.array(
-            [20.8, 125.0, 4.17]
-        )  # lower bound, geometric mean, and upper bound
-        values2 = np.array([1.0, 30.0, 1000.0])
-        values3 = np.array([4.17, 83.3, 417.0])
-        values4 = np.array([41.7, 125.0, 375.0])
-        values5 = np.array([83.3, 4170.0, 4.17])
-        values6 = np.array([2.5, 33.3, 250.0])
-
-        if component_name == "Motor-Driven Pump":
-            return values1
-        elif component_name == "Motor-Operated Valves":
-            return values4
-        else:
-            return np.array([1, 1, 1])
+        return np.array([self.comp_data.at[self.current_row,'lower_bound'],
+                         self.comp_data.at[self.current_row,'best_estimate'],
+                         self.comp_data.at[self.current_row,'upper_bound']])
 
     # Executes and commits an SQL query on this window's database connection
     def exec_SQL(self, query) -> None:
