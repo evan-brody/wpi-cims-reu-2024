@@ -949,7 +949,7 @@ class MainWindow(QMainWindow):
 
         try:
             new_val = self.FAIL_MODE_COLUMN_TYPES[j](new_val)
-            if not (1 <= new_val <= 10):
+            if not (1 <= new_val <= 10) and (2 <= j <= 4):
                 item.setText(str(self.comp_data.iloc[i, j + 3]))
                 self.refreshing_table = False
 
