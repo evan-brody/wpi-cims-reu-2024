@@ -34,14 +34,14 @@ TODO: UI Bug fixes
     DONE: generating weibull distribution in stats tab crashes
     DONE: generating rayleigh distribution in stats tab crashes
     DONE: generate plot in stats distribution crashes app unless you modify something first
-    TODO: Source Plot1,2,3 from database instead of hardcoded
+    DONE: Source Plot1,2,3 from database instead of hardcoded
     TODO: Variable plot sizes in stats tab
     DONE: Download chart button downloads blank jpeg
     DONE: Read database pulls from csv not local storage/current modified database
     DONE: Auto-update RPN
     DONE: Save RPN values should save it to a file not just locally
     DONE: modifying FSD variables should auto save to local database instead of having button do it
-    TODO: invalid FSD variables should throw out of bounds warnings
+    DONE: invalid FSD variables should throw out of bounds warnings
     DONE: all data modification should just be in the table, no need for textboxes
     DONE: FMEA and FMECA buttons exist but don't do anything 
     DONE: risk acceptance should autocolor when table is generated
@@ -188,10 +188,7 @@ class MainWindow(QMainWindow):
         #     self.database_view_tab, "Database View"
         # )  # Add the tab to the QTabWidget
 
-        self.dep_tab = QWidget()
-        self.central_widget.addTab(
-            self.dep_tab, "Dependencies"
-        )
+        # self._init_instructions_tab()
 
         self.init_main_tab()
         self.init_stats_tab()
@@ -326,7 +323,7 @@ class MainWindow(QMainWindow):
     #     # self.read_database()
     #     ### END OF DATABASE VIEW TAB SETUP ###
 
-    def init_main_tab(self):
+    def _init_main_tab(self):
         ### START OF MAIN TAB SETUP ###
 
         # Create the main layout for the Main Tool tab
@@ -487,7 +484,7 @@ class MainWindow(QMainWindow):
 
         ### END OF MAIN TAB SETUP ###
 
-    def init_stats_tab(self):
+    def _init_stats_tab(self):
         ### START OF STATISTICS TAB SETUP ###
 
         # Create main layout
@@ -822,6 +819,12 @@ class MainWindow(QMainWindow):
                 for _, row in self.comp_fails.iterrows()
             ],
             True,
+        )
+        self.df = pd.merge(self.comp_fails, self.components, left_on="comp_id", right_on="id")
+        self.df = pd.merge(self.df, self.fail_modes, left_on="fail_id", right_on="id")
+        self.df.drop(labels=["cf_id", "comp_id", "fail_id", "id_x", "id_y"], axis=1, inplace=True)
+        self.df.to_csv(path_or_buf=os.path.abspath(os.path.join(self.CURRENT_DIRECTORY, 
+                                                    os.path.join(os.path.dirname(__file__), os.pardir, "rnn"), "tmp_db"))
         )
 
     def reset_df(self) -> None:
