@@ -194,8 +194,8 @@ class MainWindow(QMainWindow):
         )
 
         self.init_main_tab()
-
         self.init_stats_tab()
+        self.init_dep_tab()
 
         self.counter = 0
         self.questions = (
@@ -614,6 +614,9 @@ class MainWindow(QMainWindow):
         main_layout_stats.addLayout(right_layout_stats, 6)
 
         ### END OF STATISTICS TAB SETUP ###
+
+    def init_dep_tab(self):
+        pass
 
     def update_layout(self):
         self.refreshing_table = True
