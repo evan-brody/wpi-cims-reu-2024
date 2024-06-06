@@ -819,6 +819,12 @@ class MainWindow(QMainWindow):
             ],
             True,
         )
+        self.df = pd.merge(self.comp_fails, self.components, left_on="comp_id", right_on="id")
+        self.df = pd.merge(self.df, self.fail_modes, left_on="fail_id", right_on="id")
+        self.df.drop(labels=["cf_id", "comp_id", "fail_id", "id_x", "id_y"], axis=1, inplace=True)
+        self.df.to_csv(path_or_buf=os.path.abspath(os.path.join(self.CURRENT_DIRECTORY, 
+                                                    os.path.join(os.path.dirname(__file__), os.pardir, "rnn"), "tmp_db"))
+        )
 
     def reset_df(self) -> None:
         if not (hasattr(self, "comp_fails") and hasattr(self, "default_comp_fails")):
