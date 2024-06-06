@@ -157,7 +157,7 @@ class MainWindow(QMainWindow):
         self.risk_threshold = self.DEFAULT_RISK_THRESHOLD
 
         super().__init__()
-        self.setWindowTitle("Component Failure Modes and Effects Analysis (FMEA)")
+        self.setWindowTitle("Failure Modes, Effects, and Criticality Analysis (FMECA)")
         self.setGeometry(100, 100, 1000, 572)
         self.setStyleSheet(
             "QPushButton { color: white; background-color: #C02F1D; }"
@@ -323,7 +323,7 @@ class MainWindow(QMainWindow):
     #     # self.read_database()
     #     ### END OF DATABASE VIEW TAB SETUP ###
 
-    def _init_main_tab(self):
+    def init_main_tab(self):
         ### START OF MAIN TAB SETUP ###
 
         # Create the main layout for the Main Tool tab
@@ -484,7 +484,7 @@ class MainWindow(QMainWindow):
 
         ### END OF MAIN TAB SETUP ###
 
-    def _init_stats_tab(self):
+    def init_stats_tab(self):
         ### START OF STATISTICS TAB SETUP ###
 
         # Create main layout
