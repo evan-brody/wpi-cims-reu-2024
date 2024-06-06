@@ -6,7 +6,7 @@ from model import *
 
 n_hidden = 128
 n_epochs = 100000
-print_every = 5000
+print_every = 100
 plot_every = 1000
 learning_rate = 0.005 # If you set this too high, it might explode. If too low, it might not learn
 
@@ -20,24 +20,37 @@ def randomChoice(l):
 
 def randomTrainingPair():
     #category = randomChoice(all_categories)
-    line = comp_fails.sample()
-    expected_output = Variable()
-    category_tensor = Variable(torch.LongTensor([all_categories.index(category)]))
-    line_tensor = Variable(lineToTensor(line))
-    return category, line, category_tensor, line_tensor
+    row = comp_fails.sample()
+    line = row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')]
+    # expected_output = Variable(
+    #     nn.functional.normalize(torch.tensor(
+    #         [row.iloc[0,row.columns.get_loc('lower_bound')],
+    #          row.iloc[0,row.columns.get_loc('best_estimate')],
+    #          row.iloc[0,row.columns.get_loc('upper_bound')]]
+    #         )))
+    expected_output = Variable(
+        torch.tensor(
+            [row.iloc[0,row.columns.get_loc('lower_bound')],
+             row.iloc[0,row.columns.get_loc('best_estimate')],
+             row.iloc[0,row.columns.get_loc('upper_bound')]]
+            ))
+    #category_tensor = Variable(torch.LongTensor([all_categories.index(category)]))
+    #print(line)
+    line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')]))
+    return line, expected_output, line_tensor
 
 rnn = RNN(n_letters, n_hidden, 3)
 optimizer = torch.optim.SGD(rnn.parameters(), lr=learning_rate)
-criterion = nn.NLLLoss()
+criterion = nn.CrossEntropyLoss()
 
-def train(category_tensor, line_tensor):
+def train(expected_output, line_tensor):
     hidden = rnn.initHidden()
     optimizer.zero_grad()
 
     for i in range(line_tensor.size()[0]):
         output, hidden = rnn(line_tensor[i], hidden)
 
-    loss = criterion(output, category_tensor)
+    loss = criterion(output[0,:], expected_output)
     loss.backward()
 
     optimizer.step()
@@ -58,15 +71,15 @@ def timeSince(since):
 start = time.time()
 
 for epoch in range(1, n_epochs + 1):
-    category, line, category_tensor, line_tensor = randomTrainingPair()
-    output, loss = train(category_tensor, line_tensor)
+    line, expected_output, line_tensor = randomTrainingPair()
+    output, loss = train(expected_output, line_tensor)
     current_loss += loss
 
     # Print epoch number, loss, name and guess
     if epoch % print_every == 0:
-        guess, guess_i = categoryFromOutput(output)
-        correct = 'y' if guess == category else 'n (%s)' % category
-        print('%d %d%% (%s) %.4f %s / %s %s' % (epoch, epoch / n_epochs * 100, timeSince(start), loss, line, guess, correct))
+        #guess, guess_i = categoryFromOutput(output)
+        #correct = 'y' if guess == category else 'n (%s)' % category
+        print('%d %d%% (%s) %.4f %s / %s %s' % (epoch, epoch / n_epochs * 100, timeSince(start), loss, line, output, expected_output))
 
     # Add current loss avg to list of losses
     if epoch % plot_every == 0:

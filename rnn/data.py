@@ -5,6 +5,7 @@ import unicodedata
 import string
 
 all_letters = string.ascii_letters + " .,;'-"
+#print(all_letters)
 n_letters = len(all_letters)
 
 def findFiles(path): return glob.glob(path)
