@@ -183,12 +183,10 @@ class MainWindow(QMainWindow):
         self.central_widget.addTab(
             self.statistics_tab, "Statistics"
         )  # Add the tab to the QTabWidget
-        # self.database_view_tab = QWidget()  # Create a new tab
-        # self.central_widget.addTab(
-        #     self.database_view_tab, "Database View"
-        # )  # Add the tab to the QTabWidget
-
-        # self._init_instructions_tab()
+        self.dep_tab = QWidget()
+        self.central_widget.addTab(
+            self.dep_tab, "Dependencies"
+        )
 
         self.init_main_tab()
         self.init_stats_tab()
@@ -613,7 +611,22 @@ class MainWindow(QMainWindow):
         ### END OF STATISTICS TAB SETUP ###
 
     def init_dep_tab(self):
-        pass
+        self.dep_layout = QVBoxLayout(self.dep_tab)
+
+        self.test_widget = QWidget()
+        self.test_widget.setAutoFillBackground(True)
+        palette = self.test_widget.palette()
+        palette.setColor(QPalette.Window, QColor("red"))
+        self.test_widget.setPalette(palette)
+
+        self.test_widget2 = QWidget()
+        self.test_widget2.setAutoFillBackground(True)
+        palette = self.test_widget2.palette()
+        palette.setColor(QPalette.Window, QColor("blue"))
+        self.test_widget2.setPalette(palette)
+
+        self.dep_layout.addWidget(self.test_widget, stretch=3)
+        self.dep_layout.addWidget(self.test_widget2, stretch=1)
 
     def update_layout(self):
         self.refreshing_table = True
