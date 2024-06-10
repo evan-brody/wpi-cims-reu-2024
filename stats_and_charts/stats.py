@@ -19,28 +19,32 @@ def weibull_objective(params, values):
         k, lam = params
         # Calculate the estimated values for lower bound, geometric mean, and upper bound
         estimated_lower = weibull_min.ppf(0.05, k, scale=lam)  # 5% point probability (lower bound), given by Appendix B
-        estimated_mean = lam * np.exp(gamma(1 + 1 / k) / 2)  # geometric mean of Weibull distribution
+        estimated_mean = weibull_min.ppf(0.50, k, scale=lam)  # 50% point probability (best estimate), given by Appendix B
+        #estimated_mean = lam * gamma(1 + 1 / k)  # geometric mean of Weibull distribution
         estimated_upper = weibull_min.ppf(0.95, k, scale=lam)  # 95% point prbability (upper bound),given by Appendix B
         estimated_values = np.array([estimated_lower, estimated_mean, estimated_upper])
         # Calculate the difference between actual and estimated values
         return np.sum((values - estimated_values) ** 2)
 
+def fit_weibull(values,domain):
+    initial_guess = [1.0,1.0]
+    # Set bounds for k and lam
+    bounds = Bounds([0.01, 0.01], [np.inf, np.inf])  # Avoid zero by setting lower bound to a small positive number
+
+    # Perform the optimization
+    result = minimize(weibull_objective, initial_guess, args=(values,), bounds=bounds)
+
+    # Extract the optimized parameters
+    k_opt, lam_opt = result.x
+    return weibull_min.pdf(domain, k_opt, loc=0, scale=lam_opt)
+
 def _weibull(values):
     input = values
-    
-    # Set the lower bound, geometric mean, and upper bound of the failure rates
-    values1 = np.array([20.8, 125.0, 4.17])  # replace with actual lower bound, geometric mean, and upper bound
-    values2 = np.array([1.0, 30.0, 1000.0])
-    values3 = np.array([4.17, 83.3, 417.0])
-    values4 = np.array([41.7, 125.0, 375.0])
-    values5 = np.array([83.3, 4170.0, 4.17])
-    values6 = np.array([2.5, 33.3, 250.0])
 
     # Initial guess for k and lam
-    """
-    k_app = math.pow((4*input[1])/(input[2]-input[0]),1.086)
-    initial_guess = np.array([k_app, input[1]/gamma(1+1/k_app)])
-    """
+    #k_app = math.pow((4*input[1])/(input[2]-input[0]),1.086)
+    #initial_guess = np.array([k_app, input[1]/gamma(1+1/k_app)])
+    
     initial_guess = [1.0,1.0]
     # Set bounds for k and lam
     bounds = Bounds([0.01, 0.01], [np.inf, np.inf])  # Avoid zero by setting lower bound to a small positive number
@@ -53,9 +57,6 @@ def _weibull(values):
 
     # Generate a sample from the Weibull distribution with the optimized parameters
     sample = lam_opt * np.random.weibull(k_opt, 1000)
-
-    #print(k_opt)
-    #print(lam_opt)
 
     # Create a Figure and Axes object
     fig = plt.figure(figsize=(8, 6))
@@ -81,7 +82,7 @@ def _weibull(values):
     ax.plot(x, pdf, 'r-', label='Probability Density Function')
 
     ax.set_title('Motor Failure Weibull Distribution')
-    ax.set_xlabel('Frequency')
+    ax.set_xlabel('Failures per Million Hours')
     ax.set_ylabel('Probability Density')
     ax.legend()
 
@@ -94,7 +95,7 @@ def _weibull(values):
     """
     return fig
 
-#_weibull(np.array([1,2,3]))
+
 """
 
    Name: _rayleigh
@@ -108,7 +109,8 @@ def rayleigh_objective(param, values):
         sigma = param[0]
         # Calculate the estimated values for lower bound, geometric mean, and upper bound
         estimated_lower = rayleigh.ppf(0.05, scale=sigma)
-        estimated_mean = sigma * np.sqrt(np.pi / 2)  # mean of Rayleigh distribution
+        estimated_mean = rayleigh.ppf(0.50, scale=sigma)
+        #estimated_mean = sigma * np.sqrt(np.pi / 2)  # mean of Rayleigh distribution
         estimated_upper = rayleigh.ppf(0.95, scale=sigma)
         estimated_values = np.array([estimated_lower, estimated_mean, estimated_upper])
         # Calculate the difference between actual and estimated values
@@ -135,7 +137,6 @@ def _rayleigh(values):
     # Generate a sample from the Rayleigh distribution with the optimized parameter
     sample = np.random.rayleigh(sigma_opt, 1000)
 
-    #print(sigma_opt)
 
     # Plotting the histogram
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -155,17 +156,28 @@ def _rayleigh(values):
     ax.plot(x, pdf, 'r-', label='Probability Density Function')
 
     ax.set_title('Motor Failure Rayleigh Distribution')
-    ax.set_xlabel('Frequency')
+    ax.set_xlabel('Failures per Million Hours')
     ax.set_ylabel('Probability Density')
     ax.legend()
 
     return fig
 
-#_rayleigh(np.array([1,2,3]))
+def bathtub_objective(param, values):
+    T,t1,t2 = param
+    
+    sigma = param[0]
+    # Calculate the estimated values for lower bound, geometric mean, and upper bound
+    estimated_lower = rayleigh.ppf(0.05, scale=sigma)
+    estimated_mean = rayleigh.ppf(0.50, scale=sigma)
+    #estimated_mean = sigma * np.sqrt(np.pi / 2)  # mean of Rayleigh distribution
+    estimated_upper = rayleigh.ppf(0.95, scale=sigma)
+    estimated_values = np.array([estimated_lower, estimated_mean, estimated_upper])
+    # Calculate the difference between actual and estimated values
+    return np.sum((values - estimated_values) ** 2)
 
 def _bathtub(N, T, t1, t2):
     # Time vector
-    t = np.linspace(0, T, N)
+    t = np.linspace(0, T, 1000)
 
     # Shape parameters for the three Weibull distributions
     # Assume shape parameters for "infant mortality", "normal life", and "wear-out" phases
@@ -196,7 +208,6 @@ def _bathtub(N, T, t1, t2):
     ax.legend()
 
     ax.grid(True)
-    print("Reached end of bathtub")
     return fig
 
 
