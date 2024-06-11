@@ -102,12 +102,12 @@ class MainWindow(QMainWindow):
     CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     DB_PATH = os.path.join(os.path.dirname(__file__), os.pardir, "data")
     DB_NAME = "part_info.db"
-    RECOMMENDATIONS = (
-        "Recommended Detectability: 9-10 (Unacceptable)",
-        "Recommended Detectability: 7-8 (Severe)",
-        "Recommended Detectability: 4-6 (Medium)",
-        "Recommended Detectability: 1-3 (Low)",
-    )
+    # RECOMMENDATIONS = (
+    #     "Recommended Detectability: 9-10 (Unacceptable)",
+    #     "Recommended Detectability: 7-8 (Severe)",
+    #     "Recommended Detectability: 4-6 (Medium)",
+    #     "Recommended Detectability: 1-3 (Low)",
+    # )
     # Columns to show in the failure mode table.
     # These are DataFrame columns.
     FAIL_MODE_COLUMNS = (
@@ -519,11 +519,11 @@ class MainWindow(QMainWindow):
         left_layout_stats.addWidget(self.stat_submit_button)
 
         # Create button for detectability recommendation
-        self.detectability_button_stats = QPushButton(
-            "Get Detectability Recommendation"
-        )
-        self.detectability_button_stats.clicked.connect(self.ask_questions)
-        left_layout_stats.addWidget(self.detectability_button_stats)
+        # self.detectability_button_stats = QPushButton(
+        #     "Get Detectability Recommendation"
+        # )
+        # self.detectability_button_stats.clicked.connect(self.ask_questions)
+        # left_layout_stats.addWidget(self.detectability_button_stats)
 
         # Create and add the table widget
         self.table_widget_stats = QTableWidget()
@@ -1087,28 +1087,28 @@ class MainWindow(QMainWindow):
         self.main_figure
         figure.savefig(file_path, format="jpg", dpi=300)
 
-    def ask_questions(self):
-        if self.qindex < len(self.questions):
-            reply = QMessageBox.question(
-                self,
-                "Question",
-                self.questions[self.qindex],
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No,
-            )
+    # def ask_questions(self):
+    #     if self.qindex < len(self.questions):
+    #         reply = QMessageBox.question(
+    #             self,
+    #             "Question",
+    #             self.questions[self.qindex],
+    #             QMessageBox.Yes | QMessageBox.No,
+    #             QMessageBox.No,
+    #         )
 
-            if reply == QMessageBox.Yes:
-                self.counter += 1
+    #         if reply == QMessageBox.Yes:
+    #             self.counter += 1
 
-            self.qindex += 1
-            self.ask_questions()
-        else:
-            self.show_recommendation()
+    #         self.qindex += 1
+    #         self.ask_questions()
+    #     else:
+    #         self.show_recommendation()
 
-    def show_recommendation(self):
-        QMessageBox.information(
-            self, "Recommendation", self.RECOMMENDATIONS[self.counter]
-        )
+    # def show_recommendation(self):
+    #     QMessageBox.information(
+    #         self, "Recommendation", self.RECOMMENDATIONS[self.counter]
+    #     )
 
     def filter_components(self, search_query):
         filtered_components = [
