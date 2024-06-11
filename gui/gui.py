@@ -147,6 +147,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         # These need to match one-to-one
         assert len(self.FAIL_MODE_COLUMNS) == len(self.FAIL_MODE_COLUMN_TYPES)
+        
+        super().__init__()
 
         # Initializes DataFrames.
         self.read_sql()
@@ -156,7 +158,6 @@ class MainWindow(QMainWindow):
         self.refreshing_table = False
         self.risk_threshold = self.DEFAULT_RISK_THRESHOLD
 
-        super().__init__()
         self.setWindowTitle("Failure Modes, Effects, and Criticality Analysis (FMECA)")
         self.setGeometry(100, 100, 1000, 572)
         self.setStyleSheet(
