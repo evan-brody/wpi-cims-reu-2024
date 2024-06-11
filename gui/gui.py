@@ -613,20 +613,11 @@ class MainWindow(QMainWindow):
     def init_dep_tab(self):
         self.dep_layout = QVBoxLayout(self.dep_tab)
 
-        self.test_widget = QWidget()
-        self.test_widget.setAutoFillBackground(True)
-        palette = self.test_widget.palette()
-        palette.setColor(QPalette.Window, QColor("red"))
-        self.test_widget.setPalette(palette)
+        self.system_vis_scene = QGraphicsScene()
+        self.system_vis_scene.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
 
-        self.test_widget2 = QWidget()
-        self.test_widget2.setAutoFillBackground(True)
-        palette = self.test_widget2.palette()
-        palette.setColor(QPalette.Window, QColor("blue"))
-        self.test_widget2.setPalette(palette)
-
-        self.dep_layout.addWidget(self.test_widget, stretch=3)
-        self.dep_layout.addWidget(self.test_widget2, stretch=1)
+        self.system_vis_view = QGraphicsView(self.system_vis_scene)
+        self.dep_layout.addWidget(self.system_vis_view)
 
     def update_layout(self):
         self.refreshing_table = True
