@@ -147,7 +147,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         # These need to match one-to-one
         assert len(self.FAIL_MODE_COLUMNS) == len(self.FAIL_MODE_COLUMN_TYPES)
-        
+
         super().__init__()
 
         # Initializes DataFrames.
@@ -635,7 +635,9 @@ class MainWindow(QMainWindow):
         self.dep_layout.addWidget(self.comp_tray_view, stretch=1)
 
         # Add components to tray
-        # TODO
+        for name in self.components["name"]:
+            pass
+            # TODO: add button for each component. Search filter ?
 
     def update_layout(self):
         self.refreshing_table = True
