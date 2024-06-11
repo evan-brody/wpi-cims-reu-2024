@@ -338,11 +338,6 @@ class MainWindow(QMainWindow):
         # Create and add the component name dropdown menu
         search_and_dropdown_layout = QHBoxLayout()
 
-        self.component_search_field = QLineEdit(self)
-        self.component_search_field.setPlaceholderText("Search for a component...")
-        self.component_search_field.textChanged.connect(self.filter_components)
-        search_and_dropdown_layout.addWidget(self.component_search_field)
-
         self.component_name_field = QComboBox(self)
         self.component_name_field.activated.connect(
             lambda: (
@@ -352,7 +347,18 @@ class MainWindow(QMainWindow):
                 self.update_layout(),
             )
         )
-        self.populate_component_dropdown(self.components["name"])
+        self.populate_component_dropdown(self.component_name_field, self.components["name"])
+
+        self.component_search_field = QLineEdit(self)
+        self.component_search_field.setPlaceholderText("Search for a component...")
+        self.component_search_field.textChanged.connect(
+            self.filter_components(
+                self.populate_component_dropdown,
+                self.component_name_field
+                )
+            )
+
+        search_and_dropdown_layout.addWidget(self.component_search_field)
         search_and_dropdown_layout.addWidget(self.component_name_field)
 
         self.left_layout.addLayout(search_and_dropdown_layout)
@@ -614,6 +620,30 @@ class MainWindow(QMainWindow):
     def init_dep_tab(self):
         self.dep_layout = QVBoxLayout(self.dep_tab)
 
+        # Set up top component selection layout
+        self.dep_select_layout = QHBoxLayout()
+
+        # Set up component selection dropdown
+        self.dep_comp_select = QComboBox(self)
+        self.dep_comp_select.addItem("Select a Component")
+        self.populate_component_dropdown(
+            self.dep_comp_select,
+            self.components["name"]
+        )
+
+        # Set up component search field
+        self.dep_comp_search = QLineEdit(self)
+        self.dep_comp_search.setPlaceholderText("Search for a component...")
+        self.dep_comp_search.textChanged.connect(
+            self.filter_components(
+                self.populate_component_dropdown, self.dep_comp_select
+                )
+            )
+
+        # Add widgets to top layout
+        self.dep_select_layout.addWidget(self.dep_comp_search, stretch=1)
+        self.dep_select_layout.addWidget(self.dep_comp_select, stretch=1)
+
         # Setting up system dependency view
         self.system_vis_scene = QGraphicsScene()
         self.system_vis_scene.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
@@ -622,22 +652,18 @@ class MainWindow(QMainWindow):
         self.system_vis_view.setFrameStyle(QFrame.Panel | QFrame.Plain)
         self.system_vis_view.setLineWidth(2)
 
-        self.dep_layout.addWidget(self.system_vis_view, stretch=3)
-
         # Setting up component tray view
-        self.comp_tray_scene = QGraphicsScene()
-        self.comp_tray_scene.setBackgroundBrush(QBrush(QColor(192, 47, 29), Qt.SolidPattern))
+        # self.comp_tray_scene = QGraphicsScene()
+        # self.comp_tray_scene.setBackgroundBrush(QBrush(QColor(192, 47, 29), Qt.SolidPattern))
 
-        self.comp_tray_view = QGraphicsView(self.comp_tray_scene)
-        self.comp_tray_view.setFrameStyle(QFrame.Panel | QFrame.Plain)
-        self.comp_tray_view.setLineWidth(2)
+        # self.comp_tray_view = QGraphicsView(self.comp_tray_scene)
+        # self.comp_tray_view.setFrameStyle(QFrame.Panel | QFrame.Plain)
+        # self.comp_tray_view.setLineWidth(2)
 
-        self.dep_layout.addWidget(self.comp_tray_view, stretch=1)
-
-        # Add components to tray
-        for name in self.components["name"]:
-            pass
-            # TODO: add button for each component. Search filter ?
+        # Add widgets separate from setup
+        self.dep_layout.addLayout(self.dep_select_layout, stretch=1)
+        self.dep_layout.addWidget(self.system_vis_view, stretch=3)
+        # self.dep_layout.addWidget(self.comp_tray_view, stretch=1)
 
     def update_layout(self):
         self.refreshing_table = True
@@ -1113,19 +1139,22 @@ class MainWindow(QMainWindow):
     #         self, "Recommendation", self.RECOMMENDATIONS[self.counter]
     #     )
 
-    def filter_components(self, search_query):
-        filtered_components = [
-            component
-            for component in self.components["name"]
-            if search_query.lower() in component.lower()
-        ]
-        self.populate_component_dropdown(filtered_components)
+    def filter_components(self, pop_comp_func, field):
+        def f(search_query):
+            filtered_components = [
+                component
+                for component in self.components["name"]
+                if search_query.lower() in component.lower()
+            ]
+            pop_comp_func(field, filtered_components)
 
-    def populate_component_dropdown(self, components):
-        self.component_name_field.clear()
-        self.component_name_field.addItem("Select a Component")
+        return f
+
+    def populate_component_dropdown(self, field, components):
+        field.clear()
+        field.addItem("Select a Component")
         for name in components:
-            self.component_name_field.addItem(name)
+            field.addItem(name)
 
 
 if __name__ == "__main__":
