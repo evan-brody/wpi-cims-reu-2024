@@ -613,11 +613,28 @@ class MainWindow(QMainWindow):
     def init_dep_tab(self):
         self.dep_layout = QVBoxLayout(self.dep_tab)
 
+        # Setting up system dependency view
         self.system_vis_scene = QGraphicsScene()
         self.system_vis_scene.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
 
         self.system_vis_view = QGraphicsView(self.system_vis_scene)
-        self.dep_layout.addWidget(self.system_vis_view)
+        self.system_vis_view.setFrameStyle(QFrame.Panel | QFrame.Plain)
+        self.system_vis_view.setLineWidth(2)
+
+        self.dep_layout.addWidget(self.system_vis_view, stretch=3)
+
+        # Setting up component tray view
+        self.comp_tray_scene = QGraphicsScene()
+        self.comp_tray_scene.setBackgroundBrush(QBrush(QColor(192, 47, 29), Qt.SolidPattern))
+
+        self.comp_tray_view = QGraphicsView(self.comp_tray_scene)
+        self.comp_tray_view.setFrameStyle(QFrame.Panel | QFrame.Plain)
+        self.comp_tray_view.setLineWidth(2)
+
+        self.dep_layout.addWidget(self.comp_tray_view, stretch=1)
+
+        # Add components to tray
+        # TODO
 
     def update_layout(self):
         self.refreshing_table = True
