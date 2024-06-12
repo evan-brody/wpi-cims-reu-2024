@@ -619,7 +619,8 @@ class MainWindow(QMainWindow):
         ### END OF STATISTICS TAB SETUP ###
 
     def init_dep_tab(self):
-        self.dep_layout = QVBoxLayout(self.dep_tab)
+        self.dep_layout = QHBoxLayout(self.dep_tab)
+        self.dep_left_layout = QVBoxLayout()
 
         # Set up top component selection layout
         self.dep_select_layout = QHBoxLayout()
@@ -646,7 +647,7 @@ class MainWindow(QMainWindow):
         self.dep_select_layout.addWidget(self.dep_comp_select, stretch=1)
 
         class DepQGraphicsScene(QGraphicsScene):
-            MOUSE_DELTA_INT = hash("mouse_delta") % 2_147_483_647
+            MOUSE_DELTA = 0
 
             def __init__(self, parent_window: MainWindow):
                 super().__init__()
@@ -670,10 +671,9 @@ class MainWindow(QMainWindow):
                 rect_w, rect_h = 100, 50
                 rect_x = event.scenePos().x() - rect_w // 2
                 rect_y = event.scenePos().y() - rect_h // 2
-                pen = QPen(Qt.black)
                 brush = QBrush(self.parent_window.WPI_RED)
 
-                rect_item = self.addRect(0, 0, rect_w, rect_h, pen, brush)
+                rect_item = self.addRect(0, 0, rect_w, rect_h, QPen(), brush)
                 rect_item.setPos(rect_x, rect_y)
                 rect_item.setFlags(QGraphicsItem.ItemIsSelectable)
 
@@ -731,7 +731,7 @@ class MainWindow(QMainWindow):
 
                     # Establish vectors from mouse to items
                     for item in self.selectedItems():
-                        item.setData(self.MOUSE_DELTA_INT, item.scenePos() - pos)
+                        item.setData(self.MOUSE_DELTA, item.scenePos() - pos)
 
             def mouseMoveEvent(self, event):
                 pos = event.scenePos()
@@ -741,7 +741,7 @@ class MainWindow(QMainWindow):
                    self.clicked_on is not None and \
                    self.select_start is not None:
                     for item in self.selectedItems():
-                        delta = item.data(self.MOUSE_DELTA_INT)
+                        delta = item.data(self.MOUSE_DELTA)
                         item.setPos(pos + delta)
 
                 if self.select_rect_item is None:
@@ -775,6 +775,7 @@ class MainWindow(QMainWindow):
                 self.released_on = self.itemAt(pos, QTransform())
                 if single_click and self.released_on is None:
                     self.add_component(event)
+                    self.clearSelection()
                     return
 
                 # Define selection area
@@ -799,8 +800,10 @@ class MainWindow(QMainWindow):
         self.system_vis_view.setLineWidth(2)
 
         # Add widgets separate from setup
-        self.dep_layout.addLayout(self.dep_select_layout, stretch=1)
-        self.dep_layout.addWidget(self.system_vis_view, stretch=3)
+        self.dep_left_layout.addLayout(self.dep_select_layout, stretch=1)
+        self.dep_left_layout.addWidget(self.system_vis_view, stretch=3)
+
+        self.dep_layout.addLayout(self.dep_left_layout)
 
     def update_layout(self):
         self.refreshing_table = True
