@@ -646,6 +646,8 @@ class MainWindow(QMainWindow):
         self.dep_select_layout.addWidget(self.dep_comp_select, stretch=1)
 
         class DepQGraphicsScene(QGraphicsScene):
+            MOUSE_DELTA_INT = hash("mouse_delta") % 2_147_483_647
+
             def __init__(self, parent_window: MainWindow):
                 super().__init__()
 
@@ -657,6 +659,7 @@ class MainWindow(QMainWindow):
                 self.select_end = None
                 self.clicked_on = None
                 self.released_on = None
+                self.mouse_down = False
 
             def add_component(self, event):
                 comp_str = self.parent_window.dep_comp_select.currentText()
@@ -702,6 +705,7 @@ class MainWindow(QMainWindow):
                     self.select_rect_item = None
 
             def mousePressEvent(self, event):
+                self.mouse_down = True
                 self.select_start = event.scenePos()
                 pos = event.scenePos()
 
@@ -710,23 +714,40 @@ class MainWindow(QMainWindow):
                 if self.clicked_on is not None:
                     self.clicked_on.setSelected(True)
 
-                # Begin visual selection box
-                self.del_select_rect_item()
-                self.select_rect_item = self.addRect(
-                    self.select_start.x(),
-                    self.select_start.y(),
-                    0, 0,
-                    QPen(Qt.black),
-                    QBrush(Qt.NoBrush)
-                )
+                    # Handles clicking on text
+                    par = self.clicked_on.parentItem()
+                    if par is not None:
+                        par.setSelected(True)
+
+                    # Establish vectors from mouse to items
+                    for item in self.selectedItems():
+                        item.setData(self.MOUSE_DELTA_INT, item.scenePos() - pos)
+                else:
+                    # Begin visual selection box
+                    self.del_select_rect_item()
+                    self.select_rect_item = self.addRect(
+                        self.select_start.x(),
+                        self.select_start.y(),
+                        0, 0,
+                        QPen(Qt.black),
+                        QBrush(Qt.NoBrush)
+                    )
 
             def mouseMoveEvent(self, event):
+                pos = event.scenePos()
+
+                # Drags objects around, if we should
+                if self.mouse_down and \
+                   self.clicked_on is not None and \
+                   self.select_start is not None:
+                    for item in self.selectedItems():
+                        delta = item.data(self.MOUSE_DELTA_INT)
+                        item.setPos(pos + delta)
+
                 if self.select_rect_item is None:
                     return
 
                 # Adjusts visual selection box
-                pos = event.scenePos()
-
                 ax = min(self.select_start.x(), pos.x())
                 ay = min(self.select_start.y(), pos.y())
 
@@ -745,6 +766,7 @@ class MainWindow(QMainWindow):
                 )
 
             def mouseReleaseEvent(self, event):
+                self.mouse_down = False
                 self.del_select_rect_item()
                 pos = event.scenePos()
                 
