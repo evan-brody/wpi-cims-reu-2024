@@ -197,7 +197,7 @@ class MainWindow(QMainWindow):
         self.init_main_tab()
         self.init_stats_tab()
         self.init_dep_tab()
-        #self.init_rnn_tab()
+        self.init_rnn_tab()
 
         self.counter = 0
         self.questions = (
@@ -342,7 +342,7 @@ class MainWindow(QMainWindow):
         self.left_layout.addWidget(self.component_selection)
 
         # Create and add the component name dropdown menu
-        search_and_dropdown_layout = QHBoxLayout()
+        self.search_and_dropdown_layout_main = QHBoxLayout()
 
         self.component_name_field = QComboBox(self)
         self.component_name_field.activated.connect(
@@ -364,10 +364,10 @@ class MainWindow(QMainWindow):
                 )
             )
 
-        search_and_dropdown_layout.addWidget(self.component_search_field)
-        search_and_dropdown_layout.addWidget(self.component_name_field)
+        self.search_and_dropdown_layout_main.addWidget(self.component_search_field)
+        self.search_and_dropdown_layout_main.addWidget(self.component_name_field)
 
-        self.left_layout.addLayout(search_and_dropdown_layout)
+        self.left_layout.addLayout(self.search_and_dropdown_layout_main)
 
         # Create and add the risk acceptance threshold field
         self.threshold_label = QLabel("Risk Acceptance Threshold:")
@@ -499,17 +499,18 @@ class MainWindow(QMainWindow):
         ### START OF STATISTICS TAB SETUP ###
 
         # Create main layout
-        main_layout_stats = QHBoxLayout(self.statistics_tab)
+        self.stats_layout = QHBoxLayout(self.statistics_tab)
 
         # Left layout for component info and table
-        left_layout_stats = QVBoxLayout()
+        self.left_layout_stats = QVBoxLayout()
 
         # Creating label to designate component selection
-        #left_layout_stats.addWidget(self.component_selection)
         self.component_selection_stats = QLabel("Component Selection: ")
-        left_layout_stats.addWidget(self.component_selection_stats)
+        self.left_layout_stats.addWidget(self.component_selection_stats)
 
         # Create and add the component name dropdown menu
+        self.search_and_dropdown_layout_stats = QHBoxLayout()
+
         self.component_name_field_stats = QComboBox(self)
         self.component_name_field_stats.addItem("Select a Component")
         self.component_name_field_stats.activated.connect(
@@ -520,17 +521,29 @@ class MainWindow(QMainWindow):
                 self.update_layout(),
             )
         )
-        for name in self.components["name"]:
-            self.component_name_field_stats.addItem(name)
-        self.left_layout.addWidget(self.component_name_field_stats)
-        left_layout_stats.addWidget(self.component_name_field_stats)
+        
+        self.populate_component_dropdown(self.component_name_field_stats, self.components["name"])
+
+        self.component_search_field_stats = QLineEdit(self)
+        self.component_search_field_stats.setPlaceholderText("Search for a component...")
+        self.component_search_field_stats.textChanged.connect(
+            self.filter_components(
+                self.populate_component_dropdown,
+                self.component_name_field_stats
+                )
+            )
+
+        self.search_and_dropdown_layout_stats.addWidget(self.component_search_field_stats)
+        self.search_and_dropdown_layout_stats.addWidget(self.component_name_field_stats)
+
+        self.left_layout_stats.addLayout(self.search_and_dropdown_layout_stats)
 
         # Create and add the submit button
-        self.stat_submit_button = QPushButton("Show Table")
-        self.stat_submit_button.clicked.connect(
+        self.submit_button_stats = QPushButton("Show Table")
+        self.submit_button_stats.clicked.connect(
             lambda: self.populate_table(self.table_widget_stats, self.comp_fails)
         )
-        left_layout_stats.addWidget(self.stat_submit_button)
+        self.left_layout_stats.addWidget(self.submit_button_stats)
 
         # Create button for detectability recommendation
         # self.detectability_button_stats = QPushButton(
@@ -557,7 +570,7 @@ class MainWindow(QMainWindow):
         self.table_widget_stats.verticalHeader().setMaximumSectionSize(32)
         self.table_widget_stats.verticalScrollBar().setMaximum(10 * 30)
         self.table_widget_stats.cellClicked.connect(self.cell_clicked)
-        left_layout_stats.addWidget(self.table_widget_stats)
+        self.left_layout_stats.addWidget(self.table_widget_stats)
 
         # Create a QHBoxLayout for the navigation buttons
         self.nav_button_layout_stats = QHBoxLayout()
@@ -579,14 +592,14 @@ class MainWindow(QMainWindow):
         self.nav_button_layout_stats.addWidget(self.next_button_stats)
 
         # Add the nav_button_layout to the left layout
-        left_layout_stats.addLayout(self.nav_button_layout_stats)
+        self.left_layout_stats.addLayout(self.nav_button_layout_stats)
 
         # Creating right layout for graphs in stats tab
-        right_layout_stats = QVBoxLayout()
+        self.right_layout_stats = QVBoxLayout()
 
         # Create label for the graphing
         self.stat_modeling_tag = QLabel("Statistical Modeling: ")
-        right_layout_stats.addWidget(self.stat_modeling_tag)
+        self.right_layout_stats.addWidget(self.stat_modeling_tag)
 
         # Create dropdown menu for holding charts we want to give the option of generating
         self.chart_name_field_stats = QComboBox(self)
@@ -594,7 +607,7 @@ class MainWindow(QMainWindow):
         self.chart_name_field_stats.addItem("Weibull Distribution")
         self.chart_name_field_stats.addItem("Rayleigh Distribution")
         self.chart_name_field_stats.addItem("Bathtub Curve")
-        right_layout_stats.addWidget(self.chart_name_field_stats)
+        self.right_layout_stats.addWidget(self.chart_name_field_stats)
 
         # Matplotlib canvases with tab widget (hardcoded for one component)
         self.stats_tab = QTabWidget()
@@ -604,23 +617,23 @@ class MainWindow(QMainWindow):
         self.stats_tab.addTab(self.stats_tab_canvas1, "Failure Mode 1")
         # self.stats_tab.addTab(self.stats_tab_canvas2, "Failure Mode 2")
         # self.stats_tab.addTab(self.stats_tab_canvas3, "Failure Mode 3")
-        right_layout_stats.addWidget(self.stats_tab)
+        self.right_layout_stats.addWidget(self.stats_tab)
 
         # Create and add the generate chart button
         self.generate_chart_button_stats = QPushButton("Generate Chart")
         self.generate_chart_button_stats.clicked.connect(self.generate_stats_chart)
-        right_layout_stats.addWidget(self.generate_chart_button_stats)
+        self.right_layout_stats.addWidget(self.generate_chart_button_stats)
 
         # Create and add the download chart button (non-functional)
         self.download_chart_button_stats = QPushButton("Download Chart")
         self.download_chart_button_stats.clicked.connect(
             lambda: self.download_chart(self.stats_tab_canvas1.figure)
         )
-        right_layout_stats.addWidget(self.download_chart_button_stats)
+        self.right_layout_stats.addWidget(self.download_chart_button_stats)
 
         # Add left and right layouts to the main layout
-        main_layout_stats.addLayout(left_layout_stats, 4)
-        main_layout_stats.addLayout(right_layout_stats, 6)
+        self.stats_layout.addLayout(self.left_layout_stats, 4)
+        self.stats_layout.addLayout(self.right_layout_stats, 6)
 
         ### END OF STATISTICS TAB SETUP ###
 
@@ -812,28 +825,29 @@ class MainWindow(QMainWindow):
         ### START OF RNN TAB SETUP ###
 
         # Create main layout
-        self.main_layout_rnn = QHBoxLayout(self.rnn_tab)
+        self.rnn_layout = QHBoxLayout(self.rnn_tab)
 
         # Left layout for component info and table
         self.left_layout_rnn = QVBoxLayout()
 
-        ######################3
         # Creating label to designate component selection
         self.component_selection_rnn = QLabel("Component Selection: ")
         self.left_layout_rnn.addWidget(self.component_selection_rnn)
-        
+
         # Create and add the component name dropdown menu
         self.search_and_dropdown_layout_rnn = QHBoxLayout()
 
         self.component_name_field_rnn = QComboBox(self)
+        self.component_name_field_rnn.addItem("Select a Component")
         self.component_name_field_rnn.activated.connect(
             lambda: (
-                self.component_name_field_stats.setCurrentText(
-                    self.component_name_field.currentText()
+                self.component_name_field.setCurrentText(
+                    self.component_name_field_rnn.currentText()
                 ),
                 self.update_layout(),
             )
         )
+        
         self.populate_component_dropdown(self.component_name_field_rnn, self.components["name"])
 
         self.component_search_field_rnn = QLineEdit(self)
@@ -841,42 +855,21 @@ class MainWindow(QMainWindow):
         self.component_search_field_rnn.textChanged.connect(
             self.filter_components(
                 self.populate_component_dropdown,
-                self.component_name_field
+                self.component_name_field_rnn
                 )
             )
 
         self.search_and_dropdown_layout_rnn.addWidget(self.component_search_field_rnn)
         self.search_and_dropdown_layout_rnn.addWidget(self.component_name_field_rnn)
 
-        self.left_layout.addLayout(self.search_and_dropdown_layout_rnn)
-        #####################3333
-
-        # Creating label to designate component selection
-        # self.component_selection_stats = QLabel("Component Selection: ")
-        # self.left_layout_rnn.addWidget(self.component_selection_stats)
-
-        # # Create and add the component name dropdown menu
-        # self.component_name_field_stats = QComboBox(self)
-        # self.component_name_field_stats.addItem("Select a Component")
-        # self.component_name_field_stats.activated.connect(
-        #     lambda: (
-        #         self.component_name_field.setCurrentText(
-        #             self.component_name_field_stats.currentText()
-        #         ),
-        #         self.update_layout(),
-        #     )
-        # )
-        # for name in self.components["name"]:
-        #     self.component_name_field_stats.addItem(name)
-        # self.left_layout.addWidget(self.component_name_field_stats)
-        # left_layout_stats.addWidget(self.component_name_field_stats)
-
+        self.left_layout_rnn.addLayout(self.search_and_dropdown_layout_rnn)
+        
         # Create and add the submit button
-        # self.stat_submit_button = QPushButton("Show Table")
-        # self.stat_submit_button.clicked.connect(
-            #lambda: self.populate_table(self.table_widget_stats, self.comp_fails)
-        #)
-        # self.left_layout_rnn.addWidget(self.stat_submit_button)
+        self.submit_button_rnn = QPushButton("Show Table")
+        self.submit_button_rnn.clicked.connect(
+            lambda: self.populate_table(self.table_widget_rnn, self.comp_fails)
+        )
+        self.left_layout_rnn.addWidget(self.submit_button_rnn)
 
         # Create and add the table widget
         self.table_widget_rnn = QTableWidget()
@@ -897,16 +890,6 @@ class MainWindow(QMainWindow):
         self.table_widget_rnn.verticalScrollBar().setMaximum(10 * 30)
         self.table_widget_rnn.cellClicked.connect(self.cell_clicked)
         self.left_layout_rnn.addWidget(self.table_widget_rnn)
-
-        # Create a QHBoxLayout for the navigation buttons
-        self.nav_button_layout_stats = QHBoxLayout()
-
-        # Initialize the selected index and the maximum number of IDs to show
-        self.selected_index_stats = 0
-        self.max_ids_stats = 10
-
-        # Add the nav_button_layout to the left layout
-        self.left_layout_rnn.addLayout(self.nav_button_layout_stats)
 
         # Creating right layout for graphs in stats tab
         self.right_layout_rnn = QVBoxLayout()
@@ -946,8 +929,8 @@ class MainWindow(QMainWindow):
         # right_layout_stats.addWidget(self.download_chart_button_stats)
 
         # Add left and right layouts to the main layout
-        self.main_layout_rnn.addLayout(self.left_layout_rnn, 4)
-        self.main_layout_rnn.addLayout(self.right_layout_rnn, 6)
+        self.rnn_layout.addLayout(self.left_layout_rnn, 4)
+        self.rnn_layout.addLayout(self.right_layout_rnn, 6)
 
         ### END OF RNN TAB SETUP ###
         
@@ -955,6 +938,7 @@ class MainWindow(QMainWindow):
         self.refreshing_table = True
         self.populate_table(self.table_widget, self.comp_fails)
         self.populate_table(self.table_widget_stats, self.comp_fails)
+        self.populate_table(self.table_widget_rnn, self.comp_fails)
         self.generate_main_chart()
 
         for row in range(len(self.comp_data.index)):
