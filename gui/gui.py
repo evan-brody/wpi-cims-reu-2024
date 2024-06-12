@@ -648,22 +648,29 @@ class MainWindow(QMainWindow):
         self.system_vis_scene = QGraphicsScene()
         self.system_vis_scene.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
 
-        self.system_vis_view = QGraphicsView(self.system_vis_scene)
+        class DepQGraphicsView(QGraphicsView):
+            def __init__(self, scene):
+                super().__init__(scene)
+                self.setSceneRect(0, 0, 10_000, 10_000)
+
+            def mousePressEvent(self, event):
+                print(event.pos().x(), event.pos().y())
+
+                qrect = QRectF(event.pos(), event.pos() + QPointF(10.0, 10.0))
+                scene = self.scene()
+                rect_item = scene.addRect(qrect)
+                rect_item.setPos(event.pos())
+
+                self.update()
+
+        self.system_vis_view = DepQGraphicsView(self.system_vis_scene)
+        self.system_vis_view.setMouseTracking(True)
         self.system_vis_view.setFrameStyle(QFrame.Panel | QFrame.Plain)
         self.system_vis_view.setLineWidth(2)
-
-        # Setting up component tray view
-        # self.comp_tray_scene = QGraphicsScene()
-        # self.comp_tray_scene.setBackgroundBrush(QBrush(QColor(192, 47, 29), Qt.SolidPattern))
-
-        # self.comp_tray_view = QGraphicsView(self.comp_tray_scene)
-        # self.comp_tray_view.setFrameStyle(QFrame.Panel | QFrame.Plain)
-        # self.comp_tray_view.setLineWidth(2)
 
         # Add widgets separate from setup
         self.dep_layout.addLayout(self.dep_select_layout, stretch=1)
         self.dep_layout.addWidget(self.system_vis_view, stretch=3)
-        # self.dep_layout.addWidget(self.comp_tray_view, stretch=1)
 
     def update_layout(self):
         self.refreshing_table = True
