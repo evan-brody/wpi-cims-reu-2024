@@ -706,12 +706,22 @@ class MainWindow(QMainWindow):
 
             def mousePressEvent(self, event):
                 self.mouse_down = True
-                self.select_start = event.scenePos()
                 pos = event.scenePos()
+                self.select_start = pos
 
                 # Select whatever we've clicked on
                 self.clicked_on = self.itemAt(pos, QTransform())
-                if self.clicked_on is not None:
+                if self.clicked_on is None:
+                    # Begin visual selection box
+                    self.del_select_rect_item()
+                    self.select_rect_item = self.addRect(
+                        self.select_start.x(),
+                        self.select_start.y(),
+                        0, 0,
+                        QPen(Qt.black),
+                        QBrush(Qt.NoBrush)
+                    )
+                else:
                     self.clicked_on.setSelected(True)
 
                     # Handles clicking on text
@@ -722,16 +732,6 @@ class MainWindow(QMainWindow):
                     # Establish vectors from mouse to items
                     for item in self.selectedItems():
                         item.setData(self.MOUSE_DELTA_INT, item.scenePos() - pos)
-                else:
-                    # Begin visual selection box
-                    self.del_select_rect_item()
-                    self.select_rect_item = self.addRect(
-                        self.select_start.x(),
-                        self.select_start.y(),
-                        0, 0,
-                        QPen(Qt.black),
-                        QBrush(Qt.NoBrush)
-                    )
 
             def mouseMoveEvent(self, event):
                 pos = event.scenePos()
