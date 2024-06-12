@@ -87,7 +87,7 @@ from PyQt5.QtCore import *
 from stats_and_charts.charts import Charts
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
-database_data = {}
+# database_data = {}
 
 """
 
@@ -480,14 +480,14 @@ class MainWindow(QMainWindow):
 
         # Create and connect the navigation buttons
         self.prev_button = QPushButton("Previous")
-        self.prev_button.clicked.connect(self.show_previous)
+        # self.prev_button.clicked.connect(self.show_previous)
         self.nav_button_layout.addWidget(self.prev_button)
 
         # Add spacing between the buttons
         self.nav_button_layout.addSpacing(10)
 
         self.next_button = QPushButton("Next")
-        self.next_button.clicked.connect(self.show_next)
+        # self.next_button.clicked.connect(self.show_next)
         self.nav_button_layout.addWidget(self.next_button)
 
         # Add the nav_button_layout to the left layout
@@ -568,14 +568,14 @@ class MainWindow(QMainWindow):
 
         # Create and connect the navigation buttons
         self.prev_button_stats = QPushButton("Previous")
-        self.prev_button_stats.clicked.connect(self.show_previous_stats)
+        # self.prev_button_stats.clicked.connect(self.show_previous_stats)
         self.nav_button_layout_stats.addWidget(self.prev_button_stats)
 
         # Add spacing between the buttons
         self.nav_button_layout_stats.addSpacing(10)
 
         self.next_button_stats = QPushButton("Next")
-        self.next_button_stats.clicked.connect(self.show_next_stats)
+        # self.next_button_stats.clicked.connect(self.show_next_stats)
         self.nav_button_layout_stats.addWidget(self.next_button_stats)
 
         # Add the nav_button_layout to the left layout
@@ -652,6 +652,8 @@ class MainWindow(QMainWindow):
         self.dep_select_layout.addWidget(self.dep_comp_select, stretch=1)
 
         class DepQGraphicsScene(QGraphicsScene):
+            MOUSE_DELTA_INT = hash("mouse_delta") % 2_147_483_647
+
             def __init__(self, parent_window: MainWindow):
                 super().__init__()
 
@@ -663,6 +665,7 @@ class MainWindow(QMainWindow):
                 self.select_end = None
                 self.clicked_on = None
                 self.released_on = None
+                self.mouse_down = False
 
             def add_component(self, event):
                 comp_str = self.parent_window.dep_comp_select.currentText()
@@ -708,31 +711,49 @@ class MainWindow(QMainWindow):
                     self.select_rect_item = None
 
             def mousePressEvent(self, event):
-                self.select_start = event.scenePos()
+                self.mouse_down = True
                 pos = event.scenePos()
+                self.select_start = pos
 
                 # Select whatever we've clicked on
                 self.clicked_on = self.itemAt(pos, QTransform())
-                if self.clicked_on is not None:
+                if self.clicked_on is None:
+                    # Begin visual selection box
+                    self.del_select_rect_item()
+                    self.select_rect_item = self.addRect(
+                        self.select_start.x(),
+                        self.select_start.y(),
+                        0, 0,
+                        QPen(Qt.black),
+                        QBrush(Qt.NoBrush)
+                    )
+                else:
                     self.clicked_on.setSelected(True)
 
-                # Begin visual selection box
-                self.del_select_rect_item()
-                self.select_rect_item = self.addRect(
-                    self.select_start.x(),
-                    self.select_start.y(),
-                    0, 0,
-                    QPen(Qt.black),
-                    QBrush(Qt.NoBrush)
-                )
+                    # Handles clicking on text
+                    par = self.clicked_on.parentItem()
+                    if par is not None:
+                        par.setSelected(True)
+
+                    # Establish vectors from mouse to items
+                    for item in self.selectedItems():
+                        item.setData(self.MOUSE_DELTA_INT, item.scenePos() - pos)
 
             def mouseMoveEvent(self, event):
+                pos = event.scenePos()
+
+                # Drags objects around, if we should
+                if self.mouse_down and \
+                   self.clicked_on is not None and \
+                   self.select_start is not None:
+                    for item in self.selectedItems():
+                        delta = item.data(self.MOUSE_DELTA_INT)
+                        item.setPos(pos + delta)
+
                 if self.select_rect_item is None:
                     return
 
                 # Adjusts visual selection box
-                pos = event.scenePos()
-
                 ax = min(self.select_start.x(), pos.x())
                 ay = min(self.select_start.y(), pos.y())
 
@@ -742,15 +763,15 @@ class MainWindow(QMainWindow):
                 by -= ay
 
                 self.removeItem(self.select_rect_item)
-                dash_pen = QPen(Qt.DashLine)
                 self.select_rect_item = self.addRect(
                     ax, ay,
                     bx, by,
-                    dash_pen,
+                    QPen(Qt.DashLine),
                     QBrush(Qt.NoBrush)
                 )
 
             def mouseReleaseEvent(self, event):
+                self.mouse_down = False
                 self.del_select_rect_item()
                 pos = event.scenePos()
                 
@@ -1314,61 +1335,61 @@ class MainWindow(QMainWindow):
     Refreshes table to the previous page.
     """
 
-    def show_previous(self):
-        # so that it doesn't go below 0
-        self.selected_index = max(0, self.selected_index - self.max_ids)
-        self.populate_table(self.table_widget, self.comp_fails)
+    # def show_previous(self):
+    #     # so that it doesn't go below 0
+    #     self.selected_index = max(0, self.selected_index - self.max_ids)
+    #     self.populate_table(self.table_widget, self.comp_fails)
 
     """
     Description: Refreshes statistics table to the previous page.
     """
 
-    def show_previous_stats(self):
-        # so that it doesn't go below 0
-        self.selected_index_stats = max(
-            0, self.selected_index_stats - self.max_ids_stats
-        )
-        self.populate_table(self.table_widget_stats, self.comp_fails)
+    # def show_previous_stats(self):
+    #     # so that it doesn't go below 0
+    #     self.selected_index_stats = max(
+    #         0, self.selected_index_stats - self.max_ids_stats
+    #     )
+    #     self.populate_table(self.table_widget_stats, self.comp_fails)
 
     """
     Refreshes table to the next page.
     """
 
-    def show_next(self):
-        component_name = self.component_name_field.currentText()
-        component_data = database_data.get(component_name, [])
-        total_pages = len(component_data) // self.max_ids
-        if len(component_data) % self.max_ids != 0:
-            total_pages += 1
+    # def show_next(self):
+    #     component_name = self.component_name_field.currentText()
+    #     component_data = database_data.get(component_name, [])
+    #     total_pages = len(component_data) // self.max_ids
+    #     if len(component_data) % self.max_ids != 0:
+    #         total_pages += 1
 
-        if self.selected_index + self.max_ids < len(component_data):
-            self.selected_index += self.max_ids
-        elif (
-            self.selected_index + self.max_ids >= len(component_data)
-            and self.selected_index // self.max_ids < total_pages - 1
-        ):
-            self.selected_index = (total_pages - 1) * self.max_ids
-        self.populate_table(self.table_widget, self.comp_fails)
+    #     if self.selected_index + self.max_ids < len(component_data):
+    #         self.selected_index += self.max_ids
+    #     elif (
+    #         self.selected_index + self.max_ids >= len(component_data)
+    #         and self.selected_index // self.max_ids < total_pages - 1
+    #     ):
+    #         self.selected_index = (total_pages - 1) * self.max_ids
+    #     self.populate_table(self.table_widget, self.comp_fails)
 
     """
     Refreshes statistics table to the next page.
     """
 
-    def show_next_stats(self):
-        component_name = self.component_name_field_stats.currentText()
-        component_data = database_data.get(component_name, [])
-        total_pages = len(component_data) // self.max_ids_stats
-        if len(component_data) % self.max_ids_stats != 0:
-            total_pages += 1
+    # def show_next_stats(self):
+    #     component_name = self.component_name_field_stats.currentText()
+    #     component_data = database_data.get(component_name, [])
+    #     total_pages = len(component_data) // self.max_ids_stats
+    #     if len(component_data) % self.max_ids_stats != 0:
+    #         total_pages += 1
 
-        if self.selected_index_stats + self.max_ids_stats < len(component_data):
-            self.selected_index_stats += self.max_ids_stats
-        elif (
-            self.selected_index_stats + self.max_ids_stats >= len(component_data)
-            and self.selected_index_stats // self.max_ids_stats < total_pages - 1
-        ):
-            self.selected_index_stats = (total_pages - 1) * self.max_ids_stats
-        self.populate_table(self.table_widget_stats, self.comp_fails)
+    #     if self.selected_index_stats + self.max_ids_stats < len(component_data):
+    #         self.selected_index_stats += self.max_ids_stats
+    #     elif (
+    #         self.selected_index_stats + self.max_ids_stats >= len(component_data)
+    #         and self.selected_index_stats // self.max_ids_stats < total_pages - 1
+    #     ):
+    #         self.selected_index_stats = (total_pages - 1) * self.max_ids_stats
+    #     self.populate_table(self.table_widget_stats, self.comp_fails)
 
     """
     Gives user the option to download displayed figure.
