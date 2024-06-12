@@ -135,6 +135,7 @@ class MainWindow(QMainWindow):
         "Upper Bound (UB)",
         "Mission Time",
     ]
+    WPI_RED = QColor(192, 47, 29)
 
     """
 
@@ -645,36 +646,52 @@ class MainWindow(QMainWindow):
         self.dep_select_layout.addWidget(self.dep_comp_select, stretch=1)
 
         class DepQGraphicsScene(QGraphicsScene):
-            def __init__(self):
+            def __init__(self, parent_window: MainWindow):
                 super().__init__()
-                self.setSceneRect(0, 0, 1_000, 1_000)
+
+                self.setSceneRect(0, 0, 5_000, 1_000)
+                self.parent_window = parent_window
 
             def mousePressEvent(self, event):
-                x, y = event.scenePos().x(), event.scenePos().y()
-                pen = QPen(Qt.black)
-                brush = QBrush(Qt.black)
+                if hasattr(self.parent_window, "dep_comp_select"):
+                    comp_str = self.parent_window.dep_comp_select.currentText()
+                    if comp_str == "Select a Component":
+                        return
 
-                rect = self.addRect(x, y, 10, 10, pen, brush)
+                # Create rectangle
+                rect_w, rect_h = 100, 50
+                rect_x = event.scenePos().x() - rect_w // 2
+                rect_y = event.scenePos().y() - rect_h // 2
+                pen = QPen(Qt.black)
+                brush = QBrush(self.parent_window.WPI_RED)
+
+                rect_item = self.addRect(0, 0, rect_w, rect_h, pen, brush)
+                rect_item.setPos(rect_x, rect_y)
+
+                # Create text
+                text_widg = QLabel(comp_str)
+                text_widg.setWordWrap(True)
+                text_widg.setAlignment(Qt.AlignHCenter)
+
+                # Match background color to rectangle
+                pal = text_widg.palette()
+                pal.setBrush(QPalette.Window, brush)
+                text_widg.setPalette(pal)
+
+                # Set up proxy for binding to scene
+                proxy = QGraphicsProxyWidget(parent=rect_item)
+                proxy.setWidget(text_widg)
+
+                # Center within rectangle
+                text_pos = rect_item.mapFromScene(rect_item.pos())
+                text_w = proxy.boundingRect().width()
+                text_h = proxy.boundingRect().height()
+                text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
+                proxy.setPos(text_pos)
 
         # Setting up system dependency view
-        self.system_vis_scene = DepQGraphicsScene()
+        self.system_vis_scene = DepQGraphicsScene(self)
         self.system_vis_scene.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
-
-        # class DepQGraphicsView(QGraphicsView):
-        #     def __init__(self, scene):
-        #         super().__init__(scene)
-        #         self.setSceneRect(0, 0, 10_000, 10_000)
-
-        #     def mousePressEvent(self, event):
-        #         print(event.pos().x(), event.pos().y())
-        #         print(event.scene)
-
-        #         qrect = QRectF(event.pos(), event.pos() + QPointF(10.0, 10.0))
-        #         scene = self.scene()
-        #         rect_item = scene.addRect(qrect)
-        #         rect_item.setPos(event.pos())
-
-        #         self.update()
 
         self.system_vis_view = QGraphicsView(self.system_vis_scene)
         self.system_vis_view.setMouseTracking(True)
