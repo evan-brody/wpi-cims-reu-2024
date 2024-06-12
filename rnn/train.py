@@ -10,11 +10,6 @@ print_every = 100
 plot_every = 1000
 learning_rate = 0.005 # If you set this too high, it might explode. If too low, it might not learn
 
-def categoryFromOutput(output):
-    top_n, top_i = output.data.topk(1) # Tensor out of Variable with .data
-    category_i = top_i[0][0]
-    return all_categories[category_i], category_i
-
 def randomChoice(l):
     return l[random.randint(0, len(l) - 1)]
 
