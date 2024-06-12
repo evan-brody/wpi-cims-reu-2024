@@ -679,7 +679,8 @@ class MainWindow(QMainWindow):
                 self.select_end = None
                 self.clicked_on = None
                 self.released_on = None
-                self.mouse_down = False
+                self.mouse_down_l = False
+                self.mouse_down_r = False
 
             def add_component(self, event: QGraphicsSceneMouseEvent):
                 comp_str = self.parent_window.dep_comp_select.currentText()
@@ -724,10 +725,14 @@ class MainWindow(QMainWindow):
                     self.select_rect_item = None
 
             def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
-                if Qt.LeftButton != event.button():
-                    return
-                
-                self.mouse_down = True
+                match event.button():
+                    case Qt.LeftButton:
+                        self.mousePressEventL(event)
+                    case Qt.RightButton:
+                        self.mousePressEventR(event)
+
+            def mousePressEventL(self, event: QGraphicsSceneMouseEvent):
+                self.mouse_down_l = True
                 pos = event.scenePos()
                 self.select_start = pos
 
@@ -746,26 +751,28 @@ class MainWindow(QMainWindow):
                 else:
                     if 1 == len(self.selectedItems()):
                         self.clearSelection()
-                    self.clicked_on.setSelected(True)
 
                     # Handles clicking on text
                     par = self.clicked_on.parentItem()
-                    if par is not None:
-                        par.setSelected(True)
+                    if par:
                         self.clicked_on = par
+                    
+                    self.clicked_on.setSelected(True)
 
                     # Establish vectors from mouse to items
                     for item in self.selectedItems():
                         item.setData(self.MOUSE_DELTA, item.scenePos() - pos)
-
-            # The default implementation does this, but just for safety
-            def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent):
-                self.mousePressEvent(event)
+            
+            def mousePressEventR(self, event: QGraphicsSceneMouseEvent):
+                self.mouse_down_r = True
 
             def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
-                if not self.mouse_down:
-                    return
-                
+                if self.mouse_down_l:
+                    self.mouseMoveEventL(event)
+                if self.mouse_down_r:
+                    self.mouseMoveEventR(event)
+
+            def mouseMoveEventL(self, event: QGraphicsSceneMouseEvent):
                 pos = event.scenePos()
 
                 # Drags objects around, if we should
@@ -775,9 +782,6 @@ class MainWindow(QMainWindow):
                         delta = item.data(self.MOUSE_DELTA)
                         item.setPos(pos + delta)
                     return
-
-                # if self.select_rect_item is None:
-                #     return
 
                 # Adjusts visual selection box
                 ax = min(self.select_start.x(), pos.x())
@@ -796,14 +800,19 @@ class MainWindow(QMainWindow):
                     QBrush(Qt.NoBrush)
                 )
 
+            def mouseMoveEventR(self, event: QGraphicsSceneMouseEvent):
+                pass
+
             def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
-                button = event.button()
-                if Qt.LeftButton != button:
-                    if Qt.RightButton == button:
+                match event.button():
+                    case Qt.LeftButton:
+                        self.mouseReleaseEventL(event)
+                    case Qt.RightButton:
                         self.clearSelection()
-                    return
-                
-                self.mouse_down = False
+                        self.mouseReleaseEventR(event)
+
+            def mouseReleaseEventL(self, event: QGraphicsSceneMouseEvent):
+                self.mouse_down_l = False
                 pos = event.scenePos()
                 
                 # Handle single clicks
@@ -812,6 +821,10 @@ class MainWindow(QMainWindow):
                 self.released_on = self.itemAt(pos, QTransform())
                 if single_click:
                     if self.released_on: # Select component if clicking on it
+                        # In case we're clicking on text
+                        par = self.released_on.parentItem()
+                        if par:
+                            self.released_on = par
                         self.clearSelection()
                         self.released_on.setSelected(True)
                     else: # Add new component if just clicking in free area
@@ -835,6 +848,9 @@ class MainWindow(QMainWindow):
                 if self.clicked_on is not None and self.clicked_on == self.released_on:
                     self.clearSelection()
                     self.clicked_on.setSelected(True)
+
+            def mouseReleaseEventR(self, event: QGraphicsSceneMouseEvent):
+                self.mouse_down_r = False
 
             def keyReleaseEvent(self, event):
                 match event.key():
