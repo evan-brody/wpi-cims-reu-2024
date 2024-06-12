@@ -644,26 +644,39 @@ class MainWindow(QMainWindow):
         self.dep_select_layout.addWidget(self.dep_comp_search, stretch=1)
         self.dep_select_layout.addWidget(self.dep_comp_select, stretch=1)
 
-        # Setting up system dependency view
-        self.system_vis_scene = QGraphicsScene()
-        self.system_vis_scene.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
-
-        class DepQGraphicsView(QGraphicsView):
-            def __init__(self, scene):
-                super().__init__(scene)
-                self.setSceneRect(0, 0, 10_000, 10_000)
+        class DepQGraphicsScene(QGraphicsScene):
+            def __init__(self):
+                super().__init__()
+                self.setSceneRect(0, 0, 1_000, 1_000)
 
             def mousePressEvent(self, event):
-                print(event.pos().x(), event.pos().y())
+                x, y = event.scenePos().x(), event.scenePos().y()
+                pen = QPen(Qt.black)
+                brush = QBrush(Qt.black)
 
-                qrect = QRectF(event.pos(), event.pos() + QPointF(10.0, 10.0))
-                scene = self.scene()
-                rect_item = scene.addRect(qrect)
-                rect_item.setPos(event.pos())
+                rect = self.addRect(x, y, 10, 10, pen, brush)
 
-                self.update()
+        # Setting up system dependency view
+        self.system_vis_scene = DepQGraphicsScene()
+        self.system_vis_scene.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
 
-        self.system_vis_view = DepQGraphicsView(self.system_vis_scene)
+        # class DepQGraphicsView(QGraphicsView):
+        #     def __init__(self, scene):
+        #         super().__init__(scene)
+        #         self.setSceneRect(0, 0, 10_000, 10_000)
+
+        #     def mousePressEvent(self, event):
+        #         print(event.pos().x(), event.pos().y())
+        #         print(event.scene)
+
+        #         qrect = QRectF(event.pos(), event.pos() + QPointF(10.0, 10.0))
+        #         scene = self.scene()
+        #         rect_item = scene.addRect(qrect)
+        #         rect_item.setPos(event.pos())
+
+        #         self.update()
+
+        self.system_vis_view = QGraphicsView(self.system_vis_scene)
         self.system_vis_view.setMouseTracking(True)
         self.system_vis_view.setFrameStyle(QFrame.Panel | QFrame.Plain)
         self.system_vis_view.setLineWidth(2)
