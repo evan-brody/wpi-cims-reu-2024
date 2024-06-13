@@ -127,9 +127,12 @@ class DepQGraphicsScene(QGraphicsScene):
         self.dep_origin = None
         self.dyn_arr = None
 
+        # We can't use QGraphicsItem.data to store these
+        # because if you enter an array as a value, it
+        # copies it every time you retrieve it, which
+        # means you can't modify it
         self.rect_depends_on = {}
         self.rect_influences = {}
-
         self.rect_arrs_in = {}
         self.rect_arrs_out = {}
 
