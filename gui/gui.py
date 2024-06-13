@@ -130,9 +130,6 @@ class DepQGraphicsScene(QGraphicsScene):
         self.rect_depends_on = {}
         self.rect_influences = {}
 
-        self.arrs_point_to = {}
-        self.arrs_point_from = {}
-
         self.rect_arrs_in = {}
         self.rect_arrs_out = {}
 
@@ -361,8 +358,6 @@ class DepQGraphicsScene(QGraphicsScene):
                                             dependency.rect().height() / 2)
                     
                     new_arr = self.draw_arr(item_center, dep_center, QPen())
-                    self.arrs_point_to[new_arr] = dependency
-                    self.arrs_point_from[new_arr] = item
 
                     self.rect_arrs_out[item].append(new_arr)
                     self.rect_arrs_in[dependency].append(new_arr)
@@ -383,9 +378,6 @@ class DepQGraphicsScene(QGraphicsScene):
                                             item.rect().height() / 2)
 
                     new_arr = self.draw_arr(inf_center, item_center, QPen())
-
-                    self.arrs_point_to[new_arr] = item
-                    self.arrs_point_from[new_arr] = influence
 
                     self.rect_arrs_out[influence].append(new_arr)
                     self.rect_arrs_in[item].append(new_arr)
@@ -485,8 +477,6 @@ class DepQGraphicsScene(QGraphicsScene):
                                             self.released_on_r.rect().height() / 2)
                     
                     arr = self.draw_arr(arr_start_pos, arr_end_pos, QPen())
-                    self.arrs_point_to[arr] = self.released_on_r
-                    self.arrs_point_from[arr] = self.released_on_1
 
                     self.rect_arrs_out[self.dep_origin].append(arr)
                     self.rect_arrs_in[self.released_on_r].append(arr)
