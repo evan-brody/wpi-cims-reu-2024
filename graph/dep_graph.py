@@ -5,6 +5,7 @@
 import sys # TODO: this is for RAM usage analysis. remove when not needed anymore
 import numpy as np
 import itertools
+import functools
 from PyQt5.QtWidgets import QGraphicsRectItem
 
 class DepGraph:
@@ -63,6 +64,19 @@ class DepGraph:
             res = self.prob_mat_mul(A1, res)
 
         return res
+    
+    def exp_A_c(self, p) ->np.ndarray:
+        n = self.n
+        if 0 == p:
+            return self.I[:n, :n]
+
+        res = np.identity(n)
+        A1 = self.A[:n, :n]
+        for _ in range(p - 1):
+            res = self.prob_mat_mul(A1, res)
+
+        return self.prob_mat_mul_c(A1, res)
+    
 
     def set_auto_update(self, bval) -> None:
         self.auto_update = bval
@@ -79,9 +93,9 @@ class DepGraph:
             self.iref[n + i] = ref
 
         if direct_risks is None:
-            self.r0[n:n + d] = direct_risks
-        else:
             self.r0[n:n + d] = self.DEFAULT_DR
+        else:
+            self.r0[n:n + d] = direct_risks
         self.A[n:n + d, :n + d] = 0
         self.A[:n, n:n + d] = 0
 
@@ -103,33 +117,21 @@ class DepGraph:
         if not self.auto_update:
             return
         
-        # TODO
+        # TODO: add auto update for r
 
     # This is slow! Shouldn't be used unless necessary
     # TODO: this class should calculate m. could be tricky: it's NP-hard
     def calc_r(self, m) -> np.ndarray:
         n = self.n
-        return self.prob_mat_vec_mul(self.I[:n, :n] + self.J[:n, :n] - itertools.reduce(np.multiply, [ self.exp_A(i) for i in range(1, m + 1) ]), self.r0)
+        return self.prob_mat_vec_mul(self.I[:n, :n] + self.J[:n, :n] - functools.reduce(np.multiply, [ self.exp_A_c(i) for i in range(1, m + 1) ]), self.r0[:n])
 
 if __name__ == "__main__":
     # Testing code
     dg = DepGraph()
 
-    dg.add_vertices(['a', 'b'], [1, 2])
-    dg.add_vertices(['c'], [3])
-    dg.add_vertices(['d', 'e', 'f'], [4, 5, 6])
+    dg.add_vertices(['s', 'c', 'v', 'p'], [0.25, 0.25, 0.25, 0.25])
+    dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1/3, 1/3, 1/3])
 
-    dg.add_edges([('a', 'c')])
-    dg.add_edges([('f', 'e')], [0.5])
+    m = 2
 
-    # print(dg.A[:9, :9])
-    # print(dg.r0[:9])
-
-    a = np.array([[1, 2, 3],
-                  [4, 5, 6],
-                  [7, 8, 9]])
-    
-    b = np.array([1, 2, 3])
-
-    dg.prob_mat_vec_mul(a, b)
-    print(dg.prob_mat_mul(a, a))
+    print(dg.calc_r(m))
