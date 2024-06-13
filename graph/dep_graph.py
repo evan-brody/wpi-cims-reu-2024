@@ -1,4 +1,4 @@
-# @file graph.py
+# @file dep_graph.py
 # @author Evan Brody
 # @brief Provides backend graph functionality for dependency analysis
 
