@@ -668,6 +668,10 @@ class MainWindow(QMainWindow):
         class DepQGraphicsScene(QGraphicsScene):
             MOUSE_DELTA = 0
 
+            # The tip of a dependency arrow is an isosceles triangle
+            ARR_LONG = 10 # The length of the middle axis
+            ARR_SHORT = 5 # Half the length of the base
+
             def __init__(self, parent_window: MainWindow):
                 super().__init__()
 
@@ -695,6 +699,10 @@ class MainWindow(QMainWindow):
                 self.dep_end = None
                 self.dyn_arr_v = None
                 self.dyn_arr_h = None
+                self.arr_tip_pos = None
+                self.arr_bot_l = None
+                self.arr_bot_r = None
+                self.arr_tip = None
 
             def add_component(self, event: QGraphicsSceneMouseEvent):
                 comp_str = self.parent_window.dep_comp_select.currentText()
@@ -746,6 +754,9 @@ class MainWindow(QMainWindow):
                 if self.dyn_arr_h:
                     self.removeItem(self.dyn_arr_h)
                     self.dyn_arr_h = None
+                if self.arr_tip:
+                    self.removeItem(self.arr_tip)
+                    self.arr_tip = None
 
             def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
                 match event.button():
@@ -755,6 +766,11 @@ class MainWindow(QMainWindow):
                         self.mousePressEventR(event)
 
             def mousePressEventL(self, event: QGraphicsSceneMouseEvent):
+                if self.dep_origin:
+                    self.del_dyn_arr()
+                    self.dep_origin = None
+                    return
+                
                 self.mouse_down_l = True
                 pos = event.scenePos()
                 self.select_start = pos
@@ -808,6 +824,9 @@ class MainWindow(QMainWindow):
                 self.mouseMoveEventR(event)
 
             def mouseMoveEventL(self, event: QGraphicsSceneMouseEvent):
+                if self.dep_origin:
+                    return
+                
                 pos = event.scenePos()
 
                 # Drags objects around, if we should
@@ -839,34 +858,70 @@ class MainWindow(QMainWindow):
                 if not self.dep_origin:
                     return
                 
+                arr_start_pos = self.dep_origin.scenePos()
+                arr_start_pos += QPointF(self.dep_origin.rect().width() / 2,
+                                         self.dep_origin.rect().height() / 2)
                 arr_end_pos = event.scenePos()
                 comp_top_y = self.dep_origin.scenePos().y()
-                comp_bot_y = comp_top_y - self.dep_origin.rect().height()
-                if comp_top_y <= arr_end_pos.y():
-                    pass
-                elif comp_bot_y < arr_end_pos.y() < comp_top_y:
-                    pass
-                elif arr_end_pos.y() <= comp_bot_y:
-                    pass
+                # Important to note that y increases as we go down
+                comp_bot_y = comp_top_y + self.dep_origin.rect().height()
 
-                arr_start_pos = self.dep_origin.scenePos()
-                arr_start_pos += QPointF(self.dep_origin.rect().width() / 2, 0)
+                # The arrow is always L-shaped, so this determines
+                # where we should place the "elbow"
+                in_comp_y = comp_top_y < arr_end_pos.y() < comp_bot_y
+                if in_comp_y:
+                    elbow = QPointF(arr_end_pos.x(), arr_start_pos.y())
+                else:
+                    elbow = QPointF(arr_start_pos.x(), arr_end_pos.y())
 
                 self.del_dyn_arr()
                 self.dyn_arr_v = self.addLine(
-                    arr_start_pos.x(),
-                    arr_start_pos.y(),
-                    arr_start_pos.x(),
-                    arr_end_pos.y(),
+                    QLineF(arr_start_pos, elbow),
                     QPen(Qt.DashLine)
                 )
                 self.dyn_arr_h = self.addLine(
-                    arr_start_pos.x(),
-                    arr_end_pos.y(),
-                    arr_end_pos.x(),
-                    arr_end_pos.y(),
+                    QLineF(elbow, arr_end_pos),
                     QPen(Qt.DashLine)
                 )
+
+                self.arr_tip_pos = arr_end_pos # TODO: clamp to outside of component we're hovering over
+                if in_comp_y:
+                    center_y = comp_top_y + self.dep_origin.rect().height() / 2
+                    # Above rect center
+                    if arr_end_pos.y() <= center_y:
+                        self.arr_bot_l = self.arr_tip_pos + QPointF(-self.ARR_SHORT, self.ARR_LONG)
+                        self.arr_bot_r = self.arr_tip_pos + QPointF(self.ARR_SHORT, self.ARR_LONG)
+                    # Probably stupid to include this
+                    # but i'm doing it anyway for now
+                    elif arr_end_pos.y() == center_y:
+                        self.arr_bot_l = self.arr_tip_pos - QPointF(self.ARR_LONG, self.ARR_SHORT)
+                        self.arr_bot_r = self.arr_tip_pos + QPointF(-self.ARR_LONG, self.ARR_SHORT)
+                    # Below rect center
+                    else:
+                        self.arr_bot_l = self.arr_tip_pos + QPointF(self.ARR_SHORT, -self.ARR_LONG)
+                        self.arr_bot_r = self.arr_tip_pos - QPointF(self.ARR_SHORT, self.ARR_LONG)
+                else:
+                    center_x = self.dep_origin.scenePos().x() + self.dep_origin.rect().width() / 2
+                    # Left of rect center
+                    if arr_end_pos.x() <= center_x:
+                        self.arr_bot_l = self.arr_tip_pos + QPointF(self.ARR_LONG, self.ARR_SHORT)
+                        self.arr_bot_r = self.arr_tip_pos - QPointF(-self.ARR_LONG, self.ARR_SHORT)
+                    elif arr_end_pos.x() == center_x:
+                        pass
+                    # Right of rect center
+                    else:
+                        self.arr_bot_l = self.arr_tip_pos - QPointF(self.ARR_LONG, self.ARR_SHORT)
+                        self.arr_bot_r = self.arr_tip_pos + QPointF(-self.ARR_LONG, self.ARR_SHORT)
+
+                self.arr_tip = self.addPolygon(
+                    QPolygonF([self.arr_tip_pos, self.arr_bot_l, self.arr_bot_r]),
+                    QPen(),
+                    QBrush(Qt.black)
+                )
+
+                self.dyn_arr_v.setZValue(-1)
+                self.dyn_arr_h.setZValue(-1)
+                self.arr_tip.setZValue(-1)
 
             def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
                 match event.button():
