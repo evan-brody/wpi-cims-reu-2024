@@ -143,7 +143,7 @@ class DepQGraphicsScene(QGraphicsScene):
         )
         moused_over = self.collidingItems(collision_line)
         top_rect = None
-        if 0 < len(moused_over):
+        if moused_over:
             maxz = float('-inf')
             for item in moused_over:
                 if isinstance(item, QGraphicsRectItem) and \
