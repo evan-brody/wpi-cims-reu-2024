@@ -32,8 +32,6 @@ class DepGraph:
         self.iref = np.empty((self.MAX_VERTICES,), QGraphicsRectItem) # Maps indices to QGraphicsRectItems
 
     def prob_mat_mul(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
-        assert a.shape[1] == b.shape[0]
-
         res = np.empty((a.shape[0], b.shape[1]), np.double)
         
         for i, j in itertools.product(range(a.shape[0]), range(b.shape[1])):
@@ -42,8 +40,6 @@ class DepGraph:
         return res
 
     def prob_mat_vec_mul(self, a: np.ndarray, v: np.ndarray) -> np.ndarray:
-        assert a.shape[1] == v.shape[0]
-
         lenv = len(v)
         return self.J[0, :lenv] - np.prod(self.J[:lenv, :lenv] - np.multiply(a, v), axis=1)
 
