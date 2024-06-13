@@ -122,7 +122,6 @@ class DepQGraphicsScene(QGraphicsScene):
 
         # Tracks current placement of dependency arrow
         self.dep_origin = None
-        self.dep_end = None
         self.dyn_arr = None
 
         self.rect_depends_on = {}
@@ -345,6 +344,7 @@ class DepQGraphicsScene(QGraphicsScene):
 
                 redrawn = set()
 
+                # Redraw the arrows that are going out of the item
                 for dependency in self.rect_depends_on[item]:
                     if not dependency.scene():
                         continue
@@ -366,6 +366,7 @@ class DepQGraphicsScene(QGraphicsScene):
 
                     redrawn.add((item, dependency))
 
+                # Redraw the arrows that are going into the item  
                 for influence in self.rect_influences[item]:
                     if not influence.scene() or (influence, item) in redrawn:
                         continue
