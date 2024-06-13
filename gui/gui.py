@@ -666,7 +666,10 @@ class MainWindow(QMainWindow):
         self.dep_select_layout.addWidget(self.dep_comp_select, stretch=1)
 
         class DepQGraphicsScene(QGraphicsScene):
+            # Keys for the QGraphicsItem data table
             MOUSE_DELTA = 0
+            ARR_OUT = 1
+            ARR_IN = 2
 
             # The tip of a dependency arrow is an isosceles triangle
             ARR_LONG = 10 # The length of the middle axis
@@ -699,10 +702,23 @@ class MainWindow(QMainWindow):
                 self.dep_end = None
                 self.dyn_arr_v = None
                 self.dyn_arr_h = None
-                self.arr_tip_pos = None
-                self.arr_bot_l = None
-                self.arr_bot_r = None
                 self.arr_tip = None
+
+            def top_rect_at(self, pos):
+                collision_line = self.addLine(
+                    QLineF(pos, pos),
+                    QPen(QColor(0, 0, 0, 0))
+                )
+                moused_over = self.collidingItems(collision_line)
+                top_rect = None
+                if 0 < len(moused_over):
+                    maxz = float('-inf')
+                    for item in moused_over:
+                        if isinstance(item, QGraphicsRectItem) and \
+                           item.zValue() > maxz:
+                            top_rect, maxz = item, item.zValue()
+                
+                return top_rect
 
             def add_component(self, event: QGraphicsSceneMouseEvent):
                 comp_str = self.parent_window.dep_comp_select.currentText()
@@ -776,7 +792,7 @@ class MainWindow(QMainWindow):
                 self.select_start = pos
 
                 # Select whatever we've clicked on
-                self.clicked_on_l = self.itemAt(pos, QTransform())
+                self.clicked_on_l = self.top_rect_at(pos)
                 self.del_select_rect_item()
                 if self.clicked_on_l is None:
                     # Begin visual selection box
@@ -791,9 +807,6 @@ class MainWindow(QMainWindow):
                     if 1 == len(self.selectedItems()):
                         self.clearSelection()
 
-                    # Handles clicking on text
-                    par = self.clicked_on_l.parentItem()
-                    self.clicked_on_l = par if par else self.clicked_on_l
                     self.clicked_on_l.setSelected(True)
 
                     # Establish vectors from mouse to items
@@ -804,29 +817,45 @@ class MainWindow(QMainWindow):
                 self.mouse_down_r = True
                 pos = event.scenePos()
 
-                self.clicked_on_r = self.itemAt(pos, QTransform())
+                self.clicked_on_r = self.top_rect_at(pos)
                 if self.clicked_on_r:
-                    par = self.clicked_on_r.parentItem()
-                    self.clicked_on_r = par if par else self.clicked_on_r
                     if not self.dep_origin:
                         self.dep_origin = self.clicked_on_r
                     else:
-                        pass
-                        # todo note:
-                        # don't do this. add the arrow visually, then call backend
-                        # dep_end should not be a variable
-                        # self.dep_end = self.clicked_on_r
+                        arr_start_pos = self.dep_origin.scenePos()
+                        arr_start_pos += QPointF(self.dep_origin.rect().width() / 2,
+                                                 self.dep_origin.rect().height() / 2)
+                        
+                        arr_end_pos = self.clicked_on_r.scenePos()
+                        arr_end_pos += QPointF(self.clicked_on_r.rect().width() / 2,
+                                               self.clicked_on_r.rect().height() / 2)
+                        
+                        elbow = QPointF(arr_start_pos.x(), arr_end_pos.y())
+
+                        arr_v = self.addLine(
+                            QLineF(arr_start_pos, elbow),
+                        )
+                        arr_h = self.addLine(
+                            QLineF(elbow, arr_end_pos),
+                        )
+
+                        arr_v.setZValue(-1)
+                        arr_h.setZValue(-1)
+
+                        # Cleanup
+                        self.dep_origin = None
+                        self.del_dyn_arr()
 
             def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
                 if self.mouse_down_l:
                     self.mouseMoveEventL(event)
-                # if self.mouse_down_r:
-                self.mouseMoveEventR(event)
+                if self.dep_origin:
+                    self.mouseMoveEventR(event)
 
             def mouseMoveEventL(self, event: QGraphicsSceneMouseEvent):
                 if self.dep_origin:
                     return
-                
+
                 pos = event.scenePos()
 
                 # Drags objects around, if we should
@@ -854,25 +883,15 @@ class MainWindow(QMainWindow):
                     QBrush(Qt.NoBrush)
                 )
 
-            def mouseMoveEventR(self, event: QGraphicsSceneMouseEvent):
-                if not self.dep_origin:
-                    return
-                
+            def mouseMoveEventR(self, event: QGraphicsSceneMouseEvent):     
+                pos = event.scenePos()
+
+                # Important to note that y-values increase as we go down
                 arr_start_pos = self.dep_origin.scenePos()
                 arr_start_pos += QPointF(self.dep_origin.rect().width() / 2,
                                          self.dep_origin.rect().height() / 2)
-                arr_end_pos = event.scenePos()
-                comp_top_y = self.dep_origin.scenePos().y()
-                # Important to note that y increases as we go down
-                comp_bot_y = comp_top_y + self.dep_origin.rect().height()
 
-                # The arrow is always L-shaped, so this determines
-                # where we should place the "elbow"
-                in_comp_y = comp_top_y < arr_end_pos.y() < comp_bot_y
-                if in_comp_y:
-                    elbow = QPointF(arr_end_pos.x(), arr_start_pos.y())
-                else:
-                    elbow = QPointF(arr_start_pos.x(), arr_end_pos.y())
+                elbow = QPointF(arr_start_pos.x(), pos.y())
 
                 self.del_dyn_arr()
                 self.dyn_arr_v = self.addLine(
@@ -880,41 +899,35 @@ class MainWindow(QMainWindow):
                     QPen(Qt.DashLine)
                 )
                 self.dyn_arr_h = self.addLine(
-                    QLineF(elbow, arr_end_pos),
+                    QLineF(elbow, pos),
                     QPen(Qt.DashLine)
                 )
 
-                self.arr_tip_pos = arr_end_pos # TODO: clamp to outside of component we're hovering over
-                if in_comp_y:
-                    center_y = comp_top_y + self.dep_origin.rect().height() / 2
-                    # Above rect center
-                    if arr_end_pos.y() <= center_y:
-                        self.arr_bot_l = self.arr_tip_pos + QPointF(-self.ARR_SHORT, self.ARR_LONG)
-                        self.arr_bot_r = self.arr_tip_pos + QPointF(self.ARR_SHORT, self.ARR_LONG)
-                    # Probably stupid to include this
-                    # but i'm doing it anyway for now
-                    elif arr_end_pos.y() == center_y:
-                        self.arr_bot_l = self.arr_tip_pos - QPointF(self.ARR_LONG, self.ARR_SHORT)
-                        self.arr_bot_r = self.arr_tip_pos + QPointF(-self.ARR_LONG, self.ARR_SHORT)
-                    # Below rect center
-                    else:
-                        self.arr_bot_l = self.arr_tip_pos + QPointF(self.ARR_SHORT, -self.ARR_LONG)
-                        self.arr_bot_r = self.arr_tip_pos - QPointF(self.ARR_SHORT, self.ARR_LONG)
+                arr_tip_pos = pos
+
+                
+                moused_over = self.top_rect_at(pos)
+                if moused_over:
+                    left_bound = moused_over.scenePos().x()
+                    right_bound = left_bound + moused_over.rect().width()
+
+                    # If we're coming in from the left
+                    if arr_start_pos.x() < pos.x():
+                        arr_tip_pos.setX(left_bound)
+                    else: # Coming in from the right
+                        arr_tip_pos.setX(right_bound)
+
+                center_x = self.dep_origin.scenePos().x() + self.dep_origin.rect().width() / 2
+                # Left of origin rect center
+                if pos.x() <= center_x:
+                    arr_bot_l = arr_tip_pos + QPointF(self.ARR_LONG, self.ARR_SHORT)
+                    arr_bot_r = arr_tip_pos - QPointF(-self.ARR_LONG, self.ARR_SHORT)
                 else:
-                    center_x = self.dep_origin.scenePos().x() + self.dep_origin.rect().width() / 2
-                    # Left of rect center
-                    if arr_end_pos.x() <= center_x:
-                        self.arr_bot_l = self.arr_tip_pos + QPointF(self.ARR_LONG, self.ARR_SHORT)
-                        self.arr_bot_r = self.arr_tip_pos - QPointF(-self.ARR_LONG, self.ARR_SHORT)
-                    elif arr_end_pos.x() == center_x:
-                        pass
-                    # Right of rect center
-                    else:
-                        self.arr_bot_l = self.arr_tip_pos - QPointF(self.ARR_LONG, self.ARR_SHORT)
-                        self.arr_bot_r = self.arr_tip_pos + QPointF(-self.ARR_LONG, self.ARR_SHORT)
+                    arr_bot_l = arr_tip_pos - QPointF(self.ARR_LONG, self.ARR_SHORT)
+                    arr_bot_r = arr_tip_pos + QPointF(-self.ARR_LONG, self.ARR_SHORT)
 
                 self.arr_tip = self.addPolygon(
-                    QPolygonF([self.arr_tip_pos, self.arr_bot_l, self.arr_bot_r]),
+                    QPolygonF([arr_tip_pos, arr_bot_l, arr_bot_r]),
                     QPen(),
                     QBrush(Qt.black)
                 )
@@ -938,12 +951,9 @@ class MainWindow(QMainWindow):
                 # Handle single clicks
                 self.select_end = pos
                 single_click = self.select_start == self.select_end
-                self.released_on_1 = self.itemAt(pos, QTransform())
+                self.released_on_1 = self.top_rect_at(pos)
                 if single_click:
                     if self.released_on_1: # Select component if clicking on it
-                        # In case we're clicking on text
-                        par = self.released_on_1.parentItem()
-                        self.released_on_1 = par if par else self.released_on_1
                         self.clearSelection()
                         self.released_on_1.setSelected(True)
                     else: # Add new component if just clicking in free area
