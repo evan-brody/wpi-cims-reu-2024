@@ -98,10 +98,13 @@ class DepQGraphicsScene(QGraphicsScene):
     ARR_LONG = 10 # The length of the middle axis
     ARR_SHORT = 5 # Half the length of the base
 
+    SCENE_WIDTH = 5_000
+    SCENE_HEIGHT = 1_000
+
     def __init__(self, parent_window: QMainWindow):
         super().__init__()
 
-        self.setSceneRect(0, 0, 5_000, 1_000)
+        self.setSceneRect(0, 0, self.SCENE_WIDTH, self.SCENE_HEIGHT)
 
         self.parent_window = parent_window
 
