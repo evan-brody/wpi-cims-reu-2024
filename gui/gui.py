@@ -149,7 +149,8 @@ class DepQGraphicsScene(QGraphicsScene):
                 if isinstance(item, QGraphicsRectItem) and \
                     item.zValue() > maxz:
                     top_rect, maxz = item, item.zValue()
-        
+
+        self.removeItem(collision_line)
         return top_rect
     
     def draw_arr(self, start_pos, end_pos, pen):
