@@ -89,6 +89,430 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 # database_data = {}
 
+# Custom QGraphicsScene class for the dependency tab
+class DepQGraphicsScene(QGraphicsScene):
+    # Keys for the QGraphicsItem data table
+    MOUSE_DELTA = 0
+
+    # The tip of a dependency arrow is an isosceles triangle
+    ARR_LONG = 10 # The length of the middle axis
+    ARR_SHORT = 5 # Half the length of the base
+
+    SCENE_WIDTH = 5_000
+    SCENE_HEIGHT = 1_000
+
+    def __init__(self, parent_window: QMainWindow):
+        super().__init__()
+
+        self.setSceneRect(0, 0, self.SCENE_WIDTH, self.SCENE_HEIGHT)
+
+        self.parent_window = parent_window
+
+        # For the selection box
+        self.select_rect_item = None
+        self.select_start = None
+        self.select_end = None
+
+        # Which items we clicked and released on with LMB or RMB
+        self.clicked_on_l = None
+        self.released_on_1 = None
+        self.clicked_on_r = None
+        self.released_on_r = None
+
+        # Keeps track of which mouse buttons are currently pressed
+        self.mouse_down_l = False
+        self.mouse_down_r = False
+
+        # Tracks current placement of dependency arrow
+        self.dep_origin = None
+        self.dyn_arr = None
+
+        self.rect_depends_on = {}
+        self.rect_influences = {}
+
+        self.arrs_point_to = {}
+        self.arrs_point_from = {}
+
+        self.rect_arrs_in = {}
+        self.rect_arrs_out = {}
+
+    def top_rect_at(self, pos):
+        collision_line = self.addLine(
+            QLineF(pos, pos),
+            QPen(QColor(0, 0, 0, 0))
+        )
+        moused_over = self.collidingItems(collision_line)
+        top_rect = None
+        if 0 < len(moused_over):
+            maxz = float('-inf')
+            for item in moused_over:
+                if isinstance(item, QGraphicsRectItem) and \
+                    item.zValue() > maxz:
+                    top_rect, maxz = item, item.zValue()
+        
+        return top_rect
+    
+    def draw_arr(self, start_pos, end_pos, pen):
+        elbow = QPointF(start_pos.x(), end_pos.y())
+
+        self.del_dyn_arr()
+        arr_v = self.addLine(
+            QLineF(start_pos, elbow),
+            pen
+        )
+        arr_h = self.addLine(
+            QLineF(elbow, end_pos),
+            pen
+        )
+
+        arr_tip_pos = end_pos
+        point_down = False
+        point_up = False
+
+        moused_over = self.top_rect_at(end_pos)
+        if moused_over:
+            left_bound = moused_over.scenePos().x()
+            right_bound = left_bound + moused_over.rect().width()
+            top_bound = moused_over.scenePos().y()
+            bot_bound = top_bound + moused_over.rect().height()
+
+            # If we're going straight up or down into the rectangle
+            if left_bound < start_pos.x() < right_bound:
+                # Coming from above
+                if start_pos.y() < end_pos.y():
+                    arr_tip_pos.setY(top_bound)
+                    point_down = True
+                # Coming from below
+                else:
+                    arr_tip_pos.setY(bot_bound)
+                    point_up = True
+                arr_tip_pos.setX(start_pos.x())
+            else:
+                # If we're coming in from the left
+                if start_pos.x() < end_pos.x():
+                    arr_tip_pos.setX(left_bound)
+                # Coming in from the right
+                else:
+                    arr_tip_pos.setX(right_bound)
+
+        # Which way should the arrow point ?
+        if point_down:
+            arr_bot_l = arr_tip_pos + QPointF(self.ARR_SHORT, -self.ARR_LONG)
+            arr_bot_r = arr_tip_pos - QPointF(self.ARR_SHORT, self.ARR_LONG)
+        elif point_up:
+            arr_bot_l = arr_tip_pos + QPointF(self.ARR_SHORT, self.ARR_LONG)
+            arr_bot_r = arr_tip_pos - QPointF(self.ARR_SHORT, -self.ARR_LONG)
+        elif end_pos.x() <= start_pos.x():
+            arr_bot_l = arr_tip_pos + QPointF(self.ARR_LONG, self.ARR_SHORT)
+            arr_bot_r = arr_tip_pos - QPointF(-self.ARR_LONG, self.ARR_SHORT)
+        else:
+            arr_bot_l = arr_tip_pos - QPointF(self.ARR_LONG, self.ARR_SHORT)
+            arr_bot_r = arr_tip_pos + QPointF(-self.ARR_LONG, self.ARR_SHORT)
+
+        arr_tip = self.addPolygon(
+            QPolygonF([arr_tip_pos, arr_bot_l, arr_bot_r]),
+            QPen(),
+            QBrush(Qt.black)
+        )
+
+        arr = self.createItemGroup([arr_v, arr_h, arr_tip])
+        arr.setZValue(-1)
+
+        return arr
+
+    def add_component(self, event: QGraphicsSceneMouseEvent):
+        comp_str = self.parent_window.dep_comp_select.currentText()
+        if comp_str == "Select a Component":
+            return
+
+        # Create and add rectangle
+        rect_w, rect_h = 100, 50
+        rect_x = event.scenePos().x() - rect_w // 2
+        rect_y = event.scenePos().y() - rect_h // 2
+        brush = QBrush(self.parent_window.WPI_RED)
+
+        rect_item = self.addRect(0, 0, rect_w, rect_h, QPen(), brush)
+        rect_item.setPos(rect_x, rect_y)
+        rect_item.setFlags(QGraphicsItem.ItemIsSelectable)
+        self.rect_depends_on[rect_item] = []
+        self.rect_influences[rect_item] = []
+        self.rect_arrs_in[rect_item] = []
+        self.rect_arrs_out[rect_item] = []
+
+        # Create text
+        text_widg = QLabel(comp_str)
+        text_widg.setWordWrap(True)
+        text_widg.setAlignment(Qt.AlignHCenter)
+
+        # Match background color to rectangle
+        pal = text_widg.palette()
+        pal.setBrush(QPalette.Window, brush)
+        text_widg.setPalette(pal)
+
+        # Set up proxy for binding to scene
+        proxy = QGraphicsProxyWidget(parent=rect_item)
+        proxy.setWidget(text_widg)
+
+        # Center within rectangle
+        text_pos = rect_item.mapFromScene(rect_item.pos())
+        text_w = proxy.boundingRect().width()
+        text_h = proxy.boundingRect().height()
+        text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
+        proxy.setPos(text_pos)
+
+    def del_select_rect_item(self):
+        # Remove selection box
+        if self.select_rect_item:
+            self.removeItem(self.select_rect_item)
+            self.select_rect_item = None
+
+    def del_dyn_arr(self):
+        if self.dyn_arr:
+            self.removeItem(self.dyn_arr)
+            self.dyn_arr = None
+
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
+        match event.button():
+            case Qt.LeftButton:
+                self.mousePressEventL(event)
+            case Qt.RightButton:
+                self.mousePressEventR(event)
+
+    def mousePressEventL(self, event: QGraphicsSceneMouseEvent):
+        if self.dep_origin:
+            self.del_dyn_arr()
+            self.dep_origin = None
+            return
+        
+        self.mouse_down_l = True
+        pos = event.scenePos()
+        self.select_start = pos
+
+        # Select whatever we've clicked on
+        self.clicked_on_l = self.top_rect_at(pos)
+        self.del_select_rect_item()
+        if self.clicked_on_l is None:
+            # Begin visual selection box
+            self.select_rect_item = self.addRect(
+                self.select_start.x(),
+                self.select_start.y(),
+                0, 0,
+                QPen(Qt.black),
+                QBrush(Qt.NoBrush)
+            )
+        else:
+            if 1 == len(self.selectedItems()):
+                self.clearSelection()
+
+            self.clicked_on_l.setSelected(True)
+
+            # Establish vectors from mouse to items
+            for item in self.selectedItems():
+                item.setData(self.MOUSE_DELTA, item.scenePos() - pos)
+    
+    def mousePressEventR(self, event: QGraphicsSceneMouseEvent):
+        self.mouse_down_r = True
+
+    def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
+        if self.mouse_down_l:
+            self.mouseMoveEventL(event)
+        if self.dep_origin:
+            self.mouseMoveEventR(event)
+
+    def mouseMoveEventL(self, event: QGraphicsSceneMouseEvent):
+        if self.dep_origin:
+            return
+
+        pos = event.scenePos()
+
+        # Drags objects around, if we should
+        if self.clicked_on_l is not None and \
+            self.select_start is not None:
+            selected = self.selectedItems()
+            # Move everything before we redraw arrows
+            for item in selected:
+                delta = item.data(self.MOUSE_DELTA)
+                item.setPos(pos + delta)
+
+            # Redraw arrows
+            for item in selected:
+                if not isinstance(item, QGraphicsRectItem):
+                    continue
+
+                for arr in self.rect_arrs_out[item] + self.rect_arrs_in[item]:
+                    if arr.scene():
+                        self.removeItem(arr)
+                self.rect_arrs_out[item].clear()
+                self.rect_arrs_in[item].clear()
+
+                redrawn = set()
+
+                # Redraw the arrows that are going out of the item
+                for dependency in self.rect_depends_on[item]:
+                    if not dependency.scene():
+                        continue
+
+                    item_center = item.scenePos()
+                    item_center += QPointF(item.rect().width() / 2,
+                                            item.rect().height() / 2)
+
+                    dep_center = dependency.scenePos()
+                    dep_center += QPointF(dependency.rect().width() / 2,
+                                            dependency.rect().height() / 2)
+                    
+                    new_arr = self.draw_arr(item_center, dep_center, QPen())
+                    self.arrs_point_to[new_arr] = dependency
+                    self.arrs_point_from[new_arr] = item
+
+                    self.rect_arrs_out[item].append(new_arr)
+                    self.rect_arrs_in[dependency].append(new_arr)
+
+                    redrawn.add((item, dependency))
+
+                # Redraw the arrows that are going into the item  
+                for influence in self.rect_influences[item]:
+                    if not influence.scene() or (influence, item) in redrawn:
+                        continue
+
+                    inf_center = influence.scenePos()
+                    inf_center += QPointF(influence.rect().width() / 2,
+                                          influence.rect().height() / 2)
+
+                    item_center = item.scenePos()
+                    item_center += QPointF(item.rect().width() / 2,
+                                            item.rect().height() / 2)
+
+                    new_arr = self.draw_arr(inf_center, item_center, QPen())
+
+                    self.arrs_point_to[new_arr] = item
+                    self.arrs_point_from[new_arr] = influence
+
+                    self.rect_arrs_out[influence].append(new_arr)
+                    self.rect_arrs_in[item].append(new_arr)
+
+            return
+
+        # Adjusts visual selection box
+        ax = min(self.select_start.x(), pos.x())
+        ay = min(self.select_start.y(), pos.y())
+
+        bx = max(self.select_start.x(), pos.x())
+        by = max(self.select_start.y(), pos.y())
+        bx -= ax
+        by -= ay
+
+        self.del_select_rect_item()
+        self.select_rect_item = self.addRect(
+            ax, ay,
+            bx, by,
+            QPen(Qt.DashLine),
+            QBrush(Qt.NoBrush)
+        )
+
+    def mouseMoveEventR(self, event: QGraphicsSceneMouseEvent):     
+        # Important to note that y-values increase as we go down
+        arr_start_pos = self.dep_origin.scenePos()
+        arr_start_pos += QPointF(self.dep_origin.rect().width() / 2,
+                                 self.dep_origin.rect().height() / 2)
+        
+        self.dyn_arr = self.draw_arr(
+            arr_start_pos, 
+            event.scenePos(),
+            QPen(Qt.DashLine)
+        )
+
+    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
+        match event.button():
+            case Qt.LeftButton:
+                self.mouseReleaseEventL(event)
+            case Qt.RightButton:
+                self.clearSelection()
+                self.mouseReleaseEventR(event)
+
+    def mouseReleaseEventL(self, event: QGraphicsSceneMouseEvent):
+        self.mouse_down_l = False
+        pos = event.scenePos()
+        
+        # Handle single clicks
+        self.select_end = pos
+        single_click = self.select_start == self.select_end
+        self.released_on_1 = self.top_rect_at(pos)
+        if single_click:
+            if self.released_on_1: # Select component if clicking on it
+                self.clearSelection()
+                self.released_on_1.setSelected(True)
+            else: # Add new component if just clicking in free area
+                self.add_component(event)
+                self.clearSelection()
+            return
+        
+        if not self.select_rect_item:
+            return
+        self.del_select_rect_item()
+
+        # Define selection area
+        select = QPainterPath()
+        rect = QRectF(self.select_start, self.select_end)
+        if single_click:
+            rect.setBottomRight(self.select_end + QPointF(1, 1))
+        select.addRect(QRectF(self.select_start, self.select_end))
+        self.setSelectionArea(select)
+
+        # Selections inside one component should be treated as clicks
+        if self.clicked_on_l is not None and self.clicked_on_l == self.released_on_1:
+            self.clearSelection()
+            self.clicked_on_l.setSelected(True)
+
+    def mouseReleaseEventR(self, event: QGraphicsSceneMouseEvent):
+        self.mouse_down_r = False
+        pos = event.scenePos()
+
+        self.released_on_r = self.top_rect_at(pos)
+        if self.released_on_r:
+            if not self.dep_origin:
+                self.dep_origin = self.released_on_r
+            else:
+                # Don't draw an arrow from a component to itself
+                # or redraw an arrow that's already been created
+                if self.dep_origin != self.released_on_r and \
+                   self.released_on_r not in self.rect_depends_on[self.dep_origin]:
+                    arr_start_pos = self.dep_origin.scenePos()
+                    arr_start_pos += QPointF(self.dep_origin.rect().width() / 2,
+                                                self.dep_origin.rect().height() / 2)
+                    
+                    arr_end_pos = self.released_on_r.scenePos()
+                    arr_end_pos += QPointF(self.released_on_r.rect().width() / 2,
+                                            self.released_on_r.rect().height() / 2)
+                    
+                    arr = self.draw_arr(arr_start_pos, arr_end_pos, QPen())
+                    self.arrs_point_to[arr] = self.released_on_r
+                    self.arrs_point_from[arr] = self.released_on_1
+
+                    self.rect_arrs_out[self.dep_origin].append(arr)
+                    self.rect_arrs_in[self.released_on_r].append(arr)
+
+                    self.rect_depends_on[self.dep_origin].append(self.released_on_r)
+                    self.rect_influences[self.released_on_r].append(self.dep_origin)
+
+                # Cleanup
+                self.dep_origin = None
+                self.del_dyn_arr()
+
+    def keyReleaseEvent(self, event):
+        match event.key():
+            case Qt.Key_Delete | Qt.Key_Backspace:
+                for item in self.selectedItems():
+                    for arr in self.rect_arrs_out[item] + self.rect_arrs_in[item]:
+                        if arr.scene():
+                            self.removeItem(arr)
+                    self.rect_arrs_out[item].clear()
+                    self.rect_arrs_in[item].clear()
+
+                    self.rect_depends_on[item].clear()
+                    self.rect_influences[item].clear()
+
+                    self.removeItem(item)
+
 """
 
 Name: MainWindow
@@ -664,328 +1088,6 @@ class MainWindow(QMainWindow):
         # Add widgets to top layout
         self.dep_select_layout.addWidget(self.dep_comp_search, stretch=1)
         self.dep_select_layout.addWidget(self.dep_comp_select, stretch=1)
-
-        class DepQGraphicsScene(QGraphicsScene):
-            # Keys for the QGraphicsItem data table
-            MOUSE_DELTA = 0
-            ARR_OUT = 1
-            ARR_IN = 2
-
-            # The tip of a dependency arrow is an isosceles triangle
-            ARR_LONG = 10 # The length of the middle axis
-            ARR_SHORT = 5 # Half the length of the base
-
-            def __init__(self, parent_window: MainWindow):
-                super().__init__()
-
-                self.setSceneRect(0, 0, 5_000, 1_000)
-
-                self.parent_window = parent_window
-
-                # For the selection box
-                self.select_rect_item = None
-                self.select_start = None
-                self.select_end = None
-
-                # Which items we clicked and released on with LMB or RMB
-                self.clicked_on_l = None
-                self.released_on_1 = None
-                self.clicked_on_r = None
-                self.released_on_r = None
-
-                # Keeps track of which mouse buttons are currently pressed
-                self.mouse_down_l = False
-                self.mouse_down_r = False
-
-                # Tracks current placement of dependency arrow
-                self.dep_origin = None
-                self.dep_end = None
-                self.dyn_arr_v = None
-                self.dyn_arr_h = None
-                self.arr_tip = None
-
-            def top_rect_at(self, pos):
-                collision_line = self.addLine(
-                    QLineF(pos, pos),
-                    QPen(QColor(0, 0, 0, 0))
-                )
-                moused_over = self.collidingItems(collision_line)
-                top_rect = None
-                if 0 < len(moused_over):
-                    maxz = float('-inf')
-                    for item in moused_over:
-                        if isinstance(item, QGraphicsRectItem) and \
-                           item.zValue() > maxz:
-                            top_rect, maxz = item, item.zValue()
-                
-                return top_rect
-
-            def add_component(self, event: QGraphicsSceneMouseEvent):
-                comp_str = self.parent_window.dep_comp_select.currentText()
-                if comp_str == "Select a Component":
-                    return
-
-                # Create and add rectangle
-                rect_w, rect_h = 100, 50
-                rect_x = event.scenePos().x() - rect_w // 2
-                rect_y = event.scenePos().y() - rect_h // 2
-                brush = QBrush(self.parent_window.WPI_RED)
-
-                rect_item = self.addRect(0, 0, rect_w, rect_h, QPen(), brush)
-                rect_item.setPos(rect_x, rect_y)
-                rect_item.setFlags(QGraphicsItem.ItemIsSelectable)
-
-                # Create text
-                text_widg = QLabel(comp_str)
-                text_widg.setWordWrap(True)
-                text_widg.setAlignment(Qt.AlignHCenter)
-
-                # Match background color to rectangle
-                pal = text_widg.palette()
-                pal.setBrush(QPalette.Window, brush)
-                text_widg.setPalette(pal)
-
-                # Set up proxy for binding to scene
-                proxy = QGraphicsProxyWidget(parent=rect_item)
-                proxy.setWidget(text_widg)
-
-                # Center within rectangle
-                text_pos = rect_item.mapFromScene(rect_item.pos())
-                text_w = proxy.boundingRect().width()
-                text_h = proxy.boundingRect().height()
-                text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
-                proxy.setPos(text_pos)
-
-            def del_select_rect_item(self):
-                # Remove selection box
-                if self.select_rect_item:
-                    self.removeItem(self.select_rect_item)
-                    self.select_rect_item = None
-
-            def del_dyn_arr(self):
-                # Remove arrow
-                if self.dyn_arr_v:
-                    self.removeItem(self.dyn_arr_v)
-                    self.dyn_arr_v = None
-                if self.dyn_arr_h:
-                    self.removeItem(self.dyn_arr_h)
-                    self.dyn_arr_h = None
-                if self.arr_tip:
-                    self.removeItem(self.arr_tip)
-                    self.arr_tip = None
-
-            def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
-                match event.button():
-                    case Qt.LeftButton:
-                        self.mousePressEventL(event)
-                    case Qt.RightButton:
-                        self.mousePressEventR(event)
-
-            def mousePressEventL(self, event: QGraphicsSceneMouseEvent):
-                if self.dep_origin:
-                    self.del_dyn_arr()
-                    self.dep_origin = None
-                    return
-                
-                self.mouse_down_l = True
-                pos = event.scenePos()
-                self.select_start = pos
-
-                # Select whatever we've clicked on
-                self.clicked_on_l = self.top_rect_at(pos)
-                self.del_select_rect_item()
-                if self.clicked_on_l is None:
-                    # Begin visual selection box
-                    self.select_rect_item = self.addRect(
-                        self.select_start.x(),
-                        self.select_start.y(),
-                        0, 0,
-                        QPen(Qt.black),
-                        QBrush(Qt.NoBrush)
-                    )
-                else:
-                    if 1 == len(self.selectedItems()):
-                        self.clearSelection()
-
-                    self.clicked_on_l.setSelected(True)
-
-                    # Establish vectors from mouse to items
-                    for item in self.selectedItems():
-                        item.setData(self.MOUSE_DELTA, item.scenePos() - pos)
-            
-            def mousePressEventR(self, event: QGraphicsSceneMouseEvent):
-                self.mouse_down_r = True
-                pos = event.scenePos()
-
-                self.clicked_on_r = self.top_rect_at(pos)
-                if self.clicked_on_r:
-                    if not self.dep_origin:
-                        self.dep_origin = self.clicked_on_r
-                    else:
-                        arr_start_pos = self.dep_origin.scenePos()
-                        arr_start_pos += QPointF(self.dep_origin.rect().width() / 2,
-                                                 self.dep_origin.rect().height() / 2)
-                        
-                        arr_end_pos = self.clicked_on_r.scenePos()
-                        arr_end_pos += QPointF(self.clicked_on_r.rect().width() / 2,
-                                               self.clicked_on_r.rect().height() / 2)
-                        
-                        elbow = QPointF(arr_start_pos.x(), arr_end_pos.y())
-
-                        arr_v = self.addLine(
-                            QLineF(arr_start_pos, elbow),
-                        )
-                        arr_h = self.addLine(
-                            QLineF(elbow, arr_end_pos),
-                        )
-
-                        arr_v.setZValue(-1)
-                        arr_h.setZValue(-1)
-
-                        # Cleanup
-                        self.dep_origin = None
-                        self.del_dyn_arr()
-
-            def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
-                if self.mouse_down_l:
-                    self.mouseMoveEventL(event)
-                if self.dep_origin:
-                    self.mouseMoveEventR(event)
-
-            def mouseMoveEventL(self, event: QGraphicsSceneMouseEvent):
-                if self.dep_origin:
-                    return
-
-                pos = event.scenePos()
-
-                # Drags objects around, if we should
-                if self.clicked_on_l is not None and \
-                   self.select_start is not None:
-                    for item in self.selectedItems():
-                        delta = item.data(self.MOUSE_DELTA)
-                        item.setPos(pos + delta)
-                    return
-
-                # Adjusts visual selection box
-                ax = min(self.select_start.x(), pos.x())
-                ay = min(self.select_start.y(), pos.y())
-
-                bx = max(self.select_start.x(), pos.x())
-                by = max(self.select_start.y(), pos.y())
-                bx -= ax
-                by -= ay
-
-                self.del_select_rect_item()
-                self.select_rect_item = self.addRect(
-                    ax, ay,
-                    bx, by,
-                    QPen(Qt.DashLine),
-                    QBrush(Qt.NoBrush)
-                )
-
-            def mouseMoveEventR(self, event: QGraphicsSceneMouseEvent):     
-                pos = event.scenePos()
-
-                # Important to note that y-values increase as we go down
-                arr_start_pos = self.dep_origin.scenePos()
-                arr_start_pos += QPointF(self.dep_origin.rect().width() / 2,
-                                         self.dep_origin.rect().height() / 2)
-
-                elbow = QPointF(arr_start_pos.x(), pos.y())
-
-                self.del_dyn_arr()
-                self.dyn_arr_v = self.addLine(
-                    QLineF(arr_start_pos, elbow),
-                    QPen(Qt.DashLine)
-                )
-                self.dyn_arr_h = self.addLine(
-                    QLineF(elbow, pos),
-                    QPen(Qt.DashLine)
-                )
-
-                arr_tip_pos = pos
-
-                
-                moused_over = self.top_rect_at(pos)
-                if moused_over:
-                    left_bound = moused_over.scenePos().x()
-                    right_bound = left_bound + moused_over.rect().width()
-
-                    # If we're coming in from the left
-                    if arr_start_pos.x() < pos.x():
-                        arr_tip_pos.setX(left_bound)
-                    else: # Coming in from the right
-                        arr_tip_pos.setX(right_bound)
-
-                center_x = self.dep_origin.scenePos().x() + self.dep_origin.rect().width() / 2
-                # Left of origin rect center
-                if pos.x() <= center_x:
-                    arr_bot_l = arr_tip_pos + QPointF(self.ARR_LONG, self.ARR_SHORT)
-                    arr_bot_r = arr_tip_pos - QPointF(-self.ARR_LONG, self.ARR_SHORT)
-                else:
-                    arr_bot_l = arr_tip_pos - QPointF(self.ARR_LONG, self.ARR_SHORT)
-                    arr_bot_r = arr_tip_pos + QPointF(-self.ARR_LONG, self.ARR_SHORT)
-
-                self.arr_tip = self.addPolygon(
-                    QPolygonF([arr_tip_pos, arr_bot_l, arr_bot_r]),
-                    QPen(),
-                    QBrush(Qt.black)
-                )
-
-                self.dyn_arr_v.setZValue(-1)
-                self.dyn_arr_h.setZValue(-1)
-                self.arr_tip.setZValue(-1)
-
-            def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
-                match event.button():
-                    case Qt.LeftButton:
-                        self.mouseReleaseEventL(event)
-                    case Qt.RightButton:
-                        self.clearSelection()
-                        self.mouseReleaseEventR(event)
-
-            def mouseReleaseEventL(self, event: QGraphicsSceneMouseEvent):
-                self.mouse_down_l = False
-                pos = event.scenePos()
-                
-                # Handle single clicks
-                self.select_end = pos
-                single_click = self.select_start == self.select_end
-                self.released_on_1 = self.top_rect_at(pos)
-                if single_click:
-                    if self.released_on_1: # Select component if clicking on it
-                        self.clearSelection()
-                        self.released_on_1.setSelected(True)
-                    else: # Add new component if just clicking in free area
-                        self.add_component(event)
-                        self.clearSelection()
-                    return
-                
-                if not self.select_rect_item:
-                    return
-                self.del_select_rect_item()
-
-                # Define selection area
-                select = QPainterPath()
-                rect = QRectF(self.select_start, self.select_end)
-                if single_click:
-                    rect.setBottomRight(self.select_end + QPointF(1, 1))
-                select.addRect(QRectF(self.select_start, self.select_end))
-                self.setSelectionArea(select)
-
-                # Selections inside one component should be treated as clicks
-                if self.clicked_on_l is not None and self.clicked_on_l == self.released_on_1:
-                    self.clearSelection()
-                    self.clicked_on_l.setSelected(True)
-
-            def mouseReleaseEventR(self, event: QGraphicsSceneMouseEvent):
-                self.mouse_down_r = False
-
-            def keyReleaseEvent(self, event):
-                match event.key():
-                    case Qt.Key_Delete | Qt.Key_Backspace:
-                        for item in self.selectedItems():
-                            self.removeItem(item)
                 
         # Setting up system dependency view
         self.system_vis_scene = DepQGraphicsScene(self)
