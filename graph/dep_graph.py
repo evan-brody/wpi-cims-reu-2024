@@ -13,6 +13,7 @@ class DepGraph:
     DEFAULT_DR = 0.05
     # 17 MB
     J = np.ones((MAX_VERTICES, MAX_VERTICES), np.uint8)
+    I = np.identity(MAX_VERTICES, np.uint8)
 
     def __init__(self) -> None:
         # User will be able to set this. I anticipate that
@@ -31,6 +32,10 @@ class DepGraph:
         # 33 KB
         self.iref = np.empty((self.MAX_VERTICES,), QGraphicsRectItem) # Maps indices to QGraphicsRectItems
 
+    def prob_mat_vec_mul(self, a: np.ndarray, v: np.ndarray) -> np.ndarray:
+        lenv = len(v)
+        return self.J[0, :lenv] - np.prod(self.J[:lenv, :lenv] - np.multiply(a, v), axis=1)
+
     def prob_mat_mul(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
         res = np.empty((a.shape[0], b.shape[1]), np.double)
         
@@ -38,10 +43,26 @@ class DepGraph:
             res[i, j] = 1 - np.prod(self.J[0, :a.shape[1]] - np.multiply(a[i], b.T[j]))
         
         return res
+    
+    def prob_mat_mul_c(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+        res = np.empty((a.shape[0], b.shape[1]), np.double)
+        
+        for i, j in itertools.product(range(a.shape[0]), range(b.shape[1])):
+            res[i, j] = np.prod(self.J[0, :a.shape[1]] - np.multiply(a[i], b.T[j]))
+        
+        return res
+    
+    # This is slow
+    # TODO: speed up
+    def exp_A(self, p) -> np.ndarray:
+        n = self.n
 
-    def prob_mat_vec_mul(self, a: np.ndarray, v: np.ndarray) -> np.ndarray:
-        lenv = len(v)
-        return self.J[0, :lenv] - np.prod(self.J[:lenv, :lenv] - np.multiply(a, v), axis=1)
+        res = np.identity(n)
+        A1 = self.A[:n, :n]
+        for _ in range(p):
+            res = self.prob_mat_mul(A1, res)
+
+        return res
 
     def set_auto_update(self, bval) -> None:
         self.auto_update = bval
@@ -68,7 +89,7 @@ class DepGraph:
 
     # edges is a list of tuples (a, b) where a -> b
     # with the weight in weights whose index matches the tuple's
-    def add_edges(self, edges, weights=None):
+    def add_edges(self, edges, weights=None) -> None:
         if weights is None:
             for pair in edges:
                 i, j = self.refi[pair[1]], self.refi[pair[0]]
@@ -84,8 +105,11 @@ class DepGraph:
         
         # TODO
 
-    def calc_r(self):
-        pass
+    # This is slow! Shouldn't be used unless necessary
+    # TODO: this class should calculate m. could be tricky: it's NP-hard
+    def calc_r(self, m) -> np.ndarray:
+        n = self.n
+        return self.prob_mat_vec_mul(self.I[:n, :n] + self.J[:n, :n] - itertools.reduce(np.multiply, [ self.exp_A(i) for i in range(1, m + 1) ]), self.r0)
 
 if __name__ == "__main__":
     # Testing code
