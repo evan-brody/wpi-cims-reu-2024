@@ -157,21 +157,43 @@ class DepQGraphicsScene(QGraphicsScene):
         )
 
         arr_tip_pos = end_pos
+        point_down = False
+        point_up = False
 
         moused_over = self.top_rect_at(end_pos)
         if moused_over:
             left_bound = moused_over.scenePos().x()
             right_bound = left_bound + moused_over.rect().width()
+            top_bound = moused_over.scenePos().y()
+            bot_bound = top_bound + moused_over.rect().height()
 
-            # If we're coming in from the left
-            if start_pos.x() < end_pos.x():
-                arr_tip_pos.setX(left_bound)
-            else: # Coming in from the right
-                arr_tip_pos.setX(right_bound)
+            # If we're going straight up or down into the rectangle
+            if left_bound < start_pos.x() < right_bound:
+                # Coming from above
+                if start_pos.y() < end_pos.y():
+                    arr_tip_pos.setY(top_bound)
+                    point_down = True
+                # Coming from below
+                else:
+                    arr_tip_pos.setY(bot_bound)
+                    point_up = True
+                arr_tip_pos.setX(start_pos.x())
+            else:
+                # If we're coming in from the left
+                if start_pos.x() < end_pos.x():
+                    arr_tip_pos.setX(left_bound)
+                # Coming in from the right
+                else:
+                    arr_tip_pos.setX(right_bound)
 
-        center_x = self.dep_origin.scenePos().x() + self.dep_origin.rect().width() / 2
-        # Left of origin rect center
-        if end_pos.x() <= center_x:
+        # Which way should the arrow point ?
+        if point_down:
+            arr_bot_l = arr_tip_pos + QPointF(self.ARR_SHORT, -self.ARR_LONG)
+            arr_bot_r = arr_tip_pos - QPointF(self.ARR_SHORT, self.ARR_LONG)
+        elif point_up:
+            arr_bot_l = arr_tip_pos + QPointF(self.ARR_SHORT, self.ARR_LONG)
+            arr_bot_r = arr_tip_pos - QPointF(self.ARR_SHORT, -self.ARR_LONG)
+        elif end_pos.x() <= start_pos.x():
             arr_bot_l = arr_tip_pos + QPointF(self.ARR_LONG, self.ARR_SHORT)
             arr_bot_r = arr_tip_pos - QPointF(-self.ARR_LONG, self.ARR_SHORT)
         else:
