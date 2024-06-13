@@ -8,6 +8,10 @@ import itertools
 import functools
 from PyQt5.QtWidgets import QGraphicsRectItem
 
+# TODO: remove vertices
+# TODO: remove edges
+# TODO: optimize
+
 class DepGraph:
     MAX_VERTICES = 4096
     DEFAULT_EDGE_WEIGHT = 1
