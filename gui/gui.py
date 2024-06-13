@@ -674,13 +674,27 @@ class MainWindow(QMainWindow):
                 self.setSceneRect(0, 0, 5_000, 1_000)
 
                 self.parent_window = parent_window
+
+                # For the selection box
                 self.select_rect_item = None
                 self.select_start = None
                 self.select_end = None
-                self.clicked_on = None
-                self.released_on = None
+
+                # Which items we clicked and released on with LMB or RMB
+                self.clicked_on_l = None
+                self.released_on_1 = None
+                self.clicked_on_r = None
+                self.released_on_r = None
+
+                # Keeps track of which mouse buttons are currently pressed
                 self.mouse_down_l = False
                 self.mouse_down_r = False
+
+                # Tracks current placement of dependency arrow
+                self.dep_origin = None
+                self.dep_end = None
+                self.dyn_arr_v = None
+                self.dyn_arr_h = None
 
             def add_component(self, event: QGraphicsSceneMouseEvent):
                 comp_str = self.parent_window.dep_comp_select.currentText()
@@ -720,9 +734,18 @@ class MainWindow(QMainWindow):
 
             def del_select_rect_item(self):
                 # Remove selection box
-                if self.select_rect_item is not None:
+                if self.select_rect_item:
                     self.removeItem(self.select_rect_item)
                     self.select_rect_item = None
+
+            def del_dyn_arr(self):
+                # Remove arrow
+                if self.dyn_arr_v:
+                    self.removeItem(self.dyn_arr_v)
+                    self.dyn_arr_v = None
+                if self.dyn_arr_h:
+                    self.removeItem(self.dyn_arr_h)
+                    self.dyn_arr_h = None
 
             def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
                 match event.button():
@@ -737,9 +760,9 @@ class MainWindow(QMainWindow):
                 self.select_start = pos
 
                 # Select whatever we've clicked on
-                self.clicked_on = self.itemAt(pos, QTransform())
+                self.clicked_on_l = self.itemAt(pos, QTransform())
                 self.del_select_rect_item()
-                if self.clicked_on is None:
+                if self.clicked_on_l is None:
                     # Begin visual selection box
                     self.select_rect_item = self.addRect(
                         self.select_start.x(),
@@ -753,11 +776,9 @@ class MainWindow(QMainWindow):
                         self.clearSelection()
 
                     # Handles clicking on text
-                    par = self.clicked_on.parentItem()
-                    if par:
-                        self.clicked_on = par
-                    
-                    self.clicked_on.setSelected(True)
+                    par = self.clicked_on_l.parentItem()
+                    self.clicked_on_l = par if par else self.clicked_on_l
+                    self.clicked_on_l.setSelected(True)
 
                     # Establish vectors from mouse to items
                     for item in self.selectedItems():
@@ -765,18 +786,32 @@ class MainWindow(QMainWindow):
             
             def mousePressEventR(self, event: QGraphicsSceneMouseEvent):
                 self.mouse_down_r = True
+                pos = event.scenePos()
+
+                self.clicked_on_r = self.itemAt(pos, QTransform())
+                if self.clicked_on_r:
+                    par = self.clicked_on_r.parentItem()
+                    self.clicked_on_r = par if par else self.clicked_on_r
+                    if not self.dep_origin:
+                        self.dep_origin = self.clicked_on_r
+                    else:
+                        pass
+                        # todo note:
+                        # don't do this. add the arrow visually, then call backend
+                        # dep_end should not be a variable
+                        # self.dep_end = self.clicked_on_r
 
             def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
                 if self.mouse_down_l:
                     self.mouseMoveEventL(event)
-                if self.mouse_down_r:
-                    self.mouseMoveEventR(event)
+                # if self.mouse_down_r:
+                self.mouseMoveEventR(event)
 
             def mouseMoveEventL(self, event: QGraphicsSceneMouseEvent):
                 pos = event.scenePos()
 
                 # Drags objects around, if we should
-                if self.clicked_on is not None and \
+                if self.clicked_on_l is not None and \
                    self.select_start is not None:
                     for item in self.selectedItems():
                         delta = item.data(self.MOUSE_DELTA)
@@ -801,7 +836,37 @@ class MainWindow(QMainWindow):
                 )
 
             def mouseMoveEventR(self, event: QGraphicsSceneMouseEvent):
-                pass
+                if not self.dep_origin:
+                    return
+                
+                arr_end_pos = event.scenePos()
+                comp_top_y = self.dep_origin.scenePos().y()
+                comp_bot_y = comp_top_y - self.dep_origin.rect().height()
+                if comp_top_y <= arr_end_pos.y():
+                    pass
+                elif comp_bot_y < arr_end_pos.y() < comp_top_y:
+                    pass
+                elif arr_end_pos.y() <= comp_bot_y:
+                    pass
+
+                arr_start_pos = self.dep_origin.scenePos()
+                arr_start_pos += QPointF(self.dep_origin.rect().width() / 2, 0)
+
+                self.del_dyn_arr()
+                self.dyn_arr_v = self.addLine(
+                    arr_start_pos.x(),
+                    arr_start_pos.y(),
+                    arr_start_pos.x(),
+                    arr_end_pos.y(),
+                    QPen(Qt.DashLine)
+                )
+                self.dyn_arr_h = self.addLine(
+                    arr_start_pos.x(),
+                    arr_end_pos.y(),
+                    arr_end_pos.x(),
+                    arr_end_pos.y(),
+                    QPen(Qt.DashLine)
+                )
 
             def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
                 match event.button():
@@ -818,15 +883,14 @@ class MainWindow(QMainWindow):
                 # Handle single clicks
                 self.select_end = pos
                 single_click = self.select_start == self.select_end
-                self.released_on = self.itemAt(pos, QTransform())
+                self.released_on_1 = self.itemAt(pos, QTransform())
                 if single_click:
-                    if self.released_on: # Select component if clicking on it
+                    if self.released_on_1: # Select component if clicking on it
                         # In case we're clicking on text
-                        par = self.released_on.parentItem()
-                        if par:
-                            self.released_on = par
+                        par = self.released_on_1.parentItem()
+                        self.released_on_1 = par if par else self.released_on_1
                         self.clearSelection()
-                        self.released_on.setSelected(True)
+                        self.released_on_1.setSelected(True)
                     else: # Add new component if just clicking in free area
                         self.add_component(event)
                         self.clearSelection()
@@ -845,9 +909,9 @@ class MainWindow(QMainWindow):
                 self.setSelectionArea(select)
 
                 # Selections inside one component should be treated as clicks
-                if self.clicked_on is not None and self.clicked_on == self.released_on:
+                if self.clicked_on_l is not None and self.clicked_on_l == self.released_on_1:
                     self.clearSelection()
-                    self.clicked_on.setSelected(True)
+                    self.clicked_on_l.setSelected(True)
 
             def mouseReleaseEventR(self, event: QGraphicsSceneMouseEvent):
                 self.mouse_down_r = False
