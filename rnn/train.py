@@ -3,12 +3,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from data import *
 from model import *
+from model_lstm import *
 
-n_hidden = 128
+n_hidden = 32
 n_epochs = 100000
 print_every = 100
 plot_every = 1000
-learning_rate = 0.005 # If you set this too high, it might explode. If too low, it might not learn
+learning_rate = 0.05 # If you set this too high, it might explode. If too low, it might not learn
 
 def randomChoice(l):
     return l[random.randint(0, len(l) - 1)]
@@ -24,27 +25,36 @@ def randomTrainingPair():
     #          row.iloc[0,row.columns.get_loc('upper_bound')]]
     #         )))
     expected_output = Variable(
-        torch.tensor(
+        torch.mul(torch.tensor(
             [row.iloc[0,row.columns.get_loc('lower_bound')],
              row.iloc[0,row.columns.get_loc('best_estimate')],
              row.iloc[0,row.columns.get_loc('upper_bound')]]
-            ))
+            ),0.0001))
     #category_tensor = Variable(torch.LongTensor([all_categories.index(category)]))
     #print(line)
     line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')]))
     return line, expected_output, line_tensor
 
-rnn = RNN(n_letters, n_hidden, 3)
+#rnn = RNN(n_letters, n_hidden, 3)
+rnn = LSTM(n_letters,n_hidden,3)
 optimizer = torch.optim.SGD(rnn.parameters(), lr=learning_rate)
-criterion = nn.CrossEntropyLoss()
+criterion = nn.MSELoss()
 
 def train(expected_output, line_tensor):
-    hidden = rnn.initHidden()
     optimizer.zero_grad()
 
+    ### For RNN
+    #hidden = rnn.initHidden()
+    # for i in range(line_tensor.size()[0]):
+    #     output, hidden = rnn(line_tensor[i], hidden)
+    
+    ### For LSTM
+    rnn.train()
+    #output= rnn(line_tensor)
     for i in range(line_tensor.size()[0]):
-        output, hidden = rnn(line_tensor[i], hidden)
+        output = rnn(line_tensor[i])
 
+    # For ALL
     loss = criterion(output[0,:], expected_output)
     loss.backward()
 
@@ -75,6 +85,8 @@ for epoch in range(1, n_epochs + 1):
         #guess, guess_i = categoryFromOutput(output)
         #correct = 'y' if guess == category else 'n (%s)' % category
         print('%d %d%% (%s) %.4f %s / %s %s' % (epoch, epoch / n_epochs * 100, timeSince(start), loss, line, output, expected_output))
+        print(current_loss/print_every)
+        current_loss = 0
 
     # Add current loss avg to list of losses
     if epoch % plot_every == 0:

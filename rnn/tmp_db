@@ -1,54 +1,12 @@
 ,rpn,frequency,severity,detection,lower_bound,best_estimate,upper_bound,mission_time,name,desc
-0,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,High suction pressure
-1,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,Low suction pressure
-2,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,Vibration and noise during compressor operation
-3,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,Electric motor failure
-4,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,Overheat
-5,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,Excessive gas flow
-6,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,Lacking gas flow
-7,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,Dead head
-8,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,External leakage
-9,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,Internal leakage
-10,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,Excessive current flow
-11,1,1,1,1,0.0,0.0,0.0,1.0,Gas Compressor,Lacking current flow
-12,1,1,1,1,0.0,0.0,0.0,1.0,Electrodes,Anode Corrosion
-13,1,1,1,1,0.0,0.0,0.0,1.0,Electrodes,Cathode Corrosion
-14,1,1,1,1,0.0,0.0,0.0,1.0,Electrodes,Oversaturation
-15,1,1,1,1,0.0,0.0,0.0,1.0,Electrodes,Undersaturation
-16,1,1,1,1,0.0,0.0,0.0,1.0,Motor-Driven Pump,Failure to start
-17,1,1,1,1,0.0,0.0,0.0,1.0,Motor-Driven Pump,Failure to run
-18,1,1,1,1,0.0,0.0,0.0,1.0,Motor-Driven Pump,Unavailability due to test and maintenance
-19,1,1,1,1,0.0,0.0,0.0,1.0,Motor-Operated Valves,Failure to operate
-20,1,1,1,1,0.0,0.0,0.0,1.0,Motor-Operated Valves,Failure due to plugging
-21,1,1,1,1,0.0,0.0,0.0,1.0,Motor-Operated Valves,Unavailability due to test and maintenance
-22,40,5,8,1,0.0,0.0,0.0,1.0,Motor-Operated Valve,Large external leak
-23,24,3,8,1,0.0,0.0,0.0,1.0,Motor-Operated Valve,Small external leak
-24,1,1,1,1,0.0,0.0,0.0,1.0,Motor-Operated Valve,Large internal leak
-25,100,10,10,1,0.0,0.0,0.0,1.0,Motor-Operated Valve,Small internal leak
-26,1,1,1,1,0.0,0.0,0.0,1.0,Motor-Operated Valve,Spurious Operation
-27,1,1,1,1,0.0,0.0,0.0,1.0,Solenoid-Operated Valve,Large external leak
-28,1,1,1,1,0.0,0.0,0.0,1.0,Solenoid-Operated Valve,Small external leak
-29,1,1,1,1,0.0,0.0,0.0,1.0,Solenoid-Operated Valve,Large internal leak
-30,1,1,1,1,0.0,0.0,0.0,1.0,Solenoid-Operated Valve,Small internal leak
-31,1,1,1,1,0.0,0.0,0.0,1.0,Solenoid-Operated Valve,Spurious operation
-32,1,1,1,1,0.0,0.0,0.0,1.0,Hydraulic-Operated Valve,Large external leak
-33,1,1,1,1,0.0,0.0,0.0,1.0,Hydraulic-Operated Valve,Small external leak
-34,1,1,1,1,0.0,0.0,0.0,1.0,Hydraulic-Operated Valve,Large internal leak
-35,1,1,1,1,0.0,0.0,0.0,1.0,Hydraulic-Operated Valve,Small internal leak
-36,1,1,1,1,0.0,0.0,0.0,1.0,Hydraulic-Operated Valve,Spurious operation
-37,50,5,5,2,2.0,5.0,9.0,2.0,Air-Operated Valve,Large external leak
-38,10,5,2,1,0.0,0.0,0.0,1.0,Air-Operated Valve,Small external leak
-39,20,10,2,1,0.0,0.0,0.0,1.0,Air-Operated Valve,Large internal leak
-40,16,8,2,1,0.0,0.0,0.0,1.0,Air-Operated Valve,Small internal leak
-41,1,1,1,1,0.0,0.0,0.0,1.0,Air-Operated Valve,Spurious operation
-42,1,1,1,1,0.0,0.0,0.0,1.0,Pressure-Operated Relief Valve,Small external leak
-43,1,1,1,1,0.0,0.0,0.0,1.0,Pressure-Operated Relief Valve,Small internal leak
-44,1,1,1,1,0.0,0.0,0.0,1.0,Pressure-Operated Relief,Spurious operation
-45,1,1,1,1,0.0,0.0,0.0,1.0,Check Valve,Large external leak
-46,1,1,1,1,0.0,0.0,0.0,1.0,Check Valve,Small external leak
-47,1,1,1,1,0.0,0.0,0.0,1.0,Check Valve,Large internal leak
-48,1,1,1,1,0.0,0.0,0.0,1.0,Check Valve,Small internal leak
-49,1,1,1,1,0.0,0.0,0.0,1.0,Check Valve,Spurious operation
-50,1,1,1,1,0.0,0.0,0.0,1.0,Check Valve,Spurious closed
-51,1,1,1,1,0.0,0.0,0.0,1.0,Check Valve,Fail to close
-52,1,1,1,1,0.0,0.0,0.0,1.0,Check Valve,Fail to open
+0,1,1,1,1,20,200,2000,1.0,Gas Compressor,High suction pressure
+1,1,1,1,1,20,200,2000,1.0,Gas Compressor,Low suction pressure
+2,1,1,1,1,80,800,8000,1.0,Gas Compressor,Vibration and noise during compressor operation
+3,1,1,1,1,80,800,8000,1.0,Gas Compressor,Electric motor failure
+4,1,1,1,1,80,800,8000,1.0,Gas Compressor,Overheat
+5,1,1,1,1,80,800,8000,1.0,Gas Compressor,Excessive gas flow
+6,1,1,1,1,80,800,8000,1.0,Gas Compressor,Lacking gas flow
+7,1,1,1,1,80,800,8000,1.0,Gas Compressor,Dead head
+8,1,1,1,1,80,800,8000,1.0,Gas Compressor,External leakage
+9,1,1,1,1,80,800,8000,1.0,Gas Compressor,Internal leakage
+10,1,1,1,1,80,800,8000,1.0,Gas Compressor,Excessive current flow
