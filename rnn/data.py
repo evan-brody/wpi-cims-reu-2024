@@ -1,8 +1,5 @@
-import torch
+import torch, glob, unicodedata, string
 import pandas as pd
-import glob
-import unicodedata
-import string
 
 all_letters = string.ascii_letters + " .,;'-"
 #print(all_letters)
