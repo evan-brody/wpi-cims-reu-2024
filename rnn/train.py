@@ -29,7 +29,7 @@ def randomTrainingPair():
             [row.iloc[0,row.columns.get_loc('lower_bound')],
              row.iloc[0,row.columns.get_loc('best_estimate')],
              row.iloc[0,row.columns.get_loc('upper_bound')]]
-            ),0.0001))
+            ,dtype=torch.float32),0.0001))
     #category_tensor = Variable(torch.LongTensor([all_categories.index(category)]))
     #print(line)
     line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')]))
