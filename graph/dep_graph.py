@@ -113,15 +113,15 @@ class DepGraph_RAMOptimized:
     def scl_or_scl(self, a: float, b: float) -> float:
         return 1 - (1 - a) * (1 - b)
     
-    def vec_or_vec(self, v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+    def vec_or_vec(self, v1: list, v2: list) -> list:
         n = len(self.A[0])
         return [1] * n - np.multiply([1] * n - v1, [1] * n - v2)
 
-    def mat_or_vec(self, a: np.ndarray, v: np.ndarray) -> np.ndarray:
+    def mat_or_vec(self, a: list[list], v: list) -> list:
         lenv = len(v)
         return [1] * lenv - np.prod([ [1] * lenv for _ in repeat(None, lenv) ] - np.multiply(a, v), axis=1)
 
-    def mat_or_mat(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    def mat_or_mat(self, a: list[list], b: list[list]) -> list[list]:
         res = [[0] * len(b[0])]
 
         for _ in repeat(None, len(a) - 1):
@@ -132,7 +132,7 @@ class DepGraph_RAMOptimized:
         
         return res
 
-    def mat_or_mat_c(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    def mat_or_mat_c(self, a: list[list], b: list[list]) -> list:
         res = [[0] * len(b[0])]
 
         for _ in repeat(None, len(a) - 1):
@@ -143,7 +143,7 @@ class DepGraph_RAMOptimized:
         
         return res
 
-    def exp_A(self, p) -> np.ndarray:
+    def exp_A(self, p) -> list[list]:
         n = len(self.A[0])
 
         res = np.identity(n)
@@ -152,7 +152,7 @@ class DepGraph_RAMOptimized:
 
         return res
     
-    def exp_A_c(self, p) -> np.ndarray:
+    def exp_A_c(self, p) -> list[list]:
         n = len(self.A[0])
         res = np.identity(n)
         if 0 == p:
@@ -197,7 +197,7 @@ class DepGraph_RAMOptimized:
                 i, j = self.refi[pair[1]], self.refi[pair[0]]
                 self.A[i][j] = self.DEFAULT_EDGE_WEIGHT
 
-    def calc_r(self, m) -> np.ndarray:
+    def calc_r(self, m) -> list:
         n = len(self.A[0])
         return self.mat_or_vec(np.identity(n, np.uint8) + np.ones((n, n), np.uint8) - reduce(np.multiply, [ self.exp_A_c(i) for i in range(1, m + 1) ]), self.r0)
 
