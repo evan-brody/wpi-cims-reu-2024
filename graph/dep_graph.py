@@ -13,29 +13,45 @@ from PyQt5.QtWidgets import QGraphicsRectItem
 # TODO: optimize
 
 class DepGraph:
-    MAX_VERTICES = 4096
+    MAX_VERTICES = 512
     DEFAULT_EDGE_WEIGHT = 1
     DEFAULT_DR = 0.05
-    # 17 MB
     J = np.ones((MAX_VERTICES, MAX_VERTICES), np.uint8)
     I = np.identity(MAX_VERTICES, np.uint8)
 
-    def __init__(self) -> None:
-        # User will be able to set this. I anticipate that
-        # auto updates could be very slow, so there'll be
-        # an option to manually recalculate whenever the user
-        # wants as opposed to auto updates
-        self.auto_update = False
+    def __init__(self, cpu_optimized=False) -> None:
+        # User will be able to set this. This will
+        # use up (significantly) more RAM with the benefit
+        # of (significantly) faster risk calculations
+        self.cpu_optimized = cpu_optimized
 
-        # 33 KB
         self.r0 = np.empty((self.MAX_VERTICES,), np.double) # Direct risk vector
-        # 134 MB
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double) # Adjacency matrix
 
+        self.m = 0 # Max length path
         self.n = 0 # How many vertices we have
         self.refi = {} # Maps QGraphicsRectItems to indices
-        # 33 KB
         self.iref = np.empty((self.MAX_VERTICES,), QGraphicsRectItem) # Maps indices to QGraphicsRectItems
+
+        if not self.cpu_optimized:
+            return
+
+        self.Ap = np.empty((self.MAX_VERTICES,), np.ndarray) # Caches powers of A
+        self.Ap[0] = np.identity(self.MAX_VERTICES, np.uint8)
+        self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
+        self.r = np.empty((self.MAX_VERTICES,), np.double)
+
+    def set_cpu_optimized(self, cpu_optimized: bool) -> None:
+        self.cpu_optimized = cpu_optimized
+
+        if self.cpu_optimized:
+            pass # TODO: Cache relevant information on enabling CPU optimization
+
+    def get_cpu_optimized(self) -> bool:
+        return self.cpu_optimized
+
+    def prob_or(self, a: float, b: float) -> float:
+        return 1 - (1 - a) * (1 - b)
 
     def prob_mat_vec_mul(self, a: np.ndarray, v: np.ndarray) -> np.ndarray:
         lenv = len(v)
@@ -81,13 +97,6 @@ class DepGraph:
 
         return self.prob_mat_mul_c(A1, res)
     
-
-    def set_auto_update(self, bval) -> None:
-        self.auto_update = bval
-
-    def get_auto_update(self) -> bool:
-        return self.auto_update
-    
     def add_vertices(self, refs, direct_risks=None) -> None:
         n = self.n
         d = len(refs)
@@ -100,38 +109,66 @@ class DepGraph:
             self.r0[n:n + d] = self.DEFAULT_DR
         else:
             self.r0[n:n + d] = direct_risks
+
         self.A[n:n + d, :n + d] = 0
         self.A[:n, n:n + d] = 0
+
+        if not self.cpu_optimized:
+            self.n += d
+            return
+        
+        m = self.m
+        
+        for i in range(m + 1):
+            self.Ap[i][n:n + d, :n + d] = 0
+            self.Ap[i][:n, n:n + d] = 0
+        self.A_collapse[n:n + d, :n + d] = 1
+        self.A_collapse[:n, n:n + d] = 1
 
         self.n += d
 
     # edges is a list of tuples (a, b) where a -> b
     # with the weight in weights whose index matches the tuple's
     def add_edges(self, edges, weights=None) -> None:
-        if weights is None:
+        if weights:
+            for k, pair in enumerate(edges):
+                i, j = self.refi[pair[1]], self.refi[pair[0]]
+                self.A[i, j] = weights[k]
+        else:
             for pair in edges:
                 i, j = self.refi[pair[1]], self.refi[pair[0]]
                 self.A[i, j] = self.DEFAULT_EDGE_WEIGHT
-            return
-        
-        for k, pair in enumerate(edges):
-            i, j = self.refi[pair[1]], self.refi[pair[0]]
-            self.A[i, j] = weights[k]
 
-        if not self.auto_update:
+        if not self.cpu_optimized:
             return
         
-        # TODO: add auto update for r
+        # Auto-update / caching
+        n = self.n
+
+        for k, pair in enumerate(edges):
+            starti, endi = self.refi[pair[0]], self.refi[pair[1]]
+            weightk_c = 1 - weights[k]
+            self.A_collapse[endi, starti] = weightk_c
+            self.A_collapse[:n, starti] = self.A_collapse[:n, endi] * weightk_c
+            # TODO: propagate from vertices connecting to a
 
     # This is slow! Shouldn't be used unless necessary
     # TODO: this class should calculate m. could be tricky: it's NP-hard
     def calc_r(self, m) -> np.ndarray:
         n = self.n
         return self.prob_mat_vec_mul(self.I[:n, :n] + self.J[:n, :n] - functools.reduce(np.multiply, [ self.exp_A_c(i) for i in range(1, m + 1) ]), self.r0[:n])
+    
+    def calc_r_quick(self, m) -> np.ndarray:
+        if not self.cpu_optimized:
+            return
+        
+        n = self.n
+        # TODO: take into account a_collapse using complement
+        # return self.prob_mat_vec_mul(self.Ap[0][:n, :n] + self.A_collapse[:n, :n], self.r0[:n])
 
 if __name__ == "__main__":
     # Testing code
-    dg = DepGraph()
+    dg = DepGraph(True)
 
     dg.add_vertices(['s', 'c', 'v', 'p'], [0.25, 0.25, 0.25, 0.25])
     dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1/3, 1/3, 1/3])
