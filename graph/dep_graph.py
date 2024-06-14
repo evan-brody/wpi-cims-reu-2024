@@ -3,8 +3,8 @@
 # @brief Provides backend graph functionality for dependency analysis
 
 import numpy as np
-import itertools
-import functools
+from functools import reduce
+from itertools import repeat, chain, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
 class DepGraph_RAMOptimized:
@@ -28,15 +28,15 @@ class DepGraph_RAMOptimized:
 
     def mat_or_vec(self, a: np.ndarray, v: np.ndarray) -> np.ndarray:
         lenv = len(v)
-        return [1] * lenv - np.prod([ [1] * lenv for _ in itertools.repeat(None, lenv) ] - np.multiply(a, v), axis=1)
+        return [1] * lenv - np.prod([ [1] * lenv for _ in repeat(None, lenv) ] - np.multiply(a, v), axis=1)
 
     def mat_or_mat(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
         res = [[0] * len(b[0])]
 
-        for _ in itertools.repeat(None, len(a) - 1):
+        for _ in repeat(None, len(a) - 1):
             res.append([0] * len(b[0]))
         
-        for i, j in itertools.product(range(len(a)), range(len(b[0]))):
+        for i, j in product(range(len(a)), range(len(b[0]))):
             res[i][j] = 1 - np.prod([1] * len(a[0]) - np.multiply(a[i], np.transpose(b)[j]))
         
         return res
@@ -44,10 +44,10 @@ class DepGraph_RAMOptimized:
     def mat_or_mat_c(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
         res = [[0] * len(b[0])]
 
-        for _ in itertools.repeat(None, len(a) - 1):
+        for _ in repeat(None, len(a) - 1):
             res.append([0] * len(b[0]))
         
-        for i, j in itertools.product(range(len(a)), range(len(b[0]))):
+        for i, j in product(range(len(a)), range(len(b[0]))):
             res[i][j] = np.prod([1] * len(a[0]) - np.multiply(a[i], np.transpose(b)[j]))
         
         return res
@@ -56,7 +56,7 @@ class DepGraph_RAMOptimized:
         n = len(self.A[0])
 
         res = np.identity(n)
-        for _ in itertools.repeat(None, p):
+        for _ in repeat(None, p):
             res = self.mat_or_mat(self.A, res)
 
         return res
@@ -67,7 +67,7 @@ class DepGraph_RAMOptimized:
         if 0 == p:
             return res
 
-        for _ in itertools.repeat(None, p - 1):
+        for _ in repeat(None, p - 1):
             res = self.mat_or_mat(self.A, res)
 
         return self.mat_or_mat_c(self.A, res)
@@ -88,7 +88,7 @@ class DepGraph_RAMOptimized:
         if 0 == n:
             self.A.pop()
 
-        for _ in itertools.repeat(None, d):
+        for _ in repeat(None, d):
             self.A.append([0] * (n + d))
         
         for i in range(n):
@@ -108,7 +108,7 @@ class DepGraph_RAMOptimized:
 
     def calc_r(self, m) -> np.ndarray:
         n = len(self.A[0])
-        return self.mat_or_vec(np.identity(n, np.uint8) + np.ones((n, n), np.uint8) - functools.reduce(np.multiply, [ self.exp_A_c(i) for i in range(1, m + 1) ]), self.r0)
+        return self.mat_or_vec(np.identity(n, np.uint8) + np.ones((n, n), np.uint8) - reduce(np.multiply, [ self.exp_A_c(i) for i in range(1, m + 1) ]), self.r0)
 
 # TODO: edge removal (necessary for vertex removal)
 # TODO: vertex removal
@@ -142,7 +142,7 @@ class DepGraph_CPUOptimized:
     def mat_or_mat(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
         res = np.empty((a.shape[0], b.shape[1]), np.double)
         
-        for i, j in itertools.product(range(a.shape[0]), range(b.shape[1])):
+        for i, j in product(range(a.shape[0]), range(b.shape[1])):
             res[i, j] = 1 - np.prod(self.J[0, :a.shape[1]] - np.multiply(a[i], b.T[j]))
         
         return res
@@ -192,7 +192,7 @@ class DepGraph_CPUOptimized:
             )
 
             # Collapse other paths that pass through a to b
-            for j in itertools.chain(range(starti), range(starti + 1, n)):
+            for j in chain(range(starti), range(starti + 1, n)):
                 self.A_collapse[:n, j] = self.vec_or_vec(
                     self.A_collapse[:n, j], self.A_collapse[starti, j] * self.A_collapse[:n, starti]
                 )
