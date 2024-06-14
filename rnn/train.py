@@ -10,7 +10,7 @@ n_hidden = 32
 n_epochs = 100000
 print_every = 100
 plot_every = 1000
-learning_rate = 0.05 # If you set this too high, it might explode. If too low, it might not learn
+learning_rate = 0.005 # If you set this too high, it might explode. If too low, it might not learn
 
 def randomChoice(l):
     return l[random.randint(0, len(l) - 1)]
@@ -52,14 +52,14 @@ def train(expected_output, line_tensor):
     
     ### For LSTM
     rnn.train()
-    #output= rnn(line_tensor)
-    for i in range(line_tensor.size()[0]):
-        output = rnn(line_tensor[i])
+    output= rnn(line_tensor)
+    # for i in range(line_tensor.size()[0]):
+    #     output = rnn(line_tensor[i])
 
     # For ALL
     #print(output[0,:])
     #print(torch.flatten(output))
-    loss = criterion(output[0,:], expected_output)
+    loss = criterion(output, expected_output)
     loss.backward()
 
     optimizer.step()

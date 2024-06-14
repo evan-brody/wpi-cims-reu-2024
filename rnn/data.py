@@ -20,21 +20,8 @@ def readLines(filename):
     lines = open(filename, encoding='utf8').read().strip().split('\n')
     return [unicodeToAscii(line) for line in lines]
 
-# TODO: preprocess every line of our database,
-#       append component name and failure mode with a space in between
+# TODO: change source
 comp_fails = pd.read_csv(filepath_or_buffer="rnn/tmp_db")
-
-
-
-# category_lines = {}
-# all_categories = []
-# for filename in findFiles('../data/names/*.txt'):
-#     category = filename.split('/')[-1].split('.')[0]
-#     all_categories.append(category)
-#     lines = readLines(filename)
-#     category_lines[category] = lines
-
-# n_categories = len(all_categories)
 
 # Find letter index from all_letters, e.g. "a" = 0
 def letterToIndex(letter):
