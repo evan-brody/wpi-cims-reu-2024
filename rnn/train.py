@@ -37,7 +37,8 @@ def randomTrainingPair():
 
 #rnn = RNN(n_letters, n_hidden, 3)
 rnn = LSTM(n_letters,n_hidden,3)
-optimizer = torch.optim.SGD(rnn.parameters(), lr=learning_rate)
+optimizer = torch.optim.Adam(rnn.parameters(), lr=learning_rate)
+#optimizer = torch.optim.SGD(rnn.parameters(), lr=learning_rate)
 criterion = nn.MSELoss()
 
 def train(expected_output, line_tensor):
@@ -55,6 +56,8 @@ def train(expected_output, line_tensor):
         output = rnn(line_tensor[i])
 
     # For ALL
+    #print(output[0,:])
+    #print(torch.flatten(output))
     loss = criterion(output[0,:], expected_output)
     loss.backward()
 
@@ -93,5 +96,4 @@ for epoch in range(1, n_epochs + 1):
         all_losses.append(current_loss / plot_every)
         current_loss = 0
 
-torch.save(rnn, 'char-rnn-classification.pt')
-
+torch.save(rnn, 'failure_curve_estimator.pt')
