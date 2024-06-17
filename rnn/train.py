@@ -5,8 +5,10 @@ from data import *
 from model import *
 from model_lstm import *
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 NORMALIZATION_CONSTANT = 0.0001
-n_hidden = 32
+n_hidden = 128
 n_epochs = 100000
 print_every = 100
 plot_every = 1000
