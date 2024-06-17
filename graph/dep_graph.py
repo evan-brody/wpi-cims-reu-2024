@@ -7,7 +7,6 @@ from functools import reduce
 from itertools import repeat, chain, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
-# For testing
 import timeit
 
 # TODO: edge removal (necessary for vertex removal)
