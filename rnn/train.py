@@ -5,11 +5,12 @@ from data import *
 from model import *
 from model_lstm import *
 
+NORMALIZATION_CONSTANT = 0.0001
 n_hidden = 32
 n_epochs = 100000
 print_every = 100
 plot_every = 1000
-learning_rate = 0.05 # If you set this too high, it might explode. If too low, it might not learn
+learning_rate = 0.005 # If you set this too high, it might explode. If too low, it might not learn
 
 def randomChoice(l):
     return l[random.randint(0, len(l) - 1)]
@@ -29,7 +30,7 @@ def randomTrainingPair():
             [row.iloc[0,row.columns.get_loc('lower_bound')],
              row.iloc[0,row.columns.get_loc('best_estimate')],
              row.iloc[0,row.columns.get_loc('upper_bound')]]
-            ),0.0001))
+            ,dtype=torch.float32),NORMALIZATION_CONSTANT))
     #category_tensor = Variable(torch.LongTensor([all_categories.index(category)]))
     #print(line)
     line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')]))
@@ -37,7 +38,8 @@ def randomTrainingPair():
 
 #rnn = RNN(n_letters, n_hidden, 3)
 rnn = LSTM(n_letters,n_hidden,3)
-optimizer = torch.optim.SGD(rnn.parameters(), lr=learning_rate)
+optimizer = torch.optim.Adam(rnn.parameters(), lr=learning_rate)
+#optimizer = torch.optim.SGD(rnn.parameters(), lr=learning_rate)
 criterion = nn.MSELoss()
 
 def train(expected_output, line_tensor):
@@ -50,12 +52,14 @@ def train(expected_output, line_tensor):
     
     ### For LSTM
     rnn.train()
-    #output= rnn(line_tensor)
-    for i in range(line_tensor.size()[0]):
-        output = rnn(line_tensor[i])
+    output= rnn(line_tensor)
+    # for i in range(line_tensor.size()[0]):
+    #     output = rnn(line_tensor[i])
 
     # For ALL
-    loss = criterion(output[0,:], expected_output)
+    #print(output[0,:])
+    #print(torch.flatten(output))
+    loss = criterion(output, expected_output)
     loss.backward()
 
     optimizer.step()
@@ -93,5 +97,4 @@ for epoch in range(1, n_epochs + 1):
         all_losses.append(current_loss / plot_every)
         current_loss = 0
 
-torch.save(rnn, 'char-rnn-classification.pt')
-
+torch.save(rnn, 'failure_curve_estimator.pt')

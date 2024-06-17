@@ -1,8 +1,5 @@
-import torch
+import torch, glob, unicodedata, string
 import pandas as pd
-import glob
-import unicodedata
-import string
 
 all_letters = string.ascii_letters + " .,;'-"
 #print(all_letters)
@@ -23,21 +20,8 @@ def readLines(filename):
     lines = open(filename, encoding='utf8').read().strip().split('\n')
     return [unicodeToAscii(line) for line in lines]
 
-# TODO: preprocess every line of our database,
-#       append component name and failure mode with a space in between
+# TODO: change source
 comp_fails = pd.read_csv(filepath_or_buffer="rnn/tmp_db")
-
-
-
-# category_lines = {}
-# all_categories = []
-# for filename in findFiles('../data/names/*.txt'):
-#     category = filename.split('/')[-1].split('.')[0]
-#     all_categories.append(category)
-#     lines = readLines(filename)
-#     category_lines[category] = lines
-
-# n_categories = len(all_categories)
 
 # Find letter index from all_letters, e.g. "a" = 0
 def letterToIndex(letter):
@@ -46,7 +30,7 @@ def letterToIndex(letter):
 # Turn a line into a <line_length x 1 x n_letters>,
 # or an array of one-hot letter vectors
 def lineToTensor(line):
-    tensor = torch.zeros(len(line), 1, n_letters)
+    tensor = torch.zeros(len(line), 1, n_letters,dtype=torch.float32)
     for li, letter in enumerate(line):
         tensor[li][0][letterToIndex(letter)] = 1
     return tensor

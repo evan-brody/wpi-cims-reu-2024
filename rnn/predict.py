@@ -2,14 +2,12 @@ from model import *
 from data import *
 import sys
 
-rnn = torch.load('char-rnn-classification.pt')
+rnn = torch.load('failure_curve_estimator.pt')
 
 # Just return an output given a line
 def evaluate(line_tensor):
-    hidden = rnn.initHidden()
-    
     for i in range(line_tensor.size()[0]):
-        output, hidden = rnn(line_tensor[i], hidden)
+        output= rnn(line_tensor[i])
     
     return output
 
