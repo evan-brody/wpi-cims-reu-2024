@@ -64,35 +64,45 @@ class DepGraph_CPUOptimized:
 
         self.n += d
 
-    # edges is a list of tuples (a, b) where a -> b
-    # with the weight in weights whose index matches the tuple's
-    def add_edges(self, edges, weights=None) -> None:
-        n = self.n
-        if weights:
-            for k, pair in enumerate(edges):
-                i, j = self.refi[pair[1]], self.refi[pair[0]]
-                self.A[i, j] = weights[k]
-        else:
-            for pair in edges:
-                i, j = self.refi[pair[1]], self.refi[pair[0]]
-                self.A[i, j] = self.DEFAULT_EDGE_WEIGHT
-        
-        # Auto-update / caching
-        for k, pair in enumerate(edges):
-            weightk = weights[k]
-            starti, endi = self.refi[pair[0]], self.refi[pair[1]]
+    def delete_vertices(self, refs) -> None:
+        pass
 
-            # Collapse paths starting at a and passing through b
-            self.A_collapse[endi, starti] = weightk
-            self.A_collapse[:n, starti] = self.vec_or_vec(
-                self.A_collapse[:n, starti], weightk * self.A_collapse[:n, endi]
+    def add_edges(self, edges, weights=None) -> None:
+        for e, w in zip(edges, weights):
+            self.add_edge(e, w)
+    
+    # edge is a tuple (a, b) where a -> b
+    def add_edge(self, edge, weight) -> None:
+        n = self.n
+        a, b = self.refi[edge[0]], self.refi[edge[1]]
+        weight = weight if weight else self.DEFAULT_EDGE_WEIGHT
+        self.A[b, a] = weight
+
+        # Add to A-collapse by combining with existing connections
+        self.A_collapse[b, a] = self.scl_or_scl(
+            self.A_collapse[b, a], weight
+        )
+        # self.A_collapse[a, b] = weight
+
+        # Collapse paths starting at a and passing through b
+        self.A_collapse[:n, a] = self.vec_or_vec(
+            self.A_collapse[:n, a], weight * self.A_collapse[:n, b]
+        )
+        
+        # Collapse other paths that pass through a to b
+        # Skip a's and b's columns. A's because we already
+        # calculated its values, b's because we don't care
+        # about loops
+        lesser_i, greater_i = min(a, b), max(a, b)
+        for j in chain(range(lesser_i), \
+                       range(lesser_i + 1, greater_i), \
+                       range(greater_i + 1, n)):
+            self.A_collapse[:n, j] = self.vec_or_vec(
+                self.A_collapse[:n, j], self.A_collapse[a, j] * self.A_collapse[:n, a]
             )
 
-            # Collapse other paths that pass through a to b
-            for j in chain(range(starti), range(starti + 1, n)):
-                self.A_collapse[:n, j] = self.vec_or_vec(
-                    self.A_collapse[:n, j], self.A_collapse[starti, j] * self.A_collapse[:n, starti]
-                )
+    def delete_edges(self, edges) -> None:
+        pass
     
     def calc_r(self) -> np.ndarray:
         n = self.n
