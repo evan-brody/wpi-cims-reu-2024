@@ -7,6 +7,9 @@ from functools import reduce
 from itertools import repeat, chain, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
+# For testing
+import timeit
+
 # TODO: edge removal (necessary for vertex removal)
 # TODO: vertex removal
 class DepGraph_CPUOptimized:
@@ -24,6 +27,9 @@ class DepGraph_CPUOptimized:
         self.r0 = np.empty((self.MAX_VERTICES,), np.double) # Direct risk vector
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
         self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
+
+        # v_members[i, j] stores the vertices participating in edge: A_collapse[i, j]
+        self.v_members = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), list)
 
     def scl_or_scl(self, a: float, b: float) -> float:
         return 1 - (1 - a) * (1 - b)
@@ -59,40 +65,70 @@ class DepGraph_CPUOptimized:
         
         self.A[n:n + d, :n + d] = 0
         self.A[:n, n:n + d] = 0
+
         self.A_collapse[n:n + d, :n + d] = 0
         self.A_collapse[:n, n:n + d] = 0
 
+        self.v_members[n:n + d, :n + d] = []
+        self.v_members[:n, n:n + d] = []
+
         self.n += d
 
-    # edges is a list of tuples (a, b) where a -> b
-    # with the weight in weights whose index matches the tuple's
-    def add_edges(self, edges, weights=None) -> None:
-        n = self.n
-        if weights:
-            for k, pair in enumerate(edges):
-                i, j = self.refi[pair[1]], self.refi[pair[0]]
-                self.A[i, j] = weights[k]
-        else:
-            for pair in edges:
-                i, j = self.refi[pair[1]], self.refi[pair[0]]
-                self.A[i, j] = self.DEFAULT_EDGE_WEIGHT
-        
-        # Auto-update / caching
-        for k, pair in enumerate(edges):
-            weightk = weights[k]
-            starti, endi = self.refi[pair[0]], self.refi[pair[1]]
+    def delete_vertices(self, refs) -> None:
+        pass
 
-            # Collapse paths starting at a and passing through b
-            self.A_collapse[endi, starti] = weightk
-            self.A_collapse[:n, starti] = self.vec_or_vec(
-                self.A_collapse[:n, starti], weightk * self.A_collapse[:n, endi]
+    def add_edges(self, edges, weights=None) -> None:
+        for e, w in zip(edges, weights):
+            self.add_edge(e, w)
+    
+    # edge is a tuple (a, b) where a -> b
+    def add_edge(self, edge, weight) -> None:
+        n = self.n
+        a, b = self.refi[edge[0]], self.refi[edge[1]]
+        weight = weight if weight else self.DEFAULT_EDGE_WEIGHT
+        self.A[b, a] = weight
+
+        # Add to A-collapse by combining with existing connections
+        self.A_collapse[b, a] = self.scl_or_scl(
+            self.A_collapse[b, a], weight
+        )
+
+        # Collapse paths starting at a and passing through b
+        self.A_collapse[:n, a] = self.vec_or_vec(
+            self.A_collapse[:n, a], weight * self.A_collapse[:n, b]
+        )
+
+        # Make sure a doesn't loop on itself
+        self.A_collapse[a, a] = 0
+        
+        # Collapse other paths that pass through a to b
+        # Skip a's and b's columns. A's because we already
+        # calculated its values, b's because we don't care
+        # about loops
+        lesser_i, greater_i = min(a, b), max(a, b)
+        for j in chain(range(lesser_i), \
+                       range(lesser_i + 1, greater_i), \
+                       range(greater_i + 1, n)):
+            
+            for i in range(n):
+                # j -> i OR (j -> a AND a -> i)
+                new_path = self.A_collapse[a, j] * self.A_collapse[i, a]
+                if new_path:
+                    self.A_collapse[i, j] = self.A_collapse[a, j] * self.A_collapse[i, a]
+                    # TODO: store participating vertices
+
+            self.A_collapse[:n, j] = self.vec_or_vec(
+                self.A_collapse[:n, j], self.A_collapse[a, j] * self.A_collapse[:n, a]
             )
 
-            # Collapse other paths that pass through a to b
-            for j in chain(range(starti), range(starti + 1, n)):
-                self.A_collapse[:n, j] = self.vec_or_vec(
-                    self.A_collapse[:n, j], self.A_collapse[starti, j] * self.A_collapse[:n, starti]
-                )
+        # Remove any loops we've created
+        np.fill_diagonal(self.A_collapse, 0)
+
+        # TODO: store participating edges / vertices
+        # TODO: optimize loop removal ?
+
+    def delete_edges(self, edges) -> None:
+        pass
     
     def calc_r(self) -> np.ndarray:
         n = self.n
@@ -217,3 +253,25 @@ if __name__ == "__main__":
 
     m = 2
     print(dg.calc_r(m))
+
+#     setup = """
+# import numpy as np
+# n = 2048
+# A = np.empty((n, n), np.double)
+# """
+
+#     manual = """
+# for i in range(n):
+#     A[i, i] = 0
+# """
+
+#     use_package = """
+# np.fill_diagonal(A, 0)
+# """
+
+#     tm = timeit.Timer(stmt=manual, setup=setup)
+#     tp = timeit.Timer(stmt=use_package, setup=setup)
+
+    
+#     print("for-loop:", tm.timeit())
+#     print("np:", tp.timeit())
