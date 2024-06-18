@@ -110,7 +110,7 @@ class DepQGraphicsScene(QGraphicsScene):
         self.setSceneRect(0, 0, self.SCENE_WIDTH, self.SCENE_HEIGHT)
 
         self.parent_window = parent_window
-        self.dg = DepGraph_CPUOptimized()
+        # self.dg = DepGraph_CPUOptimized()
 
         # For the selection box
         self.select_rect_item = None
@@ -243,7 +243,7 @@ class DepQGraphicsScene(QGraphicsScene):
         self.rect_influences[rect_item] = []
         self.rect_arrs_in[rect_item] = []
         self.rect_arrs_out[rect_item] = []
-        self.dg.add_vertices([rect_item])
+        # self.dg.add_vertices([rect_item])
 
         # Create text
         text_widg = QLabel(comp_str)
@@ -493,7 +493,7 @@ class DepQGraphicsScene(QGraphicsScene):
                     self.rect_depends_on[self.dep_origin].append(self.released_on_r)
                     self.rect_influences[self.released_on_r].append(self.dep_origin)
 
-                    self.dg.add_edges([(self.dep_origin, self.released_on_r)])
+                    # self.dg.add_edges([(self.dep_origin, self.released_on_r)])
 
                 # Cleanup
                 self.dep_origin = None
