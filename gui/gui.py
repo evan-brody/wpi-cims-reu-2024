@@ -96,10 +96,10 @@ class DepQGraphicsScene(QGraphicsScene):
     MOUSE_DELTA = 0
 
     # The tip of a dependency arrow is an isosceles triangle
-    ARR_LONG = 20 # The length of the middle axis
-    ARR_SHORT = 10 # Half the length of the base
+    ARR_LONG = 30 # The length of the middle axis
+    ARR_SHORT = 15 # Half the length of the base
 
-    RECT_DIMS = (200, 100)
+    RECT_DIMS = (300, 150)
 
     SCENE_WIDTH = 5_000
     SCENE_HEIGHT = 1_000
