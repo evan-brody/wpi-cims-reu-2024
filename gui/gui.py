@@ -96,8 +96,10 @@ class DepQGraphicsScene(QGraphicsScene):
     MOUSE_DELTA = 0
 
     # The tip of a dependency arrow is an isosceles triangle
-    ARR_LONG = 10 # The length of the middle axis
-    ARR_SHORT = 5 # Half the length of the base
+    ARR_LONG = 20 # The length of the middle axis
+    ARR_SHORT = 10 # Half the length of the base
+
+    RECT_DIMS = (200, 100)
 
     SCENE_WIDTH = 5_000
     SCENE_HEIGHT = 1_000
@@ -229,7 +231,7 @@ class DepQGraphicsScene(QGraphicsScene):
             return
 
         # Create and add rectangle
-        rect_w, rect_h = 100, 50
+        rect_w, rect_h = self.RECT_DIMS
         rect_x = event.scenePos().x() - rect_w // 2
         rect_y = event.scenePos().y() - rect_h // 2
         brush = QBrush(self.parent_window.WPI_RED)
