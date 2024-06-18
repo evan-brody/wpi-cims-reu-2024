@@ -27,9 +27,6 @@ class DepGraph_CPUOptimized:
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
         self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
 
-        # v_members[i, j] stores the vertices participating in edge: A_collapse[i, j]
-        self.v_members = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), list)
-
     def scl_or_scl(self, a: float, b: float) -> float:
         return 1 - (1 - a) * (1 - b)
     
@@ -68,15 +65,13 @@ class DepGraph_CPUOptimized:
         self.A_collapse[n:n + d, :n + d] = 0
         self.A_collapse[:n, n:n + d] = 0
 
-        self.v_members[n:n + d, :n + d] = []
-        self.v_members[:n, n:n + d] = []
-
         self.n += d
 
     def delete_vertices(self, refs) -> None:
         pass
 
     def add_edges(self, edges, weights=None) -> None:
+        weights = weights if weights else [None] * len(edges)
         for e, w in zip(edges, weights):
             self.add_edge(e, w)
     
