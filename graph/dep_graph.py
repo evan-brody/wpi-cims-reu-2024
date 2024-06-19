@@ -23,6 +23,7 @@ class DepGraph_CPUOptimized:
         self.iref = np.empty((self.MAX_VERTICES,), QGraphicsRectItem) # Maps indices to QGraphicsRectItems
 
         self.n = 0 # How many vertices we have
+        self.m = 1 # Largest power of A we care about
         self.r0 = np.empty((self.MAX_VERTICES,), np.double) # Direct risk vector
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
         self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
@@ -47,6 +48,7 @@ class DepGraph_CPUOptimized:
         return res
     
     def add_vertices(self, refs, direct_risks=None) -> None:
+        m = self.m
         n = self.n
         d = len(refs)
 
@@ -58,8 +60,8 @@ class DepGraph_CPUOptimized:
             self.r0[n:n + d] = self.DEFAULT_DR
         else:
             self.r0[n:n + d] = direct_risks
-        
-        self.A[n:n + d, :n + d] = 0
+
+        self.A[:n:n + d, :n + d] = 0
         self.A[:n, n:n + d] = 0
 
         self.A_collapse[n:n + d, :n + d] = 0
