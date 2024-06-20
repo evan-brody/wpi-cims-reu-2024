@@ -23,17 +23,14 @@ class DepGraph_CPUOptimized:
         self.iref = np.empty((self.MAX_VERTICES,), QGraphicsRectItem) # Maps indices to QGraphicsRectItems
 
         self.n = 0 # How many vertices we have
+        self.m = 1 # Largest power of A we care about
         self.r0 = np.empty((self.MAX_VERTICES,), np.double) # Direct risk vector
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
         self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
+        self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), set)
 
-        # member_paths stores 
-        self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), dict)
-        # Technically this could be a 5-dimensional array to avoid resizing and
-        # provide faster lookup but we'd need more RAM for that
-
-        # Maps ordered sets of edges to their AND-combined weight
-        self.path_weights = {}
+    def connect_paths(self, p_a: set, p_b: set) -> set:
+        return { p[0] + p[1][1:] for p in product(p_a, p_b) }
 
     def scl_or_scl(self, a: float, b: float) -> float:
         return 1 - (1 - a) * (1 - b)
@@ -56,6 +53,7 @@ class DepGraph_CPUOptimized:
         return res
     
     def add_vertices(self, refs, direct_risks=None) -> None:
+        m = self.m
         n = self.n
         d = len(refs)
 
@@ -67,15 +65,19 @@ class DepGraph_CPUOptimized:
             self.r0[n:n + d] = self.DEFAULT_DR
         else:
             self.r0[n:n + d] = direct_risks
-        
-        self.A[n:n + d, :n + d] = 0
+
+        self.A[:n:n + d, :n + d] = 0
         self.A[:n, n:n + d] = 0
 
         self.A_collapse[n:n + d, :n + d] = 0
         self.A_collapse[:n, n:n + d] = 0
 
-        self.member_paths[n:n + d, :n + d] = dict()
-        self.member_paths[:n, n:n + d] = dict()
+        # This needs to be a for-loop so that it's
+        # not all the same set
+        for i, j in product(range(n, n + d), range(n + d)):
+            self.member_paths[i, j] = set()
+        for i, j in product(range(n), range(n, n + d)):
+            self.member_paths[i, j] = set()
 
         self.n += d
 
@@ -88,11 +90,12 @@ class DepGraph_CPUOptimized:
             self.add_edge(e, w)
     
     # edge is a tuple (a, b) where a -> b
-    def add_edge(self, edge, weight) -> None:
+    def add_edge(self, edge, weight=None) -> None:
         n = self.n
         a, b = self.refi[edge[0]], self.refi[edge[1]]
         weight = weight if weight else self.DEFAULT_EDGE_WEIGHT
         self.A[b, a] = weight
+        self.member_paths[b, a].add((a, b))
 
         # Add to A-collapse by combining with existing connections
         self.A_collapse[b, a] = self.scl_or_scl(
@@ -100,9 +103,22 @@ class DepGraph_CPUOptimized:
         )
 
         # Collapse paths starting at a and passing through b
-        self.A_collapse[:n, a] = self.vec_or_vec(
-            self.A_collapse[:n, a], weight * self.A_collapse[:n, b]
-        )
+        # self.A_collapse[:n, a] = self.vec_or_vec(
+        #     self.A_collapse[:n, a], weight * self.A_collapse[:n, b]
+        # )
+
+        for i in range(n):
+            new_path = self.A_collapse[i, b]
+            if new_path:
+                new_path *= weight
+                # a -> i OR (a -> b AND b -> i)
+                self.A_collapse[i, a] = self.scl_or_scl(
+                    self.A_collapse[i, a], new_path
+                )
+                # P[a -> i] U P[a -> b -> i]
+                self.member_paths[i, a].update(
+                    self.connect_paths(self.member_paths[b, a], self.member_paths[i, b])
+                )
 
         # Make sure a doesn't loop on itself
         self.A_collapse[a, a] = 0
@@ -115,17 +131,15 @@ class DepGraph_CPUOptimized:
         for j in chain(range(lesser_i), \
                        range(lesser_i + 1, greater_i), \
                        range(greater_i + 1, n)):
-            
             for i in range(n):
                 # j -> i OR (j -> a AND a -> i)
-                new_path_weight = self.A_collapse[a, j] * self.A_collapse[i, a]
-                if new_path_weight:
-                    # OR-combine with existing connection
-                    self.A_collapse[i, j] = self.scl_or_scl(self.A_collapse[i, j], new_path_weight)
-
-                    # Add component paths of a -> i to j -> i
-                    a_i_paths = self.member_paths[i, a]
-                    self.member_paths[i, j][a] = self.scl_or_scl(a_contrib, new_path_weight)
+                new_path = self.A_collapse[a, j] * self.A_collapse[i, a]
+                if new_path:
+                    self.A_collapse[i, j] = self.scl_or_scl(self.A_collapse[i, j], new_path)
+                    # P[j -> i] U P[j -> a -> i] 
+                    self.member_paths[i, j].update(
+                        self.connect_paths(self.member_paths[a, j], self.member_paths[i, a])
+                    )
 
             # self.A_collapse[:n, j] = self.vec_or_vec(
             #     self.A_collapse[:n, j], self.A_collapse[a, j] * self.A_collapse[:n, a]
@@ -144,6 +158,37 @@ class DepGraph_CPUOptimized:
         n = self.n
         return self.mat_or_vec(self.I[:n, :n] + self.A_collapse[:n, :n], self.r0[:n])
 
+if __name__ == "__main__":
+    # Testing code
+    dg = DepGraph_CPUOptimized()
+
+    dg.add_vertices(['s', 'c', 'v', 'p'], [0.25, 0.25, 0.25, 0.25])
+    dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1/3, 1/3, 1/3])
+
+    # print(dg.calc_r())
+    n = dg.n
+
+    # print(dg.A_collapse[:n, :n])
+    # print(dg.member_paths[:n, :n])
+
+    p_a = set([(1, 2, 3), (1, 4, 3)])
+    p_b = set([(5, 6, 7), (5, 8, 7)])
+    dg.connect_paths(p_a, p_b)
+
+    # print(dg.member_paths[0, 3])
+    dg = DepGraph_CPUOptimized()
+    dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
+    dg.add_edge(('b', 'd'), None)
+    dg.add_edge(('c', 'd'), None)
+    dg.add_edge(('a', 'b'), None)
+    dg.add_edge(('a', 'c'), None)
+    n = dg.n
+
+    print(dg.A_collapse[:n, :n])
+    print(dg.member_paths[3, 0])
+
+
+####### DON'T USE ###############
 class DepGraph_RAMOptimized:
     MAX_VERTICES = 512
     DEFAULT_EDGE_WEIGHT = 1
@@ -246,22 +291,3 @@ class DepGraph_RAMOptimized:
     def calc_r(self, m) -> list:
         n = len(self.A[0])
         return self.mat_or_vec(np.identity(n, np.uint8) + np.ones((n, n), np.uint8) - reduce(np.multiply, [ self.exp_A_c(i) for i in range(1, m + 1) ]), self.r0)
-
-if __name__ == "__main__":
-    # Testing code
-    dg = DepGraph_CPUOptimized()
-
-    dg.add_vertices(['s', 'c', 'v', 'p'], [0.25, 0.25, 0.25, 0.25])
-    dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1/3, 1/3, 1/3])
-
-    print(dg.calc_r())
-    
-    dg2 = DepGraph_RAMOptimized()
-
-    dg2.add_vertices(['s', 'c', 'v', 'p'], [0.25, 0.25, 0.25, 0.25])
-    dg2.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1/3, 1/3, 1/3])
-
-    m = 2
-    print(dg2.calc_r(m))
-
-    print(dg.member_paths)
