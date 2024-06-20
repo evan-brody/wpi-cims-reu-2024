@@ -8,11 +8,11 @@ from model_lstm import *
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 NORMALIZATION_CONSTANT = 0.0001
-n_hidden = 128
+n_hidden = 256
 n_epochs = 100000
 print_every = 100
 plot_every = 1000
-learning_rate = 0.005 # If you set this too high, it might explode. If too low, it might not learn
+learning_rate = 0.001 # If you set this too high, it might explode. If too low, it might not learn
 
 def randomChoice(l):
     return l[random.randint(0, len(l) - 1)]
@@ -32,14 +32,14 @@ def randomTrainingPair():
             [row.iloc[0,row.columns.get_loc('lower_bound')],
              row.iloc[0,row.columns.get_loc('best_estimate')],
              row.iloc[0,row.columns.get_loc('upper_bound')]]
-            ,dtype=torch.float32),NORMALIZATION_CONSTANT))
+            ,dtype=torch.float32).to(device),NORMALIZATION_CONSTANT))
     #category_tensor = Variable(torch.LongTensor([all_categories.index(category)]))
     #print(line)
-    line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')]))
+    line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')],device))
     return line, expected_output, line_tensor
 
 #rnn = RNN(n_letters, n_hidden, 3)
-rnn = LSTM(n_letters,n_hidden,3)
+rnn = LSTM(n_letters,n_hidden,3).to(device)
 optimizer = torch.optim.Adam(rnn.parameters(), lr=learning_rate)
 #optimizer = torch.optim.SGD(rnn.parameters(), lr=learning_rate)
 criterion = nn.MSELoss()
