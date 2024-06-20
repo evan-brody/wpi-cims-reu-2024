@@ -204,8 +204,8 @@ class DepGraph:
 
                 to_delete.append((i, j, key))
 
-        for path in to_delete:
-            del self.member_paths[path[0], path[1]][path[2]]
+        for i, j, key in to_delete:
+            del self.member_paths[i, j][key]
 
     # edge is a tuple of references (a, b) where (a -> b)
     def delete_edge(self, edge: tuple[QGraphicsRectItem]) -> None:
