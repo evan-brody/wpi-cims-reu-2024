@@ -18,26 +18,37 @@ class DepGraph:
         self.refi = {} # Maps QGraphicsRectItems to indices
         self.iref = np.empty((self.MAX_VERTICES,), QGraphicsRectItem) # Maps indices to QGraphicsRectItems
 
-        self.n = 0 # How many vertices we have
-        self.r0 = np.empty((self.MAX_VERTICES,), np.double) # Direct risk vector
+        # How many vertices we have
+        self.n = 0
+        # Direct risk vector
+        self.r0 = np.empty((self.MAX_VERTICES,), np.double)
+        # Adjacency matrix
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
-        self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
+        # Path information. Updated when calc_r is called
+        self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double) # Path information
+        # For index [i, j] possible paths from j -> i with weights
         self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), dict)
 
+    # For two sets of paths p_a and p_b, returns possible connections
+    # {pa0 + pb0, pa0 + pb1, ..., pa1 + pb0, pa1 + pb1, ..., ...}
     def connect_paths(self, p_a: dict, p_b: dict) -> dict:
         return { p1 + p2[1:] : p_a[p1] * p_b[p2] for p1, p2 in product(p_a.keys(), p_b.keys()) }
     
+    # For a set of path p, returns OR{p_0, p_1, ...}
     def combine_paths(self, pathset: dict) -> float:
         return 1 - reduce(lambda a,b: (1 - a) * (1 - b), pathset.values(), 1)
 
     # Returns if a is a subtuple of b
     def subtuple_match(self, a: tuple, b: tuple) -> bool:
+        # This method could be a one-liner, but it's
+        # significantly slower that way because of Python
         lena = len(a)
         for i in range(len(b) - lena + 1):
             if a == b[i:lena + i]:
                 return True
         return False
 
+    # P(a U b)
     def scl_or_scl(self, a: float, b: float) -> float:
         return 1 - (1 - a) * (1 - b)
     
@@ -48,7 +59,7 @@ class DepGraph:
                             # when one of the operands is 1
         return (a - b) / (1 - b)
     
-    # TODO: make these modify the arguments in-place ?
+    # TODO: make these methods modify the arguments in-place ?
     def vec_or_vec(self, v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
         n = self.n
         return self.J[0, :n] - np.multiply(self.J[0, :n] - v1, self.J[0, :n] - v2)
