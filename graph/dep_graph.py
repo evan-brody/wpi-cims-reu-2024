@@ -9,7 +9,6 @@ from PyQt5.QtWidgets import QGraphicsRectItem
 
 import timeit
 
-# TODO: edge removal (necessary for vertex removal)
 # TODO: vertex removal
 class DepGraph_CPUOptimized:
     MAX_VERTICES = 512
@@ -23,7 +22,6 @@ class DepGraph_CPUOptimized:
         self.iref = np.empty((self.MAX_VERTICES,), QGraphicsRectItem) # Maps indices to QGraphicsRectItems
 
         self.n = 0 # How many vertices we have
-        self.m = 1 # Largest power of A we care about
         self.r0 = np.empty((self.MAX_VERTICES,), np.double) # Direct risk vector
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
         self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
@@ -31,6 +29,9 @@ class DepGraph_CPUOptimized:
 
     def connect_paths(self, p_a: dict, p_b: dict) -> dict:
         return { p1 + p2[1:] : p_a[p1] * p_b[p2] for p1, p2 in product(p_a.keys(), p_b.keys()) }
+    
+    def combine_paths(self, pathset: dict) -> float:
+        return 1 - reduce(lambda a,b: (1 - a) * (1 - b), pathset.values(), 1)
 
     # Returns if a is a subtuple of b
     def subtuple_match(self, a: tuple, b: tuple) -> bool:
@@ -67,8 +68,7 @@ class DepGraph_CPUOptimized:
         
         return res
     
-    def add_vertices(self, refs, direct_risks=None) -> None:
-        m = self.m
+    def add_vertices(self, refs: list, direct_risks: list=None) -> None:
         n = self.n
         d = len(refs)
 
@@ -81,14 +81,14 @@ class DepGraph_CPUOptimized:
         else:
             self.r0[n:n + d] = direct_risks
 
-        self.A[:n:n + d, :n + d] = 0
+        self.A[n:n + d, :n + d] = 0
         self.A[:n, n:n + d] = 0
 
         self.A_collapse[n:n + d, :n + d] = 0
         self.A_collapse[:n, n:n + d] = 0
 
         # This needs to be a for-loop so that it's
-        # not all the same set
+        # not all the same dictionary
         for i, j in product(range(n, n + d), range(n + d)):
             self.member_paths[i, j] = dict()
         for i, j in product(range(n), range(n, n + d)):
@@ -96,16 +96,31 @@ class DepGraph_CPUOptimized:
 
         self.n += d
 
-    def add_edges(self, edges, weights=None) -> None:
-        if None == weights:
-            for e in edges:
-                self.add_edge(e)
-        else:
-            for e, w in zip(edges, weights):
-                self.add_edge(e, w)
-    
+    def add_vertex(self, ref: QGraphicsRectItem, direct_risk: float=None) -> None:
+        n = self.n
+        direct_risk = direct_risk if direct_risk else self.DEFAULT_DR
+        self.refi[ref] = n
+        self.iref[n] = ref
+
+        self.r0[n] = direct_risk
+
+        self.A[n, :n + 1] = 0
+        self.A[:n, n] = 0
+
+        self.A_collapse[n:n + 1, :n + 1] = 0
+        self.A_collapse[:n, n:n + 1] = 0
+
+        # This nee1s to be a for-loop so that it's
+        # not all the same dictionary
+        for j in range(n + 1):
+            self.member_paths[n, j] = dict()
+        for i in range(n):
+            self.member_paths[i, n] = dict()
+
+        self.n += 1
+
     # edge is a tuple (a, b) where a -> b
-    def add_edge(self, edge, weight=None) -> None:
+    def add_edge(self, edge: tuple, weight: float=None) -> None:
         n = self.n
         a, b = self.refi[edge[0]], self.refi[edge[1]]
         weight = weight if weight else self.DEFAULT_EDGE_WEIGHT
@@ -163,9 +178,13 @@ class DepGraph_CPUOptimized:
         # Remove any loops we've created
         np.fill_diagonal(self.A_collapse[:n, :n], 0)
 
-    def delete_edges(self, edges: list) -> None:
-        for e in edges:
-            self.delete_edge(e)
+    def add_edges(self, edges: list, weights: list=None) -> None:
+        if None == weights:
+            for e in edges:
+                self.add_edge(e)
+        else:
+            for e, w in zip(edges, weights):
+                self.add_edge(e, w)
 
     def delete_edge(self, edge: tuple) -> None:
         n = self.n
@@ -183,17 +202,34 @@ class DepGraph_CPUOptimized:
                 path_weight = self.member_paths[i, j][key]
                 collapsed_weight = self.A_collapse[i, j]
 
-                self.A_collapse[i, j] = self.inv_or(
-                    collapsed_weight, path_weight
-                )
+                # Need to fix inv_or before adding this
+                # self.A_collapse[i, j] = self.inv_or(
+                #     collapsed_weight, path_weight
+                # )
 
                 to_delete.append((i, j, key))
 
         for path in to_delete:
             del self.member_paths[path[0], path[1]][path[2]]
+
+    def delete_edges(self, edges: list) -> None:
+        for e in edges:
+            self.delete_edge(e)
+
+    def delete_vertex(self, ref: QGraphicsRectItem) -> None:
+        pass
+
+    def delete_vertices(self, refs: list) -> None:
+        for ref in refs:
+            self.delete_vertex(ref)
     
     def calc_r(self) -> np.ndarray:
         n = self.n
+        for i, j in product(range(n), repeat=2):
+            self.A_collapse[i, j] = self.combine_paths(
+                self.member_paths[i, j]
+            )
+
         return self.mat_or_vec(self.I[:n, :n] + self.A_collapse[:n, :n], self.r0[:n])
 
 if __name__ == "__main__":
@@ -203,7 +239,7 @@ if __name__ == "__main__":
     dg.add_vertices(['s', 'c', 'v', 'p'], [0.25, 0.25, 0.25, 0.25])
     dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1/3, 1/3, 1/3])
 
-    # print(dg.calc_r())
+    print(dg.calc_r())
 
     dg = DepGraph_CPUOptimized()
     dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
@@ -224,6 +260,7 @@ if __name__ == "__main__":
     print(dg.A[:n, :n])
     print(dg.A_collapse[:n, :n])
     print(dg.member_paths[3, 0])
+    print(dg.calc_r())
 
 ####### DON'T USE ###############
 class DepGraph_RAMOptimized:
