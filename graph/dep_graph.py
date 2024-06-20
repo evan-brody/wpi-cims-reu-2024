@@ -4,7 +4,7 @@
 
 import numpy as np
 from functools import reduce
-from itertools import chain, product
+from itertools import chain, product, starmap
 from PyQt5.QtWidgets import QGraphicsRectItem
 
 class DepGraph:
@@ -192,14 +192,12 @@ class DepGraph:
         to_delete = []
         for i, j in product(range(n), repeat=2):
             for key in self.member_paths[i, j].keys():
-                print(edge, key)
                 if not self.subtuple_match(edge, key):
                     continue
                 
+                # TODO: Fix OR inverse so this works
                 # path_weight = self.member_paths[i, j][key]
                 # collapsed_weight = self.A_collapse[i, j]
-
-                # Need to fix inv_or before adding this
                 # self.A_collapse[i, j] = self.inv_or(
                 #     collapsed_weight, path_weight
                 # )
