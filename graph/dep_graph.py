@@ -183,17 +183,26 @@ class DepGraph_CPUOptimized:
                 path_weight = self.member_paths[i, j][key]
                 collapsed_weight = self.A_collapse[i, j]
 
-                self.A_collapse[i, j] = self.inv_or(
-                    collapsed_weight, path_weight
-                )
+                # Need to fix inv_or before adding this
+                # self.A_collapse[i, j] = self.inv_or(
+                #     collapsed_weight, path_weight
+                # )
 
                 to_delete.append((i, j, key))
 
         for path in to_delete:
             del self.member_paths[path[0], path[1]][path[2]]
+
+    def combine_paths(self, pathset: dict) -> float:
+        return 1 - reduce(lambda a,b: (1 - a) * (1 - b), pathset.values(), 1)
     
     def calc_r(self) -> np.ndarray:
         n = self.n
+        for i, j in product(range(n), repeat=2):
+            self.A_collapse[i, j] = self.combine_paths(
+                self.member_paths[i, j]
+            )
+
         return self.mat_or_vec(self.I[:n, :n] + self.A_collapse[:n, :n], self.r0[:n])
 
 if __name__ == "__main__":
@@ -203,7 +212,7 @@ if __name__ == "__main__":
     dg.add_vertices(['s', 'c', 'v', 'p'], [0.25, 0.25, 0.25, 0.25])
     dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1/3, 1/3, 1/3])
 
-    # print(dg.calc_r())
+    print(dg.calc_r())
 
     dg = DepGraph_CPUOptimized()
     dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
@@ -224,6 +233,7 @@ if __name__ == "__main__":
     print(dg.A[:n, :n])
     print(dg.A_collapse[:n, :n])
     print(dg.member_paths[3, 0])
+    print(dg.calc_r())
 
 ####### DON'T USE ###############
 class DepGraph_RAMOptimized:
