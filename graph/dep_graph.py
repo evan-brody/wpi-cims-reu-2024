@@ -84,10 +84,10 @@ class DepGraph:
             self.refi[ref] = n + i
             self.iref[n + i] = ref
 
-        if direct_risks is None:
-            self.r0[n:n + d] = self.DEFAULT_DR
-        else:
+        if direct_risks:
             self.r0[n:n + d] = direct_risks
+        else:
+            self.r0[n:n + d] = self.DEFAULT_DR
 
         self.A[n:n + d, :n + d] = 0
         self.A[:n, n:n + d] = 0
