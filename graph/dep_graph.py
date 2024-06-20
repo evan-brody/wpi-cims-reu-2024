@@ -27,13 +27,28 @@ class DepGraph_CPUOptimized:
         self.r0 = np.empty((self.MAX_VERTICES,), np.double) # Direct risk vector
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
         self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
-        self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), set)
+        self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), dict)
 
-    def connect_paths(self, p_a: set, p_b: set) -> set:
-        return { p[0] + p[1][1:] for p in product(p_a, p_b) }
+    def connect_paths(self, p_a: dict, p_b: dict) -> dict:
+        return { p1 + p2[1:] : p_a[p1] * p_b[p2] for p1, p2 in product(p_a.keys(), p_b.keys()) }
+
+    # Returns if a is a subtuple of b
+    def subtuple_match(self, a: tuple, b: tuple) -> bool:
+        lena = len(a)
+        for i in range(len(b) - lena + 1):
+            if a == b[i:lena + i]:
+                return True
+        return False
 
     def scl_or_scl(self, a: float, b: float) -> float:
         return 1 - (1 - a) * (1 - b)
+    
+    # a is the probability of OR{b, ...}
+    # b is the event to remove
+    def inv_or(self, a: float, b: float) -> float:
+        if b == 1: return 0 # This is a problem. Can't invert OR operation
+                            # when one of the operands is 1
+        return (a - b) / (1 - b)
     
     # TODO: make these modify the arguments in-place ?
     def vec_or_vec(self, v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
@@ -75,19 +90,19 @@ class DepGraph_CPUOptimized:
         # This needs to be a for-loop so that it's
         # not all the same set
         for i, j in product(range(n, n + d), range(n + d)):
-            self.member_paths[i, j] = set()
+            self.member_paths[i, j] = dict()
         for i, j in product(range(n), range(n, n + d)):
-            self.member_paths[i, j] = set()
+            self.member_paths[i, j] = dict()
 
         self.n += d
 
-    def delete_vertices(self, refs) -> None:
-        pass
-
     def add_edges(self, edges, weights=None) -> None:
-        weights = weights if weights else [None] * len(edges)
-        for e, w in zip(edges, weights):
-            self.add_edge(e, w)
+        if None == weights:
+            for e in edges:
+                self.add_edge(e)
+        else:
+            for e, w in zip(edges, weights):
+                self.add_edge(e, w)
     
     # edge is a tuple (a, b) where a -> b
     def add_edge(self, edge, weight=None) -> None:
@@ -95,7 +110,7 @@ class DepGraph_CPUOptimized:
         a, b = self.refi[edge[0]], self.refi[edge[1]]
         weight = weight if weight else self.DEFAULT_EDGE_WEIGHT
         self.A[b, a] = weight
-        self.member_paths[b, a].add((a, b))
+        self.member_paths[b, a][(a, b)] = weight
 
         # Add to A-collapse by combining with existing connections
         self.A_collapse[b, a] = self.scl_or_scl(
@@ -148,11 +163,34 @@ class DepGraph_CPUOptimized:
         # Remove any loops we've created
         np.fill_diagonal(self.A_collapse[:n, :n], 0)
 
-        # TODO: store participating edges / vertices
-        # TODO: optimize loop removal ?
+    def delete_edges(self, edges: list) -> None:
+        for e in edges:
+            self.delete_edge(e)
 
-    def delete_edges(self, edges) -> None:
-        pass
+    def delete_edge(self, edge: tuple) -> None:
+        n = self.n
+        a, b = self.refi[edge[0]], self.refi[edge[1]]
+        self.A[b, a] = 0
+        edge = (a, b)
+
+        to_delete = []
+        for i, j in product(range(n), repeat=2):
+            for key in self.member_paths[i, j].keys():
+                print(edge, key)
+                if not self.subtuple_match(edge, key):
+                    continue
+                
+                path_weight = self.member_paths[i, j][key]
+                collapsed_weight = self.A_collapse[i, j]
+
+                self.A_collapse[i, j] = self.inv_or(
+                    collapsed_weight, path_weight
+                )
+
+                to_delete.append((i, j, key))
+
+        for path in to_delete:
+            del self.member_paths[path[0], path[1]][path[2]]
     
     def calc_r(self) -> np.ndarray:
         n = self.n
@@ -166,16 +204,7 @@ if __name__ == "__main__":
     dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1/3, 1/3, 1/3])
 
     # print(dg.calc_r())
-    n = dg.n
 
-    # print(dg.A_collapse[:n, :n])
-    # print(dg.member_paths[:n, :n])
-
-    p_a = set([(1, 2, 3), (1, 4, 3)])
-    p_b = set([(5, 6, 7), (5, 8, 7)])
-    dg.connect_paths(p_a, p_b)
-
-    # print(dg.member_paths[0, 3])
     dg = DepGraph_CPUOptimized()
     dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
     dg.add_edge(('b', 'd'), None)
@@ -184,9 +213,17 @@ if __name__ == "__main__":
     dg.add_edge(('a', 'c'), None)
     n = dg.n
 
+    print(dg.A[:n, :n])
     print(dg.A_collapse[:n, :n])
     print(dg.member_paths[3, 0])
 
+    dg.delete_edge(('b', 'd'))
+    dg.delete_edge(('c', 'd'))
+
+    print()
+    print(dg.A[:n, :n])
+    print(dg.A_collapse[:n, :n])
+    print(dg.member_paths[3, 0])
 
 ####### DON'T USE ###############
 class DepGraph_RAMOptimized:
