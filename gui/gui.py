@@ -49,7 +49,7 @@ from PyQt5.QtCore import *
 from stats_and_charts.charts import Charts
 from lstm.LSTMTrainer import LSTMTrainer
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from graph.dep_graph import DepGraph_CPUOptimized
+from graph.dep_graph import DepGraph
 import torch.multiprocessing as mp
 
 # database_data = {}
@@ -73,7 +73,7 @@ class DepQGraphicsScene(QGraphicsScene):
         self.setSceneRect(0, 0, self.SCENE_WIDTH, self.SCENE_HEIGHT)
 
         self.parent_window = parent_window
-        # self.dg = DepGraph_CPUOptimized()
+        # self.dg = DepGraph()
 
         # For the selection box
         self.select_rect_item = None

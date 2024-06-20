@@ -4,13 +4,10 @@
 
 import numpy as np
 from functools import reduce
-from itertools import repeat, chain, product, combinations
+from itertools import chain, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
-import timeit
-
-# TODO: vertex removal
-class DepGraph_CPUOptimized:
+class DepGraph:
     MAX_VERTICES = 512
     DEFAULT_EDGE_WEIGHT = 1
     DEFAULT_DR = 0.05
@@ -262,15 +259,17 @@ class DepGraph_CPUOptimized:
         return self.mat_or_vec(self.I[:n, :n] + self.A_collapse[:n, :n], self.r0[:n])
 
 if __name__ == "__main__":
-    # Testing code
-    dg = DepGraph_CPUOptimized()
+    ########### Testing code ################
+    # Test 1
+    dg = DepGraph()
 
     dg.add_vertices(['s', 'c', 'v', 'p'], [0.25] * 4)
     dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1 / 3] * 3)
 
     print(dg.calc_r())
 
-    dg = DepGraph_CPUOptimized()
+    # Test 2
+    dg = DepGraph()
     dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
     dg.add_edge(('b', 'd'))
     dg.add_edge(('c', 'd'))
@@ -292,7 +291,7 @@ if __name__ == "__main__":
     print(dg.calc_r())
 
     # Test 3
-    dg = DepGraph_CPUOptimized()
+    dg = DepGraph()
     dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
     dg.add_edge(('b', 'd'))
     dg.add_edge(('c', 'd'))
@@ -313,108 +312,3 @@ if __name__ == "__main__":
     print(dg.member_paths[3, 0])
     print("\nCALC_R")
     print(dg.calc_r())
-
-
-####### DON'T USE ###############
-class DepGraph_RAMOptimized:
-    MAX_VERTICES = 512
-    DEFAULT_EDGE_WEIGHT = 1
-    DEFAULT_DR = 0.05
-
-    def __init__(self) -> None:
-        self.refi = {} # Maps QGraphicsRectItems to indices
-        self.iref = np.empty((self.MAX_VERTICES,), QGraphicsRectItem) # Maps indices to QGraphicsRectItems
-
-        self.r0 = [] # Direct risk vector
-        self.A = [[]] # Adjacency matrix
-    
-    def scl_or_scl(self, a: float, b: float) -> float:
-        return 1 - (1 - a) * (1 - b)
-    
-    def vec_or_vec(self, v1: list, v2: list) -> list:
-        n = len(self.A[0])
-        return [1] * n - np.multiply([1] * n - v1, [1] * n - v2)
-
-    def mat_or_vec(self, a: list[list], v: list) -> list:
-        lenv = len(v)
-        return [1] * lenv - np.prod([ [1] * lenv for _ in repeat(None, lenv) ] - np.multiply(a, v), axis=1)
-
-    def mat_or_mat(self, a: list[list], b: list[list]) -> list[list]:
-        res = [[0] * len(b[0])]
-
-        for _ in repeat(None, len(a) - 1):
-            res.append([0] * len(b[0]))
-        
-        for i, j in product(range(len(a)), range(len(b[0]))):
-            res[i][j] = 1 - np.prod([1] * len(a[0]) - np.multiply(a[i], np.transpose(b)[j]))
-        
-        return res
-
-    def mat_or_mat_c(self, a: list[list], b: list[list]) -> list:
-        res = [[0] * len(b[0])]
-
-        for _ in repeat(None, len(a) - 1):
-            res.append([0] * len(b[0]))
-        
-        for i, j in product(range(len(a)), range(len(b[0]))):
-            res[i][j] = np.prod([1] * len(a[0]) - np.multiply(a[i], np.transpose(b)[j]))
-        
-        return res
-
-    def exp_A(self, p) -> list[list]:
-        n = len(self.A[0])
-
-        res = np.identity(n)
-        for _ in repeat(None, p):
-            res = self.mat_or_mat(self.A, res)
-
-        return res
-    
-    def exp_A_c(self, p) -> list[list]:
-        n = len(self.A[0])
-        res = np.identity(n)
-        if 0 == p:
-            return res
-
-        for _ in repeat(None, p - 1):
-            res = self.mat_or_mat(self.A, res)
-
-        return self.mat_or_mat_c(self.A, res)
-    
-    def add_vertices(self, refs, direct_risks=None) -> None:
-        n = len(self.A[0])
-        d = len(refs)
-
-        for i, ref in enumerate(refs):
-            self.refi[ref] = n + i
-            self.iref[n + i] = ref
-
-        if direct_risks is None:
-            self.r0 += [self.DEFAULT_DR] * d
-        else:
-            self.r0 += direct_risks
-        
-        if 0 == n:
-            self.A.pop()
-
-        for _ in repeat(None, d):
-            self.A.append([0] * (n + d))
-        
-        for i in range(n):
-            self.A[i] += [0] * d
-
-    # edges is a list of tuples (a, b) where a -> b
-    # with the weight in weights whose index matches the tuple's
-    def add_edges(self, edges, weights=None) -> None:
-        if weights:
-            for k, pair in enumerate(edges):
-                i, j = self.refi[pair[1]], self.refi[pair[0]]
-                self.A[i][j] = weights[k]
-        else:
-            for pair in edges:
-                i, j = self.refi[pair[1]], self.refi[pair[0]]
-                self.A[i][j] = self.DEFAULT_EDGE_WEIGHT
-
-    def calc_r(self, m) -> list:
-        n = len(self.A[0])
-        return self.mat_or_vec(np.identity(n, np.uint8) + np.ones((n, n), np.uint8) - reduce(np.multiply, [ self.exp_A_c(i) for i in range(1, m + 1) ]), self.r0)
