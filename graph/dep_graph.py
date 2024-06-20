@@ -4,7 +4,7 @@
 
 import numpy as np
 from functools import reduce
-from itertools import repeat, chain, product
+from itertools import repeat, chain, product, combinations
 from PyQt5.QtWidgets import QGraphicsRectItem
 
 import timeit
@@ -186,12 +186,9 @@ class DepGraph_CPUOptimized:
             for e, w in zip(edges, weights):
                 self.add_edge(e, w)
 
-    def delete_edge(self, edge: tuple) -> None:
+    # edge is a tuple of integers (i, j) where i -> j
+    def delete_edge_i(self, edge: tuple[int]) -> None:
         n = self.n
-        a, b = self.refi[edge[0]], self.refi[edge[1]]
-        self.A[b, a] = 0
-        edge = (a, b)
-
         to_delete = []
         for i, j in product(range(n), repeat=2):
             for key in self.member_paths[i, j].keys():
@@ -199,8 +196,8 @@ class DepGraph_CPUOptimized:
                 if not self.subtuple_match(edge, key):
                     continue
                 
-                path_weight = self.member_paths[i, j][key]
-                collapsed_weight = self.A_collapse[i, j]
+                # path_weight = self.member_paths[i, j][key]
+                # collapsed_weight = self.A_collapse[i, j]
 
                 # Need to fix inv_or before adding this
                 # self.A_collapse[i, j] = self.inv_or(
@@ -212,12 +209,44 @@ class DepGraph_CPUOptimized:
         for path in to_delete:
             del self.member_paths[path[0], path[1]][path[2]]
 
+    # edge is a tuple of references (a, b) where (a -> b)
+    def delete_edge(self, edge: tuple[QGraphicsRectItem]) -> None:
+        a, b = self.refi[edge[0]], self.refi[edge[1]]
+        self.A[b, a] = 0
+        edge = (a, b)
+
+        self.delete_edge_i(edge)
+
     def delete_edges(self, edges: list) -> None:
         for e in edges:
             self.delete_edge(e)
 
     def delete_vertex(self, ref: QGraphicsRectItem) -> None:
-        pass
+        n = self.n
+        vi = self.refi[ref]
+        del self.refi[ref]
+
+        self.iref[vi:n - 1] = self.iref[vi + 1:n]
+        self.r0[vi:n - 1] = self.r0[vi + 1:n]
+
+        # Delete edges before we lose their information
+        for i, j in chain(product((vi,), range(n)), product(range(n), (vi,))):
+            if self.A[i, j]:
+                self.delete_edge_i((j, i))
+
+        self.A[vi:n - 1, :n] = self.A[vi + 1:n, :n]
+        self.A[:n - 1, vi:n - 1] = self.A[:n - 1, vi + 1:n]
+
+        self.A_collapse[vi:n - 1, :n] = self.A_collapse[vi + 1:n, :n]
+        self.A_collapse[:n - 1, vi:n - 1] = self.A_collapse[:n - 1, vi + 1:n]
+
+        # Delete the dictionaries before copying back
+        self.member_paths[vi, :n] = None
+        self.member_paths[:n, vi] = None
+        self.member_paths[vi:n - 1, :n] = self.member_paths[vi + 1:n, :n]
+        self.member_paths[:n - 1, vi:n - 1] = self.member_paths[:n - 1, vi + 1:n]
+
+        self.n -= 1
 
     def delete_vertices(self, refs: list) -> None:
         for ref in refs:
@@ -261,6 +290,30 @@ if __name__ == "__main__":
     print(dg.A_collapse[:n, :n])
     print(dg.member_paths[3, 0])
     print(dg.calc_r())
+
+    # Test 3
+    dg = DepGraph_CPUOptimized()
+    dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
+    dg.add_edge(('b', 'd'))
+    dg.add_edge(('c', 'd'))
+    dg.add_edge(('a', 'b'))
+    dg.add_edge(('a', 'c'))
+    n = dg.n
+
+    print(dg.A[:n, :n])
+    print(dg.A_collapse[:n, :n])
+    print(dg.member_paths[3, 0])
+
+    dg.delete_vertex('a')
+    n = dg.n
+
+    print()
+    print(dg.A[:n, :n])
+    print(dg.A_collapse[:n, :n])
+    print(dg.member_paths[3, 0])
+    print("\nCALC_R")
+    print(dg.calc_r())
+
 
 ####### DON'T USE ###############
 class DepGraph_RAMOptimized:
