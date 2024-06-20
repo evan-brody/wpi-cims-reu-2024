@@ -8,13 +8,14 @@ from lstm.model_lstm import *
 class LSTMTrainer():
 
     def __init__(self):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")
 
         self.NORMALIZATION_CONSTANT = 0.0001
         self.n_hidden = 256
         self.n_epochs = 100000
         self.print_every = 100
-        self.plot_every = 1000
+        self.plot_every = 100
         self.learning_rate = 0.001 # If you set this too high, it might explode. If too low, it might not learn
         
         self.lstm = LSTM(n_letters,self.n_hidden,3).to(self.device)
@@ -92,7 +93,7 @@ class LSTMTrainer():
 
         torch.save(self.lstm, 'failure_curve_estimator.pt')
         
-    def iterate_once(self,epoch):
+    def iterate_once(self):
         line, expected_output, line_tensor = self.randomTrainingPair()
         output, loss = self.train(expected_output, line_tensor)
         return line,output,expected_output,loss
