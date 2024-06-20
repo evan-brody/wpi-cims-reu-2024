@@ -614,15 +614,15 @@ class MainWindow(QMainWindow):
         self.central_widget.addTab(
             self.dep_tab, "Dependencies"
         )
-        self.rnn_tab = QWidget()
+        self.lstm_tab = QWidget()
         self.central_widget.addTab(
-            self.rnn_tab, "RNN"
+            self.lstm_tab, "lstm"
         )
 
         self.init_main_tab()
         self.init_stats_tab()
         self.init_dep_tab()
-        self.init_rnn_tab()
+        self.init_lstm_tab()
 
         self.counter = 0
         self.questions = (
@@ -1105,83 +1105,84 @@ class MainWindow(QMainWindow):
 
         self.dep_layout.addLayout(self.dep_left_layout)
 
-    def init_rnn_tab(self):
-        ### START OF RNN TAB SETUP ###
+    def init_lstm_tab(self):
+        ### START OF lstm TAB SETUP ###
 
         # Create main layout
-        self.rnn_layout = QHBoxLayout(self.rnn_tab)
+        self.lstm_layout = QHBoxLayout(self.lstm_tab)
 
         # Left layout for component info and table
-        self.left_layout_rnn = QVBoxLayout()
+        self.left_layout_lstm = QVBoxLayout()
 
         # Creating label to designate component selection
-        self.component_selection_rnn = QLabel("Component Selection: ")
-        self.left_layout_rnn.addWidget(self.component_selection_rnn)
+        self.component_selection_lstm = QLabel("Component Selection: ")
+        self.left_layout_lstm.addWidget(self.component_selection_lstm)
 
         # Create and add the component name dropdown menu
-        self.search_and_dropdown_layout_rnn = QHBoxLayout()
+        self.search_and_dropdown_layout_lstm = QHBoxLayout()
 
-        self.component_name_field_rnn = QComboBox(self)
-        self.component_name_field_rnn.addItem("Select a Component")
-        self.component_name_field_rnn.activated.connect(
+        self.component_name_field_lstm = QComboBox(self)
+        self.component_name_field_lstm.addItem("Select a Component")
+        self.component_name_field_lstm.activated.connect(
             lambda: (
                 self.component_name_field.setCurrentText(
-                    self.component_name_field_rnn.currentText()
+                    self.component_name_field_lstm.currentText()
                 ),
                 self.update_layout(),
             )
         )
         
-        self.populate_component_dropdown(self.component_name_field_rnn, self.components["name"])
+        self.populate_component_dropdown(self.component_name_field_lstm, self.components["name"])
 
-        self.component_search_field_rnn = QLineEdit(self)
-        self.component_search_field_rnn.setPlaceholderText("Search for a component...")
-        self.component_search_field_rnn.textChanged.connect(
+        self.component_search_field_lstm = QLineEdit(self)
+        self.component_search_field_lstm.setPlaceholderText("Search for a component...")
+        self.component_search_field_lstm.textChanged.connect(
             self.filter_components(
                 self.populate_component_dropdown,
-                self.component_name_field_rnn
+                self.component_name_field_lstm
                 )
             )
 
-        self.search_and_dropdown_layout_rnn.addWidget(self.component_search_field_rnn)
-        self.search_and_dropdown_layout_rnn.addWidget(self.component_name_field_rnn)
+        self.search_and_dropdown_layout_lstm.addWidget(self.component_search_field_lstm)
+        self.search_and_dropdown_layout_lstm.addWidget(self.component_name_field_lstm)
 
-        self.left_layout_rnn.addLayout(self.search_and_dropdown_layout_rnn)
+        self.left_layout_lstm.addLayout(self.search_and_dropdown_layout_lstm)
         
         # Create and add the submit button
-        self.submit_button_rnn = QPushButton("Show Table")
-        self.submit_button_rnn.clicked.connect(
-            lambda: self.populate_table(self.table_widget_rnn, self.comp_fails)
+        self.submit_button_lstm = QPushButton("Show Table")
+        self.submit_button_lstm.clicked.connect(
+            lambda: self.populate_table(self.table_widget_lstm, self.comp_fails)
         )
-        self.left_layout_rnn.addWidget(self.submit_button_rnn)
+        self.left_layout_lstm.addWidget(self.submit_button_lstm)
 
         # Create and add the table widget
-        self.table_widget_rnn = QTableWidget()
-        self.table_widget_rnn.setColumnCount(len(self.HORIZONTAL_HEADER_LABELS))
-        self.table_widget_rnn.setHorizontalHeaderLabels(self.HORIZONTAL_HEADER_LABELS)
-        self.table_widget_rnn.setColumnWidth(0, 150)  # ID
-        self.table_widget_rnn.setColumnWidth(1, 150)  # Failure Mode
-        self.table_widget_rnn.setColumnWidth(3, 150)  # RPN
-        self.table_widget_rnn.setColumnWidth(4, 150)  # Frequency
-        self.table_widget_rnn.setColumnWidth(5, 150)  # Severity
-        self.table_widget_rnn.setColumnWidth(6, 150)  # Detectability
-        self.table_widget_rnn.setColumnWidth(7, 150)  # Mission Time
-        self.table_widget_rnn.setColumnWidth(8, 150)  # Lower Bound
-        self.table_widget_rnn.setColumnWidth(9, 150)  # Lower Bound
-        self.table_widget_rnn.setColumnWidth(10, 150)  # Best Estimate
-        self.table_widget_rnn.verticalHeader().setDefaultSectionSize(32)
-        self.table_widget_rnn.verticalHeader().setMaximumSectionSize(32)
-        self.table_widget_rnn.verticalScrollBar().setMaximum(10 * 30)
-        self.table_widget_rnn.cellClicked.connect(self.cell_clicked)
-        self.left_layout_rnn.addWidget(self.table_widget_rnn)
+        self.table_widget_lstm = QTableWidget()
+        self.table_widget_lstm.setColumnCount(len(self.HORIZONTAL_HEADER_LABELS))
+        self.table_widget_lstm.setHorizontalHeaderLabels(self.HORIZONTAL_HEADER_LABELS)
+        self.table_widget_lstm.setColumnWidth(0, 150)  # ID
+        self.table_widget_lstm.setColumnWidth(1, 150)  # Failure Mode
+        self.table_widget_lstm.setColumnWidth(3, 150)  # RPN
+        self.table_widget_lstm.setColumnWidth(4, 150)  # Frequency
+        self.table_widget_lstm.setColumnWidth(5, 150)  # Severity
+        self.table_widget_lstm.setColumnWidth(6, 150)  # Detectability
+        self.table_widget_lstm.setColumnWidth(7, 150)  # Mission Time
+        self.table_widget_lstm.setColumnWidth(8, 150)  # Lower Bound
+        self.table_widget_lstm.setColumnWidth(9, 150)  # Lower Bound
+        self.table_widget_lstm.setColumnWidth(10, 150)  # Best Estimate
+        self.table_widget_lstm.verticalHeader().setDefaultSectionSize(32)
+        self.table_widget_lstm.verticalHeader().setMaximumSectionSize(32)
+        self.table_widget_lstm.verticalScrollBar().setMaximum(10 * 30)
+        self.table_widget_lstm.cellClicked.connect(self.cell_clicked)
+        self.left_layout_lstm.addWidget(self.table_widget_lstm)
 
         # Creating right layout for graphs in stats tab
-        self.right_layout_rnn = QVBoxLayout()
+        self.right_layout_lstm = QVBoxLayout()
 
         # Create label for the graphing
-        # self.stat_modeling_tag = QLabel("Statistical Modeling: ")
-        # right_layout_stats.addWidget(self.stat_modeling_tag)
+        self.lstm_label_tag = QLabel("LSTM Training: ")
+        self.right_layout_lstm.addWidget(self.lstm_label_tag)
 
+        
         # # Create dropdown menu for holding charts we want to give the option of generating
         # self.chart_name_field_stats = QComboBox(self)
         # self.chart_name_field_stats.addItem("Select a Chart")
@@ -1213,16 +1214,16 @@ class MainWindow(QMainWindow):
         # right_layout_stats.addWidget(self.download_chart_button_stats)
 
         # Add left and right layouts to the main layout
-        self.rnn_layout.addLayout(self.left_layout_rnn, 4)
-        self.rnn_layout.addLayout(self.right_layout_rnn, 6)
+        self.lstm_layout.addLayout(self.left_layout_lstm, 4)
+        self.lstm_layout.addLayout(self.right_layout_lstm, 6)
 
-        ### END OF RNN TAB SETUP ###
+        ### END OF lstm TAB SETUP ###
         
     def update_layout(self):
         self.refreshing_table = True
         self.populate_table(self.table_widget, self.comp_fails)
         self.populate_table(self.table_widget_stats, self.comp_fails)
-        self.populate_table(self.table_widget_rnn, self.comp_fails)
+        self.populate_table(self.table_widget_lstm, self.comp_fails)
         self.generate_main_chart()
 
         for row in range(len(self.comp_data.index)):
@@ -1428,7 +1429,7 @@ class MainWindow(QMainWindow):
         self.df = pd.merge(self.df, self.fail_modes, left_on="fail_id", right_on="id")
         self.df.drop(labels=["cf_id", "comp_id", "fail_id", "id_x", "id_y"], axis=1, inplace=True)
         self.df.to_csv(path_or_buf=os.path.abspath(os.path.join(self.CURRENT_DIRECTORY, 
-                                                    os.path.join(os.path.dirname(__file__), os.pardir, "rnn"), "tmp_db"))
+                                                    os.path.join(os.path.dirname(__file__), os.pardir, "lstm"), "tmp_db"))
         )
 
     def reset_df(self) -> None:

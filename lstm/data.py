@@ -21,7 +21,7 @@ def readLines(filename):
     return [unicodeToAscii(line) for line in lines]
 
 # TODO: change source
-comp_fails = pd.read_csv(filepath_or_buffer="rnn/tmp_db")
+comp_fails = pd.read_csv(filepath_or_buffer="lstm/tmp_db")
 
 # Find letter index from all_letters, e.g. "a" = 0
 def letterToIndex(letter):
@@ -29,8 +29,8 @@ def letterToIndex(letter):
 
 # Turn a line into a <line_length x 1 x n_letters>,
 # or an array of one-hot letter vectors
-def lineToTensor(line):
-    tensor = torch.zeros(len(line), 1, n_letters,dtype=torch.float32)
+def lineToTensor(line,device):
+    tensor = torch.zeros(len(line), 1, n_letters,dtype=torch.float32).to(device)
     for li, letter in enumerate(line):
         tensor[li][0][letterToIndex(letter)] = 1
     return tensor
