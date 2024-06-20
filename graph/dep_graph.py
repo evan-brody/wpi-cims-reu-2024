@@ -130,10 +130,6 @@ class DepGraph:
         )
 
         # Collapse paths starting at a and passing through b
-        # self.A_collapse[:n, a] = self.vec_or_vec(
-        #     self.A_collapse[:n, a], weight * self.A_collapse[:n, b]
-        # )
-
         for i in range(n):
             new_path = self.A_collapse[i, b]
             if new_path:
@@ -167,10 +163,6 @@ class DepGraph:
                     self.member_paths[i, j].update(
                         self.connect_paths(self.member_paths[a, j], self.member_paths[i, a])
                     )
-
-            # self.A_collapse[:n, j] = self.vec_or_vec(
-            #     self.A_collapse[:n, j], self.A_collapse[a, j] * self.A_collapse[:n, a]
-            # )
 
         # Remove any loops we've created
         np.fill_diagonal(self.A_collapse[:n, :n], 0)
