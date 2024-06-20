@@ -236,17 +236,17 @@ if __name__ == "__main__":
     # Testing code
     dg = DepGraph_CPUOptimized()
 
-    dg.add_vertices(['s', 'c', 'v', 'p'], [0.25, 0.25, 0.25, 0.25])
-    dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1/3, 1/3, 1/3])
+    dg.add_vertices(['s', 'c', 'v', 'p'], [0.25] * 4)
+    dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1 / 3] * 3)
 
     print(dg.calc_r())
 
     dg = DepGraph_CPUOptimized()
     dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
-    dg.add_edge(('b', 'd'), None)
-    dg.add_edge(('c', 'd'), None)
-    dg.add_edge(('a', 'b'), None)
-    dg.add_edge(('a', 'c'), None)
+    dg.add_edge(('b', 'd'))
+    dg.add_edge(('c', 'd'))
+    dg.add_edge(('a', 'b'))
+    dg.add_edge(('a', 'c'))
     n = dg.n
 
     print(dg.A[:n, :n])
