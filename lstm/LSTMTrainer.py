@@ -1,10 +1,11 @@
 import torch, sys, os, random, time, math
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from data import *
+#from data import *
+import data
 from model_lstm import *
 
-class RNNTrainer():
+class LSTMTrainer():
 
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -16,7 +17,7 @@ class RNNTrainer():
         self.plot_every = 1000
         self.learning_rate = 0.001 # If you set this too high, it might explode. If too low, it might not learn
         
-        self.lstm = LSTM(n_letters,self.n_hidden,3).to(self.device)
+        self.lstm = LSTM(data.n_letters,self.n_hidden,3).to(self.device)
         self.optimizer = torch.optim.Adam(self.lstm.parameters(), lr=self.learning_rate)
         self.criterion = nn.MSELoss()
         return
@@ -26,7 +27,7 @@ class RNNTrainer():
 
     def randomTrainingPair(self):
         #category = randomChoice(all_categories)
-        row = comp_fails.sample()
+        row = data.comp_fails.sample()
         line = row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')]
         # expected_output = Variable(
         #     nn.functional.normalize(torch.tensor(
@@ -42,7 +43,7 @@ class RNNTrainer():
                 ,dtype=torch.float32).to(self.device),self.NORMALIZATION_CONSTANT))
         #category_tensor = Variable(torch.LongTensor([all_categories.index(category)]))
         #print(line)
-        line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')],self.device))
+        line_tensor = Variable(data.lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')],self.device))
         return line, expected_output, line_tensor
 
     def train(self,expected_output, line_tensor):
@@ -90,3 +91,6 @@ class RNNTrainer():
                 current_loss = 0
 
         torch.save(self.lstm, 'failure_curve_estimator.pt')
+        
+
+LSTMTrainer()
