@@ -50,9 +50,9 @@ from stats_and_charts.charts import Charts
 from lstm.LSTMTrainer import LSTMTrainer
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from graph.dep_graph import DepGraph_CPUOptimized
+import torch.multiprocessing as mp
 
 # database_data = {}
-
 # Custom QGraphicsScene class for the dependency tab
 class DepQGraphicsScene(QGraphicsScene):
     # Keys for the QGraphicsItem data table
@@ -1051,11 +1051,16 @@ class MainWindow(QMainWindow):
         # Create and add the submit button
         self.train_button_lstm = QPushButton("Train Model")
         self.right_layout_lstm.addWidget(self.train_button_lstm)
-        self.train_button_lstm.clicked.connect(self.train_model)
+        # self.train_button_lstm.clicked.connect(
+        #     lambda: pool.apply_async(train_helper,args=[self])
+        # )
+        self.train_button_lstm.clicked.connect(
+            lambda: train_iterator(window)
+        )
         
         # Create the matplotlib figure and canvas
-        self.lstm_figure = plt.figure()
-        self.lstm_canvas = FigureCanvas(self.lstm_figure)
+        self.loss_fig = plt.figure()
+        self.lstm_canvas = FigureCanvas(self.loss_fig)
         self.right_layout_lstm.addWidget(self.lstm_canvas)
 
         # Scrolling and zoom in/out functionality
@@ -1063,7 +1068,6 @@ class MainWindow(QMainWindow):
         self.right_layout_lstm.addWidget(self.lstm_toolbar)
 
         self.right_layout_lstm.addStretch()
-        
         
         # # Create dropdown menu for holding charts we want to give the option of generating
         # self.chart_name_field_stats = QComboBox(self)
@@ -1099,29 +1103,17 @@ class MainWindow(QMainWindow):
         self.lstm_layout.addLayout(self.left_layout_lstm, 4)
         self.lstm_layout.addLayout(self.right_layout_lstm, 6)
 
-        ### END OF lstm TAB SETUP ###
+        ### END OF LSTM TAB SETUP ###
     
-    def train_model(self):
-        # Keep track of losses for plotting
+    def train_model(self,steps: int,epoch):
         current_loss = 0
-        all_losses = []
-        
         start = time.time()
-        for epoch in range(1, self.LSTMTrainer.n_epochs + 1):
-            line,output,expected_output,loss = self.LSTMTrainer.iterate_once(epoch)
+        for e in range(steps):
+            line,output,expected_output,loss = self.LSTMTrainer.iterate_once()
             current_loss += loss
-            # Print epoch number, loss, name and guess
-            if epoch % self.LSTMTrainer.print_every == 0:
-                #guess, guess_i = categoryFromOutput(output)
-                #correct = 'y' if guess == category else 'n (%s)' % category
-                print('%d %d%% (%s) %.4f %s / %s %s' % (epoch, epoch / self.LSTMTrainer.n_epochs * 100, self.LSTMTrainer.timeSince(start), loss, line, output, expected_output))
-                print(current_loss/self.LSTMTrainer.print_every)
-                current_loss = 0
-
-            # Add current loss avg to list of losses
-            if epoch % self.LSTMTrainer.plot_every == 0:
-                all_losses.append(current_loss / self.LSTMTrainer.plot_every)
-                current_loss = 0
+        # Print epoch number, loss, name and guess
+        #queue.put('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / self.LSTMTrainer.n_epochs * 100, self.LSTMTrainer.timeSince(start), loss, line, output, expected_output))
+        return line,output,expected_output,loss,current_loss/steps,self.LSTMTrainer.timeSince(start),epoch
     
     def update_layout(self):
         self.refreshing_table = True
@@ -1505,66 +1497,6 @@ class MainWindow(QMainWindow):
             )
 
     """
-    Refreshes table to the previous page.
-    """
-
-    # def show_previous(self):
-    #     # so that it doesn't go below 0
-    #     self.selected_index = max(0, self.selected_index - self.max_ids)
-    #     self.populate_table(self.table_widget, self.comp_fails)
-
-    """
-    Description: Refreshes statistics table to the previous page.
-    """
-
-    # def show_previous_stats(self):
-    #     # so that it doesn't go below 0
-    #     self.selected_index_stats = max(
-    #         0, self.selected_index_stats - self.max_ids_stats
-    #     )
-    #     self.populate_table(self.table_widget_stats, self.comp_fails)
-
-    """
-    Refreshes table to the next page.
-    """
-
-    # def show_next(self):
-    #     component_name = self.component_name_field.currentText()
-    #     component_data = database_data.get(component_name, [])
-    #     total_pages = len(component_data) // self.max_ids
-    #     if len(component_data) % self.max_ids != 0:
-    #         total_pages += 1
-
-    #     if self.selected_index + self.max_ids < len(component_data):
-    #         self.selected_index += self.max_ids
-    #     elif (
-    #         self.selected_index + self.max_ids >= len(component_data)
-    #         and self.selected_index // self.max_ids < total_pages - 1
-    #     ):
-    #         self.selected_index = (total_pages - 1) * self.max_ids
-    #     self.populate_table(self.table_widget, self.comp_fails)
-
-    """
-    Refreshes statistics table to the next page.
-    """
-
-    # def show_next_stats(self):
-    #     component_name = self.component_name_field_stats.currentText()
-    #     component_data = database_data.get(component_name, [])
-    #     total_pages = len(component_data) // self.max_ids_stats
-    #     if len(component_data) % self.max_ids_stats != 0:
-    #         total_pages += 1
-
-    #     if self.selected_index_stats + self.max_ids_stats < len(component_data):
-    #         self.selected_index_stats += self.max_ids_stats
-    #     elif (
-    #         self.selected_index_stats + self.max_ids_stats >= len(component_data)
-    #         and self.selected_index_stats // self.max_ids_stats < total_pages - 1
-    #     ):
-    #         self.selected_index_stats = (total_pages - 1) * self.max_ids_stats
-    #     self.populate_table(self.table_widget_stats, self.comp_fails)
-
-    """
     Gives user the option to download displayed figure.
     """
 
@@ -1574,29 +1506,6 @@ class MainWindow(QMainWindow):
         )
         self.main_figure
         figure.savefig(file_path, format="jpg", dpi=300)
-
-    # def ask_questions(self):
-    #     if self.qindex < len(self.questions):
-    #         reply = QMessageBox.question(
-    #             self,
-    #             "Question",
-    #             self.questions[self.qindex],
-    #             QMessageBox.Yes | QMessageBox.No,
-    #             QMessageBox.No,
-    #         )
-
-    #         if reply == QMessageBox.Yes:
-    #             self.counter += 1
-
-    #         self.qindex += 1
-    #         self.ask_questions()
-    #     else:
-    #         self.show_recommendation()
-
-    # def show_recommendation(self):
-    #     QMessageBox.information(
-    #         self, "Recommendation", self.RECOMMENDATIONS[self.counter]
-    #     )
 
     def filter_components(self, pop_comp_func, field):
         def f(search_query):
@@ -1616,8 +1525,54 @@ class MainWindow(QMainWindow):
             field.addItem(name)
 
 
+def train_helper(instance: MainWindow,steps,epoch):
+    return instance.train_model(steps,epoch)
+
+def test(instance):
+    return instance.current_row
+
+def train_iterator(instance: MainWindow):
+    # Keep track of losses for plotting
+        
+    x = [0]
+    y = [1]
+    # plotting the first frame
+    #instance.loss_fig = plt.plot(x,y)[0]
+    #plt.ylim(0,1)
+    
+    """
+    The issue - i think - is that the window instance is too large to be pickled, and takes forever to 
+    be passed to the subprocess. So i need to find a different way to run class methods on a subprocess,
+    or I need to store the LSTMTrainer not in the class.
+    """
+    pool.apply_async(test,args=[window,],callback=async_callback)
+    #for epoch in range((int)(instance.LSTMTrainer.n_epochs/instance.LSTMTrainer.print_every)):
+    # for epoch in range(1):
+    #    pool.apply_async(train_helper,args=(instance,instance.LSTMTrainer.print_every,epoch),callback=async_callback)
+
+def async_callback(func_result):
+    # updating the data
+    #line,output,expected_output,loss,avg_loss,del_time,epoch = func_result
+    # y.append(avg_loss)
+    # x.append(del_time+x[-1])
+    
+    print(func_result)
+    #print('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / 10, x[-1], loss, line, output, expected_output))
+    # removing the older graph
+    # self.loss_fig.remove()
+    
+    # # plotting newer graph
+    # self.loss_fig = plt.plot(x,y,color = 'g')[0]
+    # plt.xlim(x[0], x[-1])
+    return
+
+
 if __name__ == "__main__":
     # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    pool = mp.Pool(2)
+    queue = mp.Queue()
+    p_out,p_in = mp.Pipe()
+    
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
