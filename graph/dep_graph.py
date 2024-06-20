@@ -27,9 +27,18 @@ class DepGraph_CPUOptimized:
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
         self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
 
+        # member_paths stores 
+        self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), dict)
+        # Technically this could be a 5-dimensional array to avoid resizing and
+        # provide faster lookup but we'd need more RAM for that
+
+        # Maps ordered sets of edges to their AND-combined weight
+        self.path_weights = {}
+
     def scl_or_scl(self, a: float, b: float) -> float:
         return 1 - (1 - a) * (1 - b)
     
+    # TODO: make these modify the arguments in-place ?
     def vec_or_vec(self, v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
         n = self.n
         return self.J[0, :n] - np.multiply(self.J[0, :n] - v1, self.J[0, :n] - v2)
@@ -64,6 +73,9 @@ class DepGraph_CPUOptimized:
 
         self.A_collapse[n:n + d, :n + d] = 0
         self.A_collapse[:n, n:n + d] = 0
+
+        self.member_paths[n:n + d, :n + d] = dict()
+        self.member_paths[:n, n:n + d] = dict()
 
         self.n += d
 
@@ -106,17 +118,21 @@ class DepGraph_CPUOptimized:
             
             for i in range(n):
                 # j -> i OR (j -> a AND a -> i)
-                new_path = self.A_collapse[a, j] * self.A_collapse[i, a]
-                if new_path:
-                    self.A_collapse[i, j] = self.A_collapse[a, j] * self.A_collapse[i, a]
-                    # TODO: store participating vertices
+                new_path_weight = self.A_collapse[a, j] * self.A_collapse[i, a]
+                if new_path_weight:
+                    # OR-combine with existing connection
+                    self.A_collapse[i, j] = self.scl_or_scl(self.A_collapse[i, j], new_path_weight)
 
-            self.A_collapse[:n, j] = self.vec_or_vec(
-                self.A_collapse[:n, j], self.A_collapse[a, j] * self.A_collapse[:n, a]
-            )
+                    # Add component paths of a -> i to j -> i
+                    a_i_paths = self.member_paths[i, a]
+                    self.member_paths[i, j][a] = self.scl_or_scl(a_contrib, new_path_weight)
+
+            # self.A_collapse[:n, j] = self.vec_or_vec(
+            #     self.A_collapse[:n, j], self.A_collapse[a, j] * self.A_collapse[:n, a]
+            # )
 
         # Remove any loops we've created
-        np.fill_diagonal(self.A_collapse, 0)
+        np.fill_diagonal(self.A_collapse[:n, :n], 0)
 
         # TODO: store participating edges / vertices
         # TODO: optimize loop removal ?
@@ -240,32 +256,12 @@ if __name__ == "__main__":
 
     print(dg.calc_r())
     
-    dg = DepGraph_RAMOptimized()
+    dg2 = DepGraph_RAMOptimized()
 
-    dg.add_vertices(['s', 'c', 'v', 'p'], [0.25, 0.25, 0.25, 0.25])
-    dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1/3, 1/3, 1/3])
+    dg2.add_vertices(['s', 'c', 'v', 'p'], [0.25, 0.25, 0.25, 0.25])
+    dg2.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1/3, 1/3, 1/3])
 
     m = 2
-    print(dg.calc_r(m))
+    print(dg2.calc_r(m))
 
-#     setup = """
-# import numpy as np
-# n = 2048
-# A = np.empty((n, n), np.double)
-# """
-
-#     manual = """
-# for i in range(n):
-#     A[i, i] = 0
-# """
-
-#     use_package = """
-# np.fill_diagonal(A, 0)
-# """
-
-#     tm = timeit.Timer(stmt=manual, setup=setup)
-#     tp = timeit.Timer(stmt=use_package, setup=setup)
-
-    
-#     print("for-loop:", tm.timeit())
-#     print("np:", tp.timeit())
+    print(dg.member_paths)
