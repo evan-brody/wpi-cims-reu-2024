@@ -2,8 +2,8 @@ import torch, sys, os, random, time, math
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 #from data import *
-import data
-from model_lstm import *
+from lstm.data import *
+from lstm.model_lstm import *
 
 class LSTMTrainer():
 
@@ -17,7 +17,7 @@ class LSTMTrainer():
         self.plot_every = 1000
         self.learning_rate = 0.001 # If you set this too high, it might explode. If too low, it might not learn
         
-        self.lstm = LSTM(data.n_letters,self.n_hidden,3).to(self.device)
+        self.lstm = LSTM(n_letters,self.n_hidden,3).to(self.device)
         self.optimizer = torch.optim.Adam(self.lstm.parameters(), lr=self.learning_rate)
         self.criterion = nn.MSELoss()
         return
@@ -27,7 +27,7 @@ class LSTMTrainer():
 
     def randomTrainingPair(self):
         #category = randomChoice(all_categories)
-        row = data.comp_fails.sample()
+        row = comp_fails.sample()
         line = row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')]
         # expected_output = Variable(
         #     nn.functional.normalize(torch.tensor(
@@ -43,7 +43,7 @@ class LSTMTrainer():
                 ,dtype=torch.float32).to(self.device),self.NORMALIZATION_CONSTANT))
         #category_tensor = Variable(torch.LongTensor([all_categories.index(category)]))
         #print(line)
-        line_tensor = Variable(data.lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')],self.device))
+        line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')],self.device))
         return line, expected_output, line_tensor
 
     def train(self,expected_output, line_tensor):
@@ -58,7 +58,7 @@ class LSTMTrainer():
         self.optimizer.step()
         return output, loss.data.item()
 
-    def timeSince(since):
+    def timeSince(self,since):
         now = time.time()
         s = now - since
         m = math.floor(s / 60)
@@ -91,6 +91,11 @@ class LSTMTrainer():
                 current_loss = 0
 
         torch.save(self.lstm, 'failure_curve_estimator.pt')
+        
+    def iterate_once(self,epoch):
+        line, expected_output, line_tensor = self.randomTrainingPair()
+        output, loss = self.train(expected_output, line_tensor)
+        return line,output,expected_output,loss
         
 
 LSTMTrainer()

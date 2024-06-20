@@ -23,54 +23,16 @@ Worcester Polytechnic Institute.
 
 ### TASK LIST ###
 
-TODO: Refactor the code so that it can generate Weibull/Rayleigh plots for any component using defaults if data isn't
-      provided. (WIP, this will take more doing)
 TODO: Add bathtub curve in Statistics tab with options for parameter changes. (WIP, just need to write some code)
-DONE: RPN & FSD should be Ints
 
 TODO: UI Bug fixes
-    DONE: Not putting in risk acceptance threshold makes main tool crash when try to generate
     TODO: Tables are same size so labels are cut off
-    DONE: generating weibull distribution in stats tab crashes
-    DONE: generating rayleigh distribution in stats tab crashes
-    DONE: generate plot in stats distribution crashes app unless you modify something first
-    DONE: Source Plot1,2,3 from database instead of hardcoded
     TODO: Variable plot sizes in stats tab
-    DONE: Download chart button downloads blank jpeg
-    DONE: Read database pulls from csv not local storage/current modified database
-    DONE: Auto-update RPN
-    DONE: Save RPN values should save it to a file not just locally
-    DONE: modifying FSD variables should auto save to local database instead of having button do it
-    DONE: invalid FSD variables should throw out of bounds warnings
-    DONE: all data modification should just be in the table, no need for textboxes
-    DONE: FMEA and FMECA buttons exist but don't do anything 
-    DONE: risk acceptance should autocolor when table is generated
-    DONE: risk acceptance should autocolor when table is updated
     TODO: detectability recommendation should reset when selected component is changed
-    DONE: read database at startup
-    DONE: automatically update database
-    DONE: stats show table without selecting crashes
-    DONE: synced component select between tabs
-    DONE: fix crash on invalid cell input
-    DONE: fix crash on chart generation without component selected
     TODO: auto refresh on statistics page
-    DONE: make pie chart work
-    DONE: Make "Refresh Table" reset to default values
-    
-
-DONE: bubbleplot should open to app and not browser
-DONE: Search for components
-DONE: generate_chart() if block to switch case
-TODO: values() design fix, also figure out what it does ???
-DONE: fix csv formatting. there shouldn't be spaces after commas
-DONE: convert .csv to sqlite .db file
-DONE: normalize database (4NF+)
-DONE: re-implement dictionary database as pandas dataframe, populated from SQLite database
-DONE: create charts.py to hold all charting functions
-
 """
 
-import os, sys, sqlite3
+import os, sys, sqlite3, time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -85,6 +47,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from stats_and_charts.charts import Charts
+from lstm.LSTMTrainer import LSTMTrainer
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from graph.dep_graph import DepGraph_CPUOptimized
 
@@ -583,6 +546,8 @@ class MainWindow(QMainWindow):
         self.current_column = 0
         self.refreshing_table = False
         self.risk_threshold = self.DEFAULT_RISK_THRESHOLD
+        
+        self.LSTMTrainer = LSTMTrainer()
 
         self.setWindowTitle("Failure Modes, Effects, and Criticality Analysis (FMECA)")
         self.setGeometry(100, 100, 1000, 572)
@@ -653,105 +618,6 @@ class MainWindow(QMainWindow):
             case _:
                 event.ignore()
 
-    # def _init_instructions_tab(self):
-    #     ### START OF USER INSTRUCTIONS TAB SETUP ###
-
-    #     # Create a QVBoxLayout instance
-    #     layout = QVBoxLayout()
-
-    #     # Create a QLabel instance and set the text
-    #     instructions1 = QLabel("Welcome to the Component FMEA Risk Mitigation Tool!")
-    #     instructions1.setAlignment(Qt.AlignCenter)  # Center the text
-    #     instructions1.setStyleSheet(
-    #         "QLabel {font-size: 30px;}"
-    #     )  # Set the text color to black and increase the font size
-
-    #     # Create QLabel instances for the logos
-    #     logo1 = QLabel()
-    #     logo2 = QLabel()
-
-    #     # Create QPixmap instances with the logo images
-    #     pixmap1 = QPixmap("images/Collins_Aerospace_Logo.png").scaled(
-    #         100, 100, Qt.KeepAspectRatio
-    #     )
-    #     pixmap2 = QPixmap("images/WPI_Inst_Prim_FulClr.png").scaled(
-    #         100, 100, Qt.KeepAspectRatio
-    #     )
-
-    #     # Set the QPixmap to the QLabel
-    #     logo1.setPixmap(pixmap1)
-    #     logo2.setPixmap(pixmap2)
-
-    #     self.instructions2 = QWidget
-    #     self.instructions2 = QTextEdit()
-    #     self.instructions2.setText(
-    #         """
-    #     Please choose whether you want to complete an FMEA or FMECA analysis by clicking one of the buttons on the right!
-        
-    #     Here is some information regarding use:
-    #     1. The “Main Tool” Tab allows the user to input a component name and a risk acceptance threshold and subsequently generate a table with that component’s failure modes and associated attributes in the database. These attributes include RPN, Frequency, Severity, Detection, and Lower Bound, Best Estimate, and Upper Bound (Failures Per Million Hours), all of which may-or-may-not have previously established values and are user-editable.
-    #         - By filling in and saving the RPN values, the user is able to generate a bar and pie chart of those failure modes at any given time. The charts dynamically update with the table and can be regenerated via their respective buttons.
-    #         - By filling in and saving the Frequency, Severity, and Detection values, the user is able to generate a 3D risk profile (a cuboid) and a 3D scatterplot of those failure modes at any given time. The color of these 3D plots ranges from green, yellow, and red to respectively reflect low, medium, and high-risk classifications extrapolated from a risk matrix.
-    #         - The Lower Bound, Best Estimate, and Upper Bound values, given in Failures Per Million Hours (FPMH), are provided to guide the user to make an informed decision about an acceptable frequency value for its component. Furthermore, by hovering the mouse of the “Frequency” input text box, the user can receive a suggested frequency value based on the built-in “Humanoid in the Loop” mechanic.
-    
-    #     2. The “Database” tab allows the user to browse the entire database of components and their values for RPN, Frequency, Severity, Detection, Lower Bound, Best Estimate, and Upper Bound. Unestablished RPN values are automatically set to 1, while every other unestablished value is automatically set to 0. While component attribute values are editable, the user must always input a known component name from the database.
-
-    #     3. The “Statistics tab allows the user to generate a neural network, regression, etc. [WORK IN PROGRESS]
-        
-    #     """
-    #     )
-
-    #     font = QFont()
-    #     font.setPointSize(16)  # Set this to the desired size
-    #     self.instructions2.setFont(font)
-
-    #     # Set textEdit as ReadOnly
-    #     self.instructions2.setReadOnly(True)
-
-    #     # Create a QHBoxLayout for the header
-    #     header_layout = QHBoxLayout()
-
-    #     # Add the buttons to the header layout
-    #     header_layout.addWidget(logo1)
-    #     header_layout.addStretch(2)  # Add flexible space
-    #     header_layout.addWidget(instructions1)
-    #     header_layout.addStretch(2)  # Add flexible space
-    #     header_layout.addWidget(logo2)
-
-    #     # adding fmea/fmeca buttons to layout
-    #     # fmea_button = QPushButton("FMEA")
-    #     # fmeca_button = QPushButton("FMECA")
-    #     # logos_buttons_layout = QVBoxLayout()
-    #     # logos_buttons_layout.addWidget(fmea_button)
-    #     # logos_buttons_layout.addWidget(fmeca_button)
-
-    #     # Add the header layout and the instructions2 widget to the main layout
-    #     # header_layout.addLayout(logos_buttons_layout)
-    #     layout.addLayout(header_layout)
-    #     layout.addWidget(self.instructions2)
-
-    #     # Set the layout on the User Instructions tab
-    #     # self.user_instructions_tab.setLayout(layout)
-
-    #     ### END OF USER INSTRUCTIONS TAB SETUP ###
-
-    # def _init_database_view_tab(self):
-    #     ### START OF DATABASE VIEW TAB SETUP ###
-
-    #     # Create the database view layout
-    #     self.database_view_layout = QVBoxLayout(self.database_view_tab)
-
-    #     # Create and add the read database button
-    #     self.read_database_button = QPushButton("Refresh Database")
-    #     # self.read_database_button.clicked.connect(self.read_database)
-    #     self.database_view_layout.addWidget(self.read_database_button)
-
-    #     # Create and add the table widget for database view
-    #     self.database_table_widget = QTableWidget()
-    #     self.database_view_layout.addWidget(self.database_table_widget)
-
-    #     # self.read_database()
-    #     ### END OF DATABASE VIEW TAB SETUP ###
 
     def init_main_tab(self):
         ### START OF MAIN TAB SETUP ###
@@ -1182,6 +1048,22 @@ class MainWindow(QMainWindow):
         self.lstm_label_tag = QLabel("LSTM Training: ")
         self.right_layout_lstm.addWidget(self.lstm_label_tag)
 
+        # Create and add the submit button
+        self.train_button_lstm = QPushButton("Train Model")
+        self.right_layout_lstm.addWidget(self.train_button_lstm)
+        self.train_button_lstm.clicked.connect(self.train_model)
+        
+        # Create the matplotlib figure and canvas
+        self.lstm_figure = plt.figure()
+        self.lstm_canvas = FigureCanvas(self.lstm_figure)
+        self.right_layout_lstm.addWidget(self.lstm_canvas)
+
+        # Scrolling and zoom in/out functionality
+        self.lstm_toolbar = NavigationToolbar(self.lstm_canvas, self)
+        self.right_layout_lstm.addWidget(self.lstm_toolbar)
+
+        self.right_layout_lstm.addStretch()
+        
         
         # # Create dropdown menu for holding charts we want to give the option of generating
         # self.chart_name_field_stats = QComboBox(self)
@@ -1218,7 +1100,29 @@ class MainWindow(QMainWindow):
         self.lstm_layout.addLayout(self.right_layout_lstm, 6)
 
         ### END OF lstm TAB SETUP ###
+    
+    def train_model(self):
+        # Keep track of losses for plotting
+        current_loss = 0
+        all_losses = []
         
+        start = time.time()
+        for epoch in range(1, self.LSTMTrainer.n_epochs + 1):
+            line,output,expected_output,loss = self.LSTMTrainer.iterate_once(epoch)
+            current_loss += loss
+            # Print epoch number, loss, name and guess
+            if epoch % self.LSTMTrainer.print_every == 0:
+                #guess, guess_i = categoryFromOutput(output)
+                #correct = 'y' if guess == category else 'n (%s)' % category
+                print('%d %d%% (%s) %.4f %s / %s %s' % (epoch, epoch / self.LSTMTrainer.n_epochs * 100, self.LSTMTrainer.timeSince(start), loss, line, output, expected_output))
+                print(current_loss/self.LSTMTrainer.print_every)
+                current_loss = 0
+
+            # Add current loss avg to list of losses
+            if epoch % self.LSTMTrainer.plot_every == 0:
+                all_losses.append(current_loss / self.LSTMTrainer.plot_every)
+                current_loss = 0
+    
     def update_layout(self):
         self.refreshing_table = True
         self.populate_table(self.table_widget, self.comp_fails)
