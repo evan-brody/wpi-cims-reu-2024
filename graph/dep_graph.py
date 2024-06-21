@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QGraphicsRectItem
 class DepGraph:
     MAX_VERTICES = 512
     DEFAULT_EDGE_WEIGHT = 1
-    DEFAULT_DR = 0.05
+    DEFAULT_DR = 0.25
     J = np.ones((MAX_VERTICES, MAX_VERTICES), np.uint8)
     I = np.identity(MAX_VERTICES, np.uint8)
 
@@ -257,7 +257,15 @@ class DepGraph:
                 self.member_paths[i, j]
             )
 
-        return self.mat_or_vec(self.I[:n, :n] + self.A_collapse[:n, :n], self.r0[:n])
+        self.r = self.mat_or_vec(self.I[:n, :n] + self.A_collapse[:n, :n], self.r0[:n])
+        return self.r
+    
+    def get_r_dict(self) -> dict:
+        res = {}
+        for i, risk in enumerate(self.r):
+            res[self.iref[i]] = risk
+
+        return res
 
 if __name__ == "__main__":
     ########### Testing code ################

@@ -30,6 +30,7 @@ TODO: UI Bug fixes
     TODO: Variable plot sizes in stats tab
     TODO: detectability recommendation should reset when selected component is changed
     TODO: auto refresh on statistics page
+    TODO: fix dependency arrow snapping when dragging rectangles over each other
 """
 
 import os, sys, sqlite3, time, logging
@@ -58,6 +59,7 @@ import torch.multiprocessing as mp
 class DepQGraphicsScene(QGraphicsScene):
     # Keys for the QGraphicsItem data table
     MOUSE_DELTA = 0
+    IS_COMPONENT = 1
 
     # The tip of a dependency arrow is an isosceles triangle
     ARR_LONG = 30 # The length of the middle axis
@@ -68,13 +70,13 @@ class DepQGraphicsScene(QGraphicsScene):
     SCENE_WIDTH = 5_000
     SCENE_HEIGHT = 1_000
 
-    def __init__(self, parent_window: QMainWindow):
+    def __init__(self, parent_window: QMainWindow) -> None:
         super().__init__()
 
         self.setSceneRect(0, 0, self.SCENE_WIDTH, self.SCENE_HEIGHT)
 
         self.parent_window = parent_window
-        # self.dg = DepGraph()
+        self.dg = DepGraph()
 
         # For the selection box
         self.select_rect_item = None
@@ -103,8 +105,9 @@ class DepQGraphicsScene(QGraphicsScene):
         self.rect_influences = {}
         self.rect_arrs_in = {}
         self.rect_arrs_out = {}
+        self.rect_risks = {}
 
-    def top_rect_at(self, pos):
+    def top_rect_at(self, pos: QPointF) -> QGraphicsRectItem:
         collision_line = self.addLine(
             QLineF(pos, pos),
             QPen(QColor(0, 0, 0, 0))
@@ -121,22 +124,42 @@ class DepQGraphicsScene(QGraphicsScene):
         self.removeItem(collision_line)
         return top_rect
     
-    def draw_arr(self, start_pos, end_pos, pen):
-        elbow = QPointF(start_pos.x(), end_pos.y())
-
+    def draw_arr(self, start_pos: QPointF, end_pos: QPointF, pen: QPen) -> QGraphicsItemGroup:
         self.del_dyn_arr()
-        arr_v = self.addLine(
-            QLineF(start_pos, elbow),
-            pen
-        )
-        arr_h = self.addLine(
-            QLineF(elbow, end_pos),
-            pen
-        )
+
+        elbow = None
 
         arr_tip_pos = end_pos
         point_down = False
         point_up = False
+
+        origin_rect = self.top_rect_at(start_pos)
+        origin_rect_pos = origin_rect.scenePos()
+
+        arr_start_pos = start_pos
+        left_bound = origin_rect_pos.x()
+        right_bound = left_bound + origin_rect.rect().width()
+        top_bound = origin_rect_pos.y()
+        bot_bound = top_bound + origin_rect.rect().height()
+
+        # Coming out of the sides of the rectangle
+        if top_bound < end_pos.y() < bot_bound:
+            # Coming out of the left
+            if end_pos.x() < left_bound:
+                arr_start_pos.setX(left_bound)
+            # Coming out of the right
+            else:
+                arr_start_pos.setX(right_bound)
+            arr_start_pos.setY(end_pos.y())
+        # Coming out of the top
+        elif end_pos.y() <= top_bound:
+            arr_start_pos.setY(top_bound)
+            elbow = QPointF(start_pos.x(), end_pos.y())
+        # Coming out of the bottom
+        elif end_pos.y() >= bot_bound:
+            arr_start_pos.setY(bot_bound)
+            elbow = QPointF(start_pos.x(), end_pos.y())
+
 
         moused_over = self.top_rect_at(end_pos)
         if moused_over:
@@ -156,13 +179,33 @@ class DepQGraphicsScene(QGraphicsScene):
                     arr_tip_pos.setY(bot_bound)
                     point_up = True
                 arr_tip_pos.setX(start_pos.x())
-            else:
-                # If we're coming in from the left
-                if start_pos.x() < end_pos.x():
+                elbow = None
+            # If we're coming in from the left
+            elif start_pos.x() < end_pos.x():
                     arr_tip_pos.setX(left_bound)
-                # Coming in from the right
-                else:
-                    arr_tip_pos.setX(right_bound)
+            # Coming in from the right
+            else:
+                arr_tip_pos.setX(right_bound)
+
+        if elbow:
+            arr_v = self.addLine(
+                QLineF(arr_start_pos, elbow),
+                pen
+            )
+            arr_h = self.addLine(
+                QLineF(elbow, arr_tip_pos),
+                pen
+            )
+        else:
+            # Dummy arrow
+            arr_v = self.addLine(
+                QLineF(arr_start_pos, arr_tip_pos),
+                QPen()
+            )
+            arr_h = self.addLine(
+                QLineF(arr_start_pos, arr_tip_pos),
+                pen
+            )
 
         # Which way should the arrow point ?
         if point_down:
@@ -189,7 +232,7 @@ class DepQGraphicsScene(QGraphicsScene):
 
         return arr
 
-    def add_component(self, event: QGraphicsSceneMouseEvent):
+    def add_component(self, event: QGraphicsSceneMouseEvent) -> None:
         comp_str = self.parent_window.dep_comp_select.currentText()
         if comp_str == "Select a Component":
             return
@@ -203,11 +246,15 @@ class DepQGraphicsScene(QGraphicsScene):
         rect_item = self.addRect(0, 0, rect_w, rect_h, QPen(), brush)
         rect_item.setPos(rect_x, rect_y)
         rect_item.setFlags(QGraphicsItem.ItemIsSelectable)
+        rect_item.setData(self.IS_COMPONENT, True)
         self.rect_depends_on[rect_item] = []
         self.rect_influences[rect_item] = []
         self.rect_arrs_in[rect_item] = []
         self.rect_arrs_out[rect_item] = []
-        # self.dg.add_vertices([rect_item])
+        self.dg.add_vertex(rect_item)
+        self.dg.calc_r()
+        self.rect_risks = self.dg.get_r_dict()
+        self.update_rect_colors()
 
         # Create text
         text_widg = QLabel(comp_str)
@@ -216,7 +263,7 @@ class DepQGraphicsScene(QGraphicsScene):
 
         # Match background color to rectangle
         pal = text_widg.palette()
-        pal.setBrush(QPalette.Window, brush)
+        pal.setBrush(QPalette.Window, QBrush(Qt.NoBrush))
         text_widg.setPalette(pal)
 
         # Set up proxy for binding to scene
@@ -230,25 +277,34 @@ class DepQGraphicsScene(QGraphicsScene):
         text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
         proxy.setPos(text_pos)
 
-    def del_select_rect_item(self):
+    def del_select_rect_item(self) -> None:
         # Remove selection box
         if self.select_rect_item:
             self.removeItem(self.select_rect_item)
             self.select_rect_item = None
 
-    def del_dyn_arr(self):
+    def del_dyn_arr(self) -> None:
         if self.dyn_arr:
             self.removeItem(self.dyn_arr)
             self.dyn_arr = None
 
-    def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
+    def update_rect_colors(self) -> None:
+        for rect in filter(lambda x: x.data(self.IS_COMPONENT), self.items()):
+            risk = self.rect_risks[rect]
+            brush = rect.brush()
+            bcolor = brush.color()
+            bcolor.setAlphaF(risk)
+            brush.setColor(bcolor)
+            rect.setBrush(brush)
+
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         match event.button():
             case Qt.LeftButton:
                 self.mousePressEventL(event)
             case Qt.RightButton:
                 self.mousePressEventR(event)
 
-    def mousePressEventL(self, event: QGraphicsSceneMouseEvent):
+    def mousePressEventL(self, event: QGraphicsSceneMouseEvent) -> None:
         if self.dep_origin:
             self.del_dyn_arr()
             self.dep_origin = None
@@ -280,16 +336,16 @@ class DepQGraphicsScene(QGraphicsScene):
             for item in self.selectedItems():
                 item.setData(self.MOUSE_DELTA, item.scenePos() - pos)
     
-    def mousePressEventR(self, event: QGraphicsSceneMouseEvent):
+    def mousePressEventR(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_r = True
 
-    def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
+    def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         if self.mouse_down_l:
             self.mouseMoveEventL(event)
         if self.dep_origin:
             self.mouseMoveEventR(event)
 
-    def mouseMoveEventL(self, event: QGraphicsSceneMouseEvent):
+    def mouseMoveEventL(self, event: QGraphicsSceneMouseEvent) -> None:
         if self.dep_origin:
             return
 
@@ -374,19 +430,23 @@ class DepQGraphicsScene(QGraphicsScene):
             QBrush(Qt.NoBrush)
         )
 
-    def mouseMoveEventR(self, event: QGraphicsSceneMouseEvent):     
+    def mouseMoveEventR(self, event: QGraphicsSceneMouseEvent) -> None:
         # Important to note that y-values increase as we go down
+        pos = event.scenePos()
         arr_start_pos = self.dep_origin.scenePos()
         arr_start_pos += QPointF(self.dep_origin.rect().width() / 2,
                                  self.dep_origin.rect().height() / 2)
         
+        if self.dep_origin == self.top_rect_at(pos):
+            return
+
         self.dyn_arr = self.draw_arr(
             arr_start_pos, 
-            event.scenePos(),
+            pos,
             QPen(Qt.DashLine)
         )
 
-    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
+    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         match event.button():
             case Qt.LeftButton:
                 self.mouseReleaseEventL(event)
@@ -394,7 +454,7 @@ class DepQGraphicsScene(QGraphicsScene):
                 self.clearSelection()
                 self.mouseReleaseEventR(event)
 
-    def mouseReleaseEventL(self, event: QGraphicsSceneMouseEvent):
+    def mouseReleaseEventL(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_l = False
         pos = event.scenePos()
         
@@ -428,7 +488,7 @@ class DepQGraphicsScene(QGraphicsScene):
             self.clearSelection()
             self.clicked_on_l.setSelected(True)
 
-    def mouseReleaseEventR(self, event: QGraphicsSceneMouseEvent):
+    def mouseReleaseEventR(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_r = False
         pos = event.scenePos()
 
@@ -457,13 +517,16 @@ class DepQGraphicsScene(QGraphicsScene):
                     self.rect_depends_on[self.dep_origin].append(self.released_on_r)
                     self.rect_influences[self.released_on_r].append(self.dep_origin)
 
-                    # self.dg.add_edges([(self.dep_origin, self.released_on_r)])
+                    self.dg.add_edge((self.dep_origin, self.released_on_r))
+                    self.dg.calc_r()
+                    self.rect_risks = self.dg.get_r_dict()
+                    self.update_rect_colors()
 
                 # Cleanup
                 self.dep_origin = None
                 self.del_dyn_arr()
 
-    def keyReleaseEvent(self, event):
+    def keyReleaseEvent(self, event) -> None:
         match event.key():
             case Qt.Key_Delete | Qt.Key_Backspace:
                 for item in self.selectedItems():
@@ -476,7 +539,12 @@ class DepQGraphicsScene(QGraphicsScene):
                     self.rect_depends_on[item].clear()
                     self.rect_influences[item].clear()
 
+                    self.dg.delete_vertex(item)
                     self.removeItem(item)
+                    self.dg.calc_r()
+                    self.rect_risks = self.dg.get_r_dict()
+
+                self.update_rect_colors()
 
 """
 
