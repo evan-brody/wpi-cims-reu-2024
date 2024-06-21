@@ -1311,9 +1311,6 @@ class MainWindow(QMainWindow):
         self.df = pd.merge(self.comp_fails, self.components, left_on="comp_id", right_on="id")
         self.df = pd.merge(self.df, self.fail_modes, left_on="fail_id", right_on="id")
         self.df.drop(labels=["cf_id", "comp_id", "fail_id", "id_x", "id_y"], axis=1, inplace=True)
-        self.df.to_csv(path_or_buf=os.path.abspath(os.path.join(self.CURRENT_DIRECTORY, 
-                                                    os.path.join(os.path.dirname(__file__), os.pardir, "lstm"), "tmp_db"))
-        )
 
     def reset_df(self) -> None:
         if not (hasattr(self, "comp_fails") and hasattr(self, "default_comp_fails")):
@@ -1514,11 +1511,11 @@ class MainWindow(QMainWindow):
 
 def train_model(epoch,trainer: LSTMTrainer):
     current_loss = 0
-    for e in range(trainer.print_every):
+    for e in range(trainer.plot_every):
         line,output,expected_output,loss = trainer.iterate_once()
         current_loss += loss
     # Print epoch number, loss, name and guess
-    return [trainer, current_loss/trainer.print_every,time.time(),epoch]
+    return [trainer, current_loss/trainer.plot_every,time.time(),epoch]
     #queue.put('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / self.LSTMTrainer.n_epochs * 100, self.LSTMTrainer.timeSince(start), loss, line, output, expected_output))
     #queue.put(current_loss)
     #return [line,output,expected_output,loss,current_loss/trainer.print_every, trainer.timeSince(start),epoch]
@@ -1528,7 +1525,7 @@ def train_iterator():
     
     window.start_time = time.time()
     window.loss_x = [0]
-    window.loss_y = [1]
+    window.loss_y = [0]
     # plotting the first frame
     window.loss_fig = plt.plot(window.loss_x,window.loss_y)[0]
     plt.ylim(0,1)
@@ -1538,7 +1535,7 @@ def train_iterator():
 def async_callback(func_result):
     trainer = func_result[0]
     
-    threshold = (int)(trainer.n_epochs/trainer.print_every)
+    threshold = (int)(trainer.n_epochs/trainer.plot_every)
     if(func_result[3]<threshold-1):
         pool.apply_async(train_model,args=[func_result[3]+1,trainer],callback=async_callback)
         
@@ -1546,24 +1543,24 @@ def async_callback(func_result):
     # updating the data
     #line,output,expected_output,loss,avg_loss,del_time,epoch = func_result
     window.loss_x.append(func_result[2]-window.start_time)
+    if(func_result[3] == 0):
+        window.loss_y[0] = func_result[1]
     window.loss_y.append(func_result[1])
     #print('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / 10, x[-1], loss, line, output, expected_output))
     # removing the older graph
     window.loss_fig.remove()
     
     # # plotting newer graph
-    plt.ion()
-    window.loss_fig = plt.plot(window.loss_x,window.loss_y,color = 'g')[0]
-    plt.xlim(window.loss_x[0], window.loss_x[-1])
-    plt.ioff()
-    return
+    with plt.ion():
+        window.loss_fig = plt.plot(window.loss_x,window.loss_y,color = 'g')[0]
+        plt.xlim(window.loss_x[0], window.loss_x[-1])
+        plt.ylim(0, max(window.loss_y))
 
 
 if __name__ == "__main__":
     # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     pool = mp.Pool(1)
-    queue = mp.Queue()
-    p_out,p_in = mp.Pipe()
+    mp.set_start_method('spawn', force=True)
     trainer = LSTMTrainer()
     logger = mp.log_to_stderr(logging.INFO)
     
