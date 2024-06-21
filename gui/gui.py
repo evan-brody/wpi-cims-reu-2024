@@ -1514,44 +1514,48 @@ class MainWindow(QMainWindow):
 
 def train_model(epoch,trainer: LSTMTrainer):
     current_loss = 0
-    start = time.time()
     for e in range(trainer.print_every):
         line,output,expected_output,loss = trainer.iterate_once()
         current_loss += loss
     # Print epoch number, loss, name and guess
-    return [trainer, current_loss/trainer.print_every,trainer.timeSince(start)]
+    return [trainer, current_loss/trainer.print_every,time.time(),epoch]
     #queue.put('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / self.LSTMTrainer.n_epochs * 100, self.LSTMTrainer.timeSince(start), loss, line, output, expected_output))
     #queue.put(current_loss)
     #return [line,output,expected_output,loss,current_loss/trainer.print_every, trainer.timeSince(start),epoch]
 
 def train_iterator():
     # Keep track of losses for plotting
-        
-    x = [0]
-    y = [1]
+    
+    window.start_time = time.time()
+    window.loss_x = [0]
+    window.loss_y = [1]
     # plotting the first frame
-    #instance.loss_fig = plt.plot(x,y)[0]
-    #plt.ylim(0,1)
+    window.loss_fig = plt.plot(window.loss_x,window.loss_y)[0]
+    plt.ylim(0,1)
     
-    
-    for epoch in range((int)(trainer.n_epochs/trainer.print_every)):
-        pool.apply_async(train_model,args=[epoch,trainer],callback=async_callback)
-    # for epoch in range(1):
-    #    pool.apply_async(train_helper,args=(instance,instance.LSTMTrainer.print_every,epoch),callback=async_callback)
+    pool.apply_async(train_model,args=[0,trainer],callback=async_callback)
 
 def async_callback(func_result):
+    trainer = func_result[0]
+    
+    threshold = (int)(trainer.n_epochs/trainer.print_every)
+    if(func_result[3]<threshold-1):
+        pool.apply_async(train_model,args=[func_result[3]+1,trainer],callback=async_callback)
+        
+    print(func_result)
     # updating the data
     #line,output,expected_output,loss,avg_loss,del_time,epoch = func_result
-    # y.append(avg_loss)
-    # x.append(del_time+x[-1])
-    print(func_result)
+    window.loss_x.append(func_result[2]-window.start_time)
+    window.loss_y.append(func_result[1])
     #print('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / 10, x[-1], loss, line, output, expected_output))
     # removing the older graph
-    # self.loss_fig.remove()
+    window.loss_fig.remove()
     
     # # plotting newer graph
-    # self.loss_fig = plt.plot(x,y,color = 'g')[0]
-    # plt.xlim(x[0], x[-1])
+    plt.ion()
+    window.loss_fig = plt.plot(window.loss_x,window.loss_y,color = 'g')[0]
+    plt.xlim(window.loss_x[0], window.loss_x[-1])
+    plt.ioff()
     return
 
 
