@@ -97,6 +97,3 @@ class LSTMTrainer():
         line, expected_output, line_tensor = self.randomTrainingPair()
         output, loss = self.train(expected_output, line_tensor)
         return line,output,expected_output,loss
-        
-
-LSTMTrainer()

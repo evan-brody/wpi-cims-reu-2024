@@ -32,7 +32,8 @@ TODO: UI Bug fixes
     TODO: auto refresh on statistics page
 """
 
-import os, sys, sqlite3, time
+import os, sys, sqlite3, time, logging
+import operator as op
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -546,8 +547,6 @@ class MainWindow(QMainWindow):
         self.current_column = 0
         self.refreshing_table = False
         self.risk_threshold = self.DEFAULT_RISK_THRESHOLD
-        
-        self.LSTMTrainer = LSTMTrainer()
 
         self.setWindowTitle("Failure Modes, Effects, and Criticality Analysis (FMECA)")
         self.setGeometry(100, 100, 1000, 572)
@@ -1054,9 +1053,7 @@ class MainWindow(QMainWindow):
         # self.train_button_lstm.clicked.connect(
         #     lambda: pool.apply_async(train_helper,args=[self])
         # )
-        self.train_button_lstm.clicked.connect(
-            lambda: train_iterator(window)
-        )
+        self.train_button_lstm.clicked.connect(train_iterator)
         
         # Create the matplotlib figure and canvas
         self.loss_fig = plt.figure()
@@ -1104,16 +1101,6 @@ class MainWindow(QMainWindow):
         self.lstm_layout.addLayout(self.right_layout_lstm, 6)
 
         ### END OF LSTM TAB SETUP ###
-    
-    def train_model(self,steps: int,epoch):
-        current_loss = 0
-        start = time.time()
-        for e in range(steps):
-            line,output,expected_output,loss = self.LSTMTrainer.iterate_once()
-            current_loss += loss
-        # Print epoch number, loss, name and guess
-        #queue.put('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / self.LSTMTrainer.n_epochs * 100, self.LSTMTrainer.timeSince(start), loss, line, output, expected_output))
-        return line,output,expected_output,loss,current_loss/steps,self.LSTMTrainer.timeSince(start),epoch
     
     def update_layout(self):
         self.refreshing_table = True
@@ -1525,13 +1512,19 @@ class MainWindow(QMainWindow):
             field.addItem(name)
 
 
-def train_helper(instance: MainWindow,steps,epoch):
-    return instance.train_model(steps,epoch)
+def train_model(epoch,trainer: LSTMTrainer):
+    current_loss = 0
+    start = time.time()
+    for e in range(trainer.print_every):
+        line,output,expected_output,loss = trainer.iterate_once()
+        current_loss += loss
+    # Print epoch number, loss, name and guess
+    return [trainer, current_loss/trainer.print_every,trainer.timeSince(start)]
+    #queue.put('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / self.LSTMTrainer.n_epochs * 100, self.LSTMTrainer.timeSince(start), loss, line, output, expected_output))
+    #queue.put(current_loss)
+    #return [line,output,expected_output,loss,current_loss/trainer.print_every, trainer.timeSince(start),epoch]
 
-def test(instance):
-    return instance.current_row
-
-def train_iterator(instance: MainWindow):
+def train_iterator():
     # Keep track of losses for plotting
         
     x = [0]
@@ -1540,13 +1533,9 @@ def train_iterator(instance: MainWindow):
     #instance.loss_fig = plt.plot(x,y)[0]
     #plt.ylim(0,1)
     
-    """
-    The issue - i think - is that the window instance is too large to be pickled, and takes forever to 
-    be passed to the subprocess. So i need to find a different way to run class methods on a subprocess,
-    or I need to store the LSTMTrainer not in the class.
-    """
-    pool.apply_async(test,args=[window,],callback=async_callback)
-    #for epoch in range((int)(instance.LSTMTrainer.n_epochs/instance.LSTMTrainer.print_every)):
+    
+    for epoch in range((int)(trainer.n_epochs/trainer.print_every)):
+        pool.apply_async(train_model,args=[epoch,trainer],callback=async_callback)
     # for epoch in range(1):
     #    pool.apply_async(train_helper,args=(instance,instance.LSTMTrainer.print_every,epoch),callback=async_callback)
 
@@ -1555,7 +1544,6 @@ def async_callback(func_result):
     #line,output,expected_output,loss,avg_loss,del_time,epoch = func_result
     # y.append(avg_loss)
     # x.append(del_time+x[-1])
-    
     print(func_result)
     #print('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / 10, x[-1], loss, line, output, expected_output))
     # removing the older graph
@@ -1569,9 +1557,11 @@ def async_callback(func_result):
 
 if __name__ == "__main__":
     # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    pool = mp.Pool(2)
+    pool = mp.Pool(1)
     queue = mp.Queue()
     p_out,p_in = mp.Pipe()
+    trainer = LSTMTrainer()
+    logger = mp.log_to_stderr(logging.INFO)
     
     app = QApplication(sys.argv)
     window = MainWindow()
