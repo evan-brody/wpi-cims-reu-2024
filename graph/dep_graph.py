@@ -325,11 +325,9 @@ class DepGraph:
         for ref in refs:
             self.delete_vertex(ref)
 
-    def update_A_c(self) -> None:
+    def calc_r(self) -> None:
         n = self.n
-        A_c_full = self.calc_A_c_full()
-
-        self.r = self.mat_or_vec(self.I[:n, :n] + A_c_full, self.r0[:n])
+        self.r = self.mat_or_vec(self.I[:n, :n] + self.calc_A_c_full(), self.r0[:n])
         return self.r
     
     def get_r_dict(self) -> dict:
