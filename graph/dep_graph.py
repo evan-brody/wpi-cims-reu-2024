@@ -4,7 +4,7 @@
 
 import numpy as np
 from functools import reduce
-from itertools import chain, product, starmap
+from itertools import chain, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
 class DepGraph:
@@ -167,6 +167,7 @@ class DepGraph:
                        range(greater_i + 1, n)):
             for i in range(n):
                 # j -> i OR (j -> a AND a -> i)
+
                 new_path = self.A_collapse[a, j] * self.A_collapse[i, a]
                 if new_path:
                     self.A_collapse[i, j] = self.scl_or_scl(self.A_collapse[i, j], new_path)
@@ -186,9 +187,13 @@ class DepGraph:
             for e, w in zip(edges, weights):
                 self.add_edge(e, w)
 
-    # edge is a tuple of integers (i, j) where i -> j
+    # edge is a tuple of integers (a, b) where a -> b
     def delete_edge_i(self, edge: tuple[int]) -> None:
         n = self.n
+        a, b = edge
+
+        self.A[b, a] = 0
+
         to_delete = []
         for i, j in product(range(n), repeat=2):
             for key in self.member_paths[i, j].keys():
@@ -209,10 +214,7 @@ class DepGraph:
 
     # edge is a tuple of references (a, b) where (a -> b)
     def delete_edge(self, edge: tuple[QGraphicsRectItem]) -> None:
-        a, b = self.refi[edge[0]], self.refi[edge[1]]
-        self.A[b, a] = 0
-        edge = (a, b)
-
+        edge = (self.refi[edge[0]], self.refi[edge[1]])
         self.delete_edge_i(edge)
 
     def delete_edges(self, edges: list) -> None:
