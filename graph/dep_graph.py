@@ -7,6 +7,8 @@ from functools import reduce
 from itertools import chain, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
+# TODO: figure out if we still need member_paths
+
 class DepGraph:
     MAX_VERTICES = 512
     DEFAULT_EDGE_WEIGHT = 1
@@ -25,7 +27,10 @@ class DepGraph:
         # Adjacency matrix
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
         # Path information. Updated when calc_r is called
-        self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double) # Path information
+        self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
+        # [i, j] = Count of paths j -> i with weight = 1
+        # Probably doesn't need to be 64-bit but that can be figured out later
+        self.one_count = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.uint64)
         # For index [i, j] possible paths from j -> i with weights
         self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), dict)
 
@@ -54,9 +59,8 @@ class DepGraph:
     
     # a is the probability of OR{b, ...}
     # b is the event to remove
-    def inv_or(self, a: float, b: float) -> float:
-        if b == 1: return 0 # This is a problem. Can't invert OR operation
-                            # when one of the operands is 1
+    def or_inv(self, a: float, b: float) -> float:
+        if b == 1: raise Exception("or_inv passed b = 1")
         return (a - b) / (1 - b)
     
     # TODO: make these methods modify the arguments in-place ?
@@ -76,6 +80,14 @@ class DepGraph:
         
         return res
     
+    def calc_A_c_full(self) -> np.ndarray:
+        n = self.n
+        A_c_full = np.ndarray((n, n), np.double)
+        for i, j in product(range(n), repeat=2):
+            A_c_full[i, j] = max(self.A_collapse[i, j], int(bool(self.one_count[i, j])))
+        
+        return A_c_full
+    
     def add_vertices(self, refs: list, direct_risks: list=None) -> None:
         n = self.n
         d = len(refs)
@@ -94,6 +106,9 @@ class DepGraph:
 
         self.A_collapse[n:n + d, :n + d] = 0
         self.A_collapse[:n, n:n + d] = 0
+
+        self.one_count[n:n + d, :n + d] = 0
+        self.one_count[:n, n:n + d] = 0
 
         # This needs to be a for-loop so that it's
         # not all the same dictionary
@@ -118,7 +133,7 @@ class DepGraph:
         self.A_collapse[n:n + 1, :n + 1] = 0
         self.A_collapse[:n, n:n + 1] = 0
 
-        # This nee1s to be a for-loop so that it's
+        # This needs to be a for-loop so that it's
         # not all the same dictionary
         for j in range(n + 1):
             self.member_paths[n, j] = dict()
@@ -136,19 +151,28 @@ class DepGraph:
         self.member_paths[b, a][(a, b)] = weight
 
         # Add to A-collapse by combining with existing connections
-        self.A_collapse[b, a] = self.scl_or_scl(
-            self.A_collapse[b, a], weight
-        )
+        if 1 == weight:
+            self.one_count[b, a] += 1
+        else:
+            self.A_collapse[b, a] = self.scl_or_scl(
+                self.A_collapse[b, a], weight
+            )
+
+        A_c_full = self.calc_A_c_full()
 
         # Collapse paths starting at a and passing through b
         for i in range(n):
-            new_path = self.A_collapse[i, b]
+            new_path = A_c_full[i, b]
             if new_path:
                 new_path *= weight
-                # a -> i OR (a -> b AND b -> i)
-                self.A_collapse[i, a] = self.scl_or_scl(
-                    self.A_collapse[i, a], new_path
-                )
+                if 1 == new_path:
+                    self.one_count[i, a] += 1
+                else:
+                    # a -> i OR (a -> b AND b -> i)
+                    self.A_collapse[i, a] = self.scl_or_scl(
+                        self.A_collapse[i, a], new_path
+                    )
+
                 # P[a -> i] U P[a -> b -> i]
                 self.member_paths[i, a].update(
                     self.connect_paths(self.member_paths[b, a], self.member_paths[i, b])
@@ -156,6 +180,7 @@ class DepGraph:
 
         # Make sure a doesn't loop on itself
         self.A_collapse[a, a] = 0
+        self.one_count[a, a] = 0
         
         # Collapse other paths that pass through a to b
         # Skip a's and b's columns. A's because we already
@@ -167,17 +192,23 @@ class DepGraph:
                        range(greater_i + 1, n)):
             for i in range(n):
                 # j -> i OR (j -> a AND a -> i)
-
-                new_path = self.A_collapse[a, j] * self.A_collapse[i, a]
-                if new_path:
+                new_path = A_c_full[a, j] * A_c_full[i, a]
+                if not new_path:
+                    continue
+                
+                if 1 == new_path:
+                    self.one_count[i, j] += 1
+                else:
                     self.A_collapse[i, j] = self.scl_or_scl(self.A_collapse[i, j], new_path)
-                    # P[j -> i] U P[j -> a -> i] 
-                    self.member_paths[i, j].update(
-                        self.connect_paths(self.member_paths[a, j], self.member_paths[i, a])
-                    )
+                
+                # P[j -> i] U P[j -> a -> i] 
+                self.member_paths[i, j].update(
+                    self.connect_paths(self.member_paths[a, j], self.member_paths[i, a])
+                )
 
         # Remove any loops we've created
         np.fill_diagonal(self.A_collapse[:n, :n], 0)
+        np.fill_diagonal(self.one_count[:n, :n], 0)
 
     def add_edges(self, edges: list, weights: list=None) -> None:
         if None == weights:
@@ -192,6 +223,8 @@ class DepGraph:
         n = self.n
         a, b = edge
 
+        A_c_full = self.calc_A_c_full()
+        weight = A_c_full[b, a]
         self.A[b, a] = 0
 
         to_delete = []
@@ -199,23 +232,58 @@ class DepGraph:
             for key in self.member_paths[i, j].keys():
                 if not self.subtuple_match(edge, key):
                     continue
-                
-                # TODO: Fix OR inverse so this works
-                # path_weight = self.member_paths[i, j][key]
-                # collapsed_weight = self.A_collapse[i, j]
-                # self.A_collapse[i, j] = self.inv_or(
-                #     collapsed_weight, path_weight
-                # )
 
                 to_delete.append((i, j, key))
 
         for i, j, key in to_delete:
             del self.member_paths[i, j][key]
 
+        # Remove influence of deleted edge on other paths
+        # Skip i = a, j = b because we'll deal with that separately
+        for i, j in product(chain(range(a), range(a + 1, n)), chain(range(b), range(b + 1, n))):
+            # (i -> a) AND (a -> b) AND (b -> j)
+            # Note that (a -> b) is not all possible paths (a -> b),
+            # but the specific edge we're deleting
+            broken_path_weight = A_c_full[a, i] * weight * A_c_full[j, b]
+            # Remove influence of (a -> b) on (i -> j)
+            if 1 == broken_path_weight:
+                self.one_count[j, i] -= 1
+            else:
+                self.A_collapse[j, i] = self.or_inv(
+                    self.A_collapse[j, i], broken_path_weight
+                )
+    
+        # Dealing with paths (a -> j)
+        for j in chain(range(a), range(a + 1, n)):
+            broken_path_weight = weight * A_c_full[j, b]
+            if 1 == broken_path_weight:
+                self.one_count[j, a] -= 1
+            else:
+                self.A_collapse[j, a] = self.or_inv(
+                    self.A_collapse[j, a], broken_path_weight
+                )
+
+        # Dealing with paths (i -> b)
+        for i in chain(range(b), range(b + 1, n)):
+            broken_path_weight = A_c_full[a, i] * weight
+            if 1 == broken_path_weight:
+                self.one_count[b, i] -= 1
+            else:
+                self.A_collapse[b, i] = self.or_inv(
+                    self.A_collapse[b, i], broken_path_weight
+                )
+
+        # Settling (a -> b)
+        if 1 == weight:
+            self.one_count[b, a] -= 1
+        else:
+            self.A_collapse[b, a] = self.or_inv(
+                self.A_collapse[b, a], broken_path_weight
+            )
+            
     # edge is a tuple of references (a, b) where (a -> b)
     def delete_edge(self, edge: tuple[QGraphicsRectItem]) -> None:
-        edge = (self.refi[edge[0]], self.refi[edge[1]])
-        self.delete_edge_i(edge)
+        self.delete_edge_i((self.refi[edge[0]], self.refi[edge[1]]))
 
     def delete_edges(self, edges: list) -> None:
         for e in edges:
@@ -240,6 +308,9 @@ class DepGraph:
         self.A_collapse[vi:n - 1, :n] = self.A_collapse[vi + 1:n, :n]
         self.A_collapse[:n - 1, vi:n - 1] = self.A_collapse[:n - 1, vi + 1:n]
 
+        self.one_count[vi:n - 1, :n] = self.one_count[vi + 1:n, :n]
+        self.one_count[:n - 1, vi:n - 1] = self.one_count[:n - 1, vi + 1:n]
+
         # Delete the dictionaries before copying back
         self.member_paths[vi, :n] = None
         self.member_paths[:n, vi] = None
@@ -254,20 +325,13 @@ class DepGraph:
     
     def calc_r(self) -> np.ndarray:
         n = self.n
-        for i, j in product(range(n), repeat=2):
-            self.A_collapse[i, j] = self.combine_paths(
-                self.member_paths[i, j]
-            )
+        A_c_full = self.calc_A_c_full()
 
-        self.r = self.mat_or_vec(self.I[:n, :n] + self.A_collapse[:n, :n], self.r0[:n])
+        self.r = self.mat_or_vec(self.I[:n, :n] + A_c_full, self.r0[:n])
         return self.r
     
     def get_r_dict(self) -> dict:
-        res = {}
-        for i, risk in enumerate(self.r):
-            res[self.iref[i]] = risk
-
-        return res
+        return { self.iref[i] : risk for i, risk in enumerate(self.r) }
 
 if __name__ == "__main__":
     ########### Testing code ################
@@ -322,4 +386,29 @@ if __name__ == "__main__":
     print(dg.A_collapse[:n, :n])
     print(dg.member_paths[3, 0])
     print("\nCALC_R")
+    print(dg.calc_r())
+
+    print("TEST 4")
+
+    dg = DepGraph()
+    dg.add_vertices(['a', 'b', 'c', 'd'], [0.5] * 4)
+    dg.add_edge(('c', 'd'), 1)
+    dg.add_edge(('b', 'c'), 1)
+    dg.add_edge(('a', 'b'), 1)
+
+    n = dg.n
+    print("\nInitial paths:")
+    print(dg.A_collapse[:n, :n])
+    print(dg.one_count[:n, :n])
+
+    print("\nInitial r:")
+    print(dg.calc_r())
+
+    dg.delete_edge(('b', 'c'))
+
+    print("\nFinal paths:")
+    print(dg.A_collapse[:n, :n])
+    print(dg.one_count[:n, :n])
+
+    print("\nFinal r:")
     print(dg.calc_r())
