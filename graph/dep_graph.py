@@ -34,6 +34,8 @@ class DepGraph:
         # For index [i, j] possible paths from j -> i with weights
         self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), dict)
 
+        self.A_c_inacc = False
+
     # For two sets of paths p_a and p_b, returns possible connections
     # {pa0 + pb0, pa0 + pb1, ..., pa1 + pb0, pa1 + pb1, ..., ...}
     def connect_paths(self, p_a: dict, p_b: dict) -> dict:
@@ -322,8 +324,8 @@ class DepGraph:
     def delete_vertices(self, refs: list) -> None:
         for ref in refs:
             self.delete_vertex(ref)
-    
-    def calc_r(self) -> np.ndarray:
+
+    def update_A_c(self) -> None:
         n = self.n
         A_c_full = self.calc_A_c_full()
 
@@ -377,6 +379,8 @@ if __name__ == "__main__":
     print(dg.A[:n, :n])
     print(dg.A_collapse[:n, :n])
     print(dg.member_paths[3, 0])
+    print("\nCALC_R")
+    print(dg.calc_r())
 
     dg.delete_vertex('a')
     n = dg.n
