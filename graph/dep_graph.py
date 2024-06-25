@@ -3,7 +3,7 @@
 # @brief Provides backend graph functionality for dependency analysis
 
 import numpy as np
-from itertools import chain, product, compress
+from itertools import chain, compress, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
 class DepGraph:
