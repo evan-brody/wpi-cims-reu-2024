@@ -60,7 +60,6 @@ class DepGraph:
     def or_inv(self, a: float, b: float) -> float:
         return (a - b) / (1 - b)
     
-    # TODO: make these methods modify the arguments in-place ?
     def vec_or_vec(self, v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
         n = self.n
         return self.J[0, :n] - np.multiply(self.J[0, :n] - v1, self.J[0, :n] - v2)
