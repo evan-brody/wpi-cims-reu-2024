@@ -32,16 +32,6 @@ class DepGraph:
         # For index [i, j] possible paths from j -> i with weights
         self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), dict)
 
-    # Returns if a is a subtuple of b
-    def subtuple_match(self, a: tuple, b: tuple) -> bool:
-        # This method could be a one-liner, but it's
-        # significantly slower that way because of Python
-        lena = len(a)
-        for i in range(len(b) - lena + 1):
-            if a == b[i:lena + i]:
-                return True
-        return False
-
     # P(a U b)
     def scl_or_scl(self, a: float, b: float) -> float:
         return 1 - (1 - a) * (1 - b)
