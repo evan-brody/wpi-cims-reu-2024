@@ -109,13 +109,6 @@ class DepGraph:
         self.one_count[n:n + d, :n + d] = 0
         self.one_count[:n, n:n + d] = 0
 
-        # This needs to be a for-loop so that it's
-        # not all the same dictionary
-        for i, j in product(range(n, n + d), range(n + d)):
-            self.member_paths[i, j] = dict()
-        for i, j in product(range(n), range(n, n + d)):
-            self.member_paths[i, j] = dict()
-
         self.n += d
 
     def add_vertex(self, ref: QGraphicsRectItem, direct_risk: float=None) -> None:
@@ -132,13 +125,6 @@ class DepGraph:
         self.A_collapse[n:n + 1, :n + 1] = 0
         self.A_collapse[:n, n:n + 1] = 0
 
-        # This needs to be a for-loop so that it's
-        # not all the same dictionary
-        for j in range(n + 1):
-            self.member_paths[n, j] = dict()
-        for i in range(n):
-            self.member_paths[i, n] = dict()
-
         self.n += 1
 
     # edge is a tuple (a, b) where a -> b
@@ -147,7 +133,6 @@ class DepGraph:
         a, b = self.refi[edge[0]], self.refi[edge[1]]
         weight = weight if weight else self.DEFAULT_EDGE_WEIGHT
         self.A[b, a] = weight
-        self.member_paths[b, a][(a, b)] = weight
 
         # Add to A-collapse by combining with existing connections
         if 1 == weight:
@@ -161,20 +146,13 @@ class DepGraph:
 
         # Collapse paths starting at a and passing through b
         for i in range(n):
-            new_path = A_c_full[i, b]
-            if new_path:
-                new_path *= weight
-                if 1 == new_path:
-                    self.one_count[i, a] += 1
-                else:
-                    # a -> i OR (a -> b AND b -> i)
-                    self.A_collapse[i, a] = self.scl_or_scl(
-                        self.A_collapse[i, a], new_path
-                    )
-
-                # P[a -> i] U P[a -> b -> i]
-                self.member_paths[i, a].update(
-                    self.connect_paths(self.member_paths[b, a], self.member_paths[i, b])
+            new_path = weight * A_c_full[i, b]
+            if 1 == new_path:
+                self.one_count[i, a] += 1
+            else:
+                # a -> i OR (a -> b AND b -> i)
+                self.A_collapse[i, a] = self.scl_or_scl(
+                    self.A_collapse[i, a], new_path
                 )
 
         # Make sure a doesn't loop on itself
@@ -192,18 +170,11 @@ class DepGraph:
             for i in range(n):
                 # j -> i OR (j -> a AND a -> i)
                 new_path = A_c_full[a, j] * A_c_full[i, a]
-                if not new_path:
-                    continue
                 
                 if 1 == new_path:
                     self.one_count[i, j] += 1
                 else:
                     self.A_collapse[i, j] = self.scl_or_scl(self.A_collapse[i, j], new_path)
-                
-                # P[j -> i] U P[j -> a -> i] 
-                self.member_paths[i, j].update(
-                    self.connect_paths(self.member_paths[a, j], self.member_paths[i, a])
-                )
 
         # Remove any loops we've created
         np.fill_diagonal(self.A_collapse[:n, :n], 0)
@@ -225,17 +196,6 @@ class DepGraph:
         A_c_full = self.calc_A_c_full()
         weight = A_c_full[b, a]
         self.A[b, a] = 0
-
-        to_delete = []
-        for i, j in product(range(n), repeat=2):
-            for key in self.member_paths[i, j].keys():
-                if not self.subtuple_match(edge, key):
-                    continue
-
-                to_delete.append((i, j, key))
-
-        for i, j, key in to_delete:
-            del self.member_paths[i, j][key]
 
         # Remove influence of deleted edge on other paths
         # Skip i = a, j = b because we'll deal with that separately
@@ -309,12 +269,6 @@ class DepGraph:
 
         self.one_count[vi:n - 1, :n] = self.one_count[vi + 1:n, :n]
         self.one_count[:n - 1, vi:n - 1] = self.one_count[:n - 1, vi + 1:n]
-
-        # Delete the dictionaries before copying back
-        self.member_paths[vi, :n] = None
-        self.member_paths[:n, vi] = None
-        self.member_paths[vi:n - 1, :n] = self.member_paths[vi + 1:n, :n]
-        self.member_paths[:n - 1, vi:n - 1] = self.member_paths[:n - 1, vi + 1:n]
 
         self.n -= 1
 
