@@ -34,8 +34,6 @@ class DepGraph:
         # For index [i, j] possible paths from j -> i with weights
         self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), dict)
 
-        self.A_c_inacc = False
-
     # For two sets of paths p_a and p_b, returns possible connections
     # {pa0 + pb0, pa0 + pb1, ..., pa1 + pb0, pa1 + pb1, ..., ...}
     def connect_paths(self, p_a: dict, p_b: dict) -> dict:
