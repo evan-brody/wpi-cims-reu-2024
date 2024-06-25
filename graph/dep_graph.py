@@ -7,8 +7,6 @@ from functools import reduce
 from itertools import chain, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
-# TODO: figure out if we still need member_paths
-
 class DepGraph:
     MAX_VERTICES = 512
     DEFAULT_EDGE_WEIGHT = 1
