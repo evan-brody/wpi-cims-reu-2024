@@ -32,15 +32,6 @@ class DepGraph:
         # For index [i, j] possible paths from j -> i with weights
         self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), dict)
 
-    # For two sets of paths p_a and p_b, returns possible connections
-    # {pa0 + pb0, pa0 + pb1, ..., pa1 + pb0, pa1 + pb1, ..., ...}
-    def connect_paths(self, p_a: dict, p_b: dict) -> dict:
-        return { p1 + p2[1:] : p_a[p1] * p_b[p2] for p1, p2 in product(p_a.keys(), p_b.keys()) }
-    
-    # For a set of path p, returns OR{p_0, p_1, ...}
-    def combine_paths(self, pathset: dict) -> float:
-        return 1 - reduce(lambda a,b: (1 - a) * (1 - b), pathset.values(), 1)
-
     # Returns if a is a subtuple of b
     def subtuple_match(self, a: tuple, b: tuple) -> bool:
         # This method could be a one-liner, but it's
@@ -84,7 +75,7 @@ class DepGraph:
         
         return A_c_full
     
-    def add_vertices(self, refs: list, direct_risks: list=None) -> None:
+    def add_vertices(self, refs: list[QGraphicsRectItem], direct_risks: list[float]=None) -> None:
         n = self.n
         d = len(refs)
 
@@ -125,7 +116,7 @@ class DepGraph:
         self.n += 1
 
     # edge is a tuple (a, b) where a -> b
-    def add_edge(self, edge: tuple, weight: float=None) -> None:
+    def add_edge(self, edge: tuple[QGraphicsRectItem], weight: float=None) -> None:
         n = self.n
         a, b = self.refi[edge[0]], self.refi[edge[1]]
         weight = weight if weight else self.DEFAULT_EDGE_WEIGHT
@@ -177,7 +168,7 @@ class DepGraph:
         np.fill_diagonal(self.A_collapse[:n, :n], 0)
         np.fill_diagonal(self.one_count[:n, :n], 0)
 
-    def add_edges(self, edges: list, weights: list=None) -> None:
+    def add_edges(self, edges: list[tuple[QGraphicsRectItem]], weights: list[float]=None) -> None:
         if None == weights:
             for e in edges:
                 self.add_edge(e)
@@ -241,7 +232,7 @@ class DepGraph:
     def delete_edge(self, edge: tuple[QGraphicsRectItem]) -> None:
         self.delete_edge_i((self.refi[edge[0]], self.refi[edge[1]]))
 
-    def delete_edges(self, edges: list) -> None:
+    def delete_edges(self, edges: list[tuple[QGraphicsRectItem]]) -> None:
         for e in edges:
             self.delete_edge(e)
 
