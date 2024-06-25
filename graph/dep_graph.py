@@ -3,7 +3,6 @@
 # @brief Provides backend graph functionality for dependency analysis
 
 import numpy as np
-from functools import reduce
 from itertools import chain, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
@@ -343,3 +342,11 @@ if __name__ == "__main__":
 
     print("\nFinal r:")
     print(dg.calc_r())
+
+    a = np.array([[1, 2],
+                  [3, 4]])
+    b = np.array([[5, 6],
+                  [7, 8]])
+    c = np.vectorize(lambda i, j: max(i, j))
+
+    print(c(a, b))
