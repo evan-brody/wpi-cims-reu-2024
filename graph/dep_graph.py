@@ -62,7 +62,6 @@ class DepGraph:
     # a is the probability of OR{b, ...}
     # b is the event to remove
     def or_inv(self, a: float, b: float) -> float:
-        if b == 1: raise Exception("or_inv passed b = 1")
         return (a - b) / (1 - b)
     
     # TODO: make these methods modify the arguments in-place ?
