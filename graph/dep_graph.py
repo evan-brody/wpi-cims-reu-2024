@@ -3,7 +3,7 @@
 # @brief Provides backend graph functionality for dependency analysis
 
 import numpy as np
-from itertools import chain, product
+from itertools import chain, product, compress
 from PyQt5.QtWidgets import QGraphicsRectItem
 
 class DepGraph:
@@ -170,13 +170,18 @@ class DepGraph:
         n = self.n
         a, b = edge
 
-        A_c_full = self.calc_A_c_full()
+        # We need to add the identity matrix so our calculations
+        # for broken_path_weight are accurate when i or j = a or b
+        A_c_full = self.I[:n, :n] + self.calc_A_c_full()
         weight = A_c_full[b, a]
         self.A[b, a] = 0
 
         # Remove influence of deleted edge on other paths
         # Skip i = a, j = b because we'll deal with that separately
-        for i, j in product(chain(range(a), range(a + 1, n)), chain(range(b), range(b + 1, n))):
+        # Skip diagonal because we don't allow those edges
+        not_diagonal = np.ones((n ** 2,), dtype=np.uint8)
+        not_diagonal[::n + 1] = 0
+        for i, j in compress(product(range(n), repeat=2), not_diagonal):
             # (i -> a) AND (a -> b) AND (b -> j)
             # Note that (a -> b) is not all possible paths (a -> b),
             # but the specific edge we're deleting
@@ -188,34 +193,6 @@ class DepGraph:
                 self.A_collapse[j, i] = self.or_inv(
                     self.A_collapse[j, i], broken_path_weight
                 )
-    
-        # Dealing with paths (a -> j)
-        for j in chain(range(a), range(a + 1, n)):
-            broken_path_weight = weight * A_c_full[j, b]
-            if 1 == broken_path_weight:
-                self.one_count[j, a] -= 1
-            else:
-                self.A_collapse[j, a] = self.or_inv(
-                    self.A_collapse[j, a], broken_path_weight
-                )
-
-        # Dealing with paths (i -> b)
-        for i in chain(range(b), range(b + 1, n)):
-            broken_path_weight = A_c_full[a, i] * weight
-            if 1 == broken_path_weight:
-                self.one_count[b, i] -= 1
-            else:
-                self.A_collapse[b, i] = self.or_inv(
-                    self.A_collapse[b, i], broken_path_weight
-                )
-
-        # Settling (a -> b)
-        if 1 == weight:
-            self.one_count[b, a] -= 1
-        else:
-            self.A_collapse[b, a] = self.or_inv(
-                self.A_collapse[b, a], broken_path_weight
-            )
             
     # edge is a tuple of references (a, b) where (a -> b)
     def delete_edge(self, edge: tuple[QGraphicsRectItem]) -> None:
