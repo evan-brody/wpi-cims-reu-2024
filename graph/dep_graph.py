@@ -177,7 +177,6 @@ class DepGraph:
         self.A[b, a] = 0
 
         # Remove influence of deleted edge on other paths
-        # Skip i = a, j = b because we'll deal with that separately
         # Skip diagonal because we don't allow those edges
         not_diagonal = np.ones((n ** 2,), dtype=np.uint8)
         not_diagonal[::n + 1] = 0
