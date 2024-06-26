@@ -160,7 +160,6 @@ class DepQGraphicsScene(QGraphicsScene):
             arr_start_pos.setY(bot_bound)
             elbow = QPointF(start_pos.x(), end_pos.y())
 
-
         moused_over = self.top_rect_at(end_pos)
         if moused_over:
             left_bound = moused_over.scenePos().x()
@@ -546,6 +545,26 @@ class DepQGraphicsScene(QGraphicsScene):
 
                 self.update_rect_colors()
 
+# Instances of this class are the buttons on the
+# right side of the Dependency Analysis tab
+class DepQAction(QAction):
+    def __init__(self, icon: QIcon, text: str, toolbar: QToolBar) -> None:
+        super().__init__(icon, text)
+
+        self.toolbar = toolbar
+        self.triggered.connect(self.clearOtherSelections)
+        self.setCheckable(True)
+
+        self.toolbar.addAction(self)
+
+    # Checked is the new state
+    def clearOtherSelections(self, checked: bool) -> None:
+        if not checked:
+            return
+        
+        for action in self.toolbar.actions():
+            action.setChecked(action == self)
+
 """
 
 Name: MainWindow
@@ -558,6 +577,7 @@ class MainWindow(QMainWindow):
     DEFAULT_RISK_THRESHOLD = 1
     CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     DB_PATH = os.path.join(os.path.dirname(__file__), os.pardir, "data")
+    IMAGES_PATH = os.path.join(os.path.dirname(__file__), "images")
     DB_NAME = "part_info.db"
     # RECOMMENDATIONS = (
     #     "Recommended Detectability: 9-10 (Unacceptable)",
@@ -998,6 +1018,7 @@ class MainWindow(QMainWindow):
     def init_dep_tab(self):
         self.dep_layout = QHBoxLayout(self.dep_tab)
         self.dep_left_layout = QVBoxLayout()
+        self.dep_right_layout = QVBoxLayout()
 
         # Set up top component selection layout
         self.dep_select_layout = QHBoxLayout()
@@ -1032,11 +1053,26 @@ class MainWindow(QMainWindow):
         self.system_vis_view.setFrameStyle(QFrame.Panel | QFrame.Plain)
         self.system_vis_view.setLineWidth(2)
 
+        # Right-hand toolbar for selecting mode
+        self.dep_toolbar = QToolBar()
+        self.dep_toolbar.setOrientation(Qt.Vertical)
+
+        # Edge button
+        self.edge_icon = QIcon(os.path.join(self.IMAGES_PATH, "edge_icon.png"))
+        self.edge_button = DepQAction(self.edge_icon, "Add Edge", self.dep_toolbar)
+
+        # AND-gate button
+        self.AND_gate_icon = QIcon(os.path.join(self.IMAGES_PATH, "and_gate.png"))
+        self.AND_gate_button = DepQAction(self.AND_gate_icon, "Add AND Gate", self.dep_toolbar)
+
         # Add widgets separate from setup
         self.dep_left_layout.addLayout(self.dep_select_layout, stretch=1)
         self.dep_left_layout.addWidget(self.system_vis_view, stretch=3)
 
+        self.dep_right_layout.addWidget(self.dep_toolbar)
+
         self.dep_layout.addLayout(self.dep_left_layout)
+        self.dep_layout.addLayout(self.dep_right_layout)
 
     def init_lstm_tab(self):
         ### START OF lstm TAB SETUP ###
