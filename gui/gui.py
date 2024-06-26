@@ -55,6 +55,37 @@ from graph.dep_graph import DepGraph
 import torch.multiprocessing as mp
 
 # database_data = {}
+
+# There should be only one instance of this class
+# It's the toolbar on the right side of the Dependency Analysis tab
+class DepQToolBar(QToolBar):
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.selected_tool = None
+
+# Instances of this class are the buttons on the
+# right side of the Dependency Analysis tab
+class DepQAction(QAction):
+    def __init__(self, icon: QIcon, text: str, toolbar: DepQToolBar) -> None:
+        super().__init__(icon, text)
+
+        self.toolbar = toolbar
+        self.triggered.connect(self.clearOtherSelections)
+        self.setCheckable(True)
+
+        self.toolbar.addAction(self)
+
+    # Checked is the new state
+    def clearOtherSelections(self, checked: bool) -> None:
+        if not checked:
+            return
+        
+        for action in self.toolbar.actions():
+            action.setChecked(action == self)
+
+        self.toolbar.selected_tool = self
+
 # Custom QGraphicsScene class for the dependency tab
 class DepQGraphicsScene(QGraphicsScene):
     # Keys for the QGraphicsItem data table
@@ -544,26 +575,6 @@ class DepQGraphicsScene(QGraphicsScene):
                     self.rect_risks = self.dg.get_r_dict()
 
                 self.update_rect_colors()
-
-# Instances of this class are the buttons on the
-# right side of the Dependency Analysis tab
-class DepQAction(QAction):
-    def __init__(self, icon: QIcon, text: str, toolbar: QToolBar) -> None:
-        super().__init__(icon, text)
-
-        self.toolbar = toolbar
-        self.triggered.connect(self.clearOtherSelections)
-        self.setCheckable(True)
-
-        self.toolbar.addAction(self)
-
-    # Checked is the new state
-    def clearOtherSelections(self, checked: bool) -> None:
-        if not checked:
-            return
-        
-        for action in self.toolbar.actions():
-            action.setChecked(action == self)
 
 """
 
@@ -1061,7 +1072,7 @@ class MainWindow(QMainWindow):
         self.edge_icon = QIcon(os.path.join(self.IMAGES_PATH, "edge_icon.png"))
         self.edge_button = DepQAction(self.edge_icon, "Add Edge", self.dep_toolbar)
 
-        # AND-gate button
+        # AND gate button
         self.AND_gate_icon = QIcon(os.path.join(self.IMAGES_PATH, "and_gate.png"))
         self.AND_gate_button = DepQAction(self.AND_gate_icon, "Add AND Gate", self.dep_toolbar)
 
