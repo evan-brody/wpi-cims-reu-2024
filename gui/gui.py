@@ -497,7 +497,13 @@ class DepQGraphicsScene(QGraphicsScene):
                 self.clearSelection()
                 self.released_on_1.setSelected(True)
             else: # Add new component if just clicking in free area
-                self.add_component(event)
+                match self.parent_window.dep_toolbar.selected_tool:
+                    case self.parent_window.comp_button:
+                        self.add_component(event)
+                    case self.parent_window.edge_button:
+                        pass # TODO: Handle edge creation here
+                    case self.parent_window.AND_gate_button:
+                        pass # TODO: Handle AND gate creation here
                 self.clearSelection()
             return
         
@@ -1065,8 +1071,12 @@ class MainWindow(QMainWindow):
         self.system_vis_view.setLineWidth(2)
 
         # Right-hand toolbar for selecting mode
-        self.dep_toolbar = QToolBar()
+        self.dep_toolbar = DepQToolBar()
         self.dep_toolbar.setOrientation(Qt.Vertical)
+
+        # Component button
+        self.comp_icon = QIcon(os.path.join(self.IMAGES_PATH, "add_comp_icon.png"))
+        self.comp_button = DepQAction(self.comp_icon, "Add Component", self.dep_toolbar)
 
         # Edge button
         self.edge_icon = QIcon(os.path.join(self.IMAGES_PATH, "edge_icon.png"))
