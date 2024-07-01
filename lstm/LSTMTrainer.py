@@ -13,12 +13,12 @@ class LSTMTrainer():
 
         self.NORMALIZATION_CONSTANT = 0.0001
         self.n_hidden = 256
-        self.n_epochs = 100000
-        self.print_every = 100
-        self.plot_every = 100
+        self.n_epochs = 100
+        self.epoch_size = 10
         self.learning_rate = 0.001 # If you set this too high, it might explode. If too low, it might not learn
         
         self.lstm = LSTM(n_letters,self.n_hidden,3).to(self.device)
+        self.lstm.share_memory()
         self.optimizer = torch.optim.Adam(self.lstm.parameters(), lr=self.learning_rate)
         self.criterion = nn.MSELoss()
         return
@@ -41,7 +41,7 @@ class LSTMTrainer():
                 [row.iloc[0,row.columns.get_loc('lower_bound')],
                 row.iloc[0,row.columns.get_loc('best_estimate')],
                 row.iloc[0,row.columns.get_loc('upper_bound')]]
-                ,dtype=torch.float32).to(self.device),self.NORMALIZATION_CONSTANT))
+                ,dtype=torch.float32),self.NORMALIZATION_CONSTANT)).to(self.device)
         #category_tensor = Variable(torch.LongTensor([all_categories.index(category)]))
         #print(line)
         line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')],self.device))
@@ -79,16 +79,11 @@ class LSTMTrainer():
             current_loss += loss
 
             # Print epoch number, loss, name and guess
-            if epoch % self.print_every == 0:
+            if epoch % self.epoch_size == 0:
                 #guess, guess_i = categoryFromOutput(output)
                 #correct = 'y' if guess == category else 'n (%s)' % category
                 print('%d %d%% (%s) %.4f %s / %s %s' % (epoch, epoch / self.n_epochs * 100, self.timeSince(start), loss, line, output, expected_output))
-                print(current_loss/self.print_every)
-                current_loss = 0
-
-            # Add current loss avg to list of losses
-            if epoch % self.plot_every == 0:
-                all_losses.append(current_loss / self.plot_every)
+                print(current_loss/self.epoch_size)
                 current_loss = 0
 
         torch.save(self.lstm, 'failure_curve_estimator.pt')

@@ -34,7 +34,6 @@ TODO: UI Bug fixes
 """
 
 import os, sys, sqlite3, time, logging
-import operator as op
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -55,6 +54,7 @@ from graph.dep_graph import DepGraph
 import torch.multiprocessing as mp
 
 # database_data = {}
+NUM_PROCESSES = 4
 
 # There should be only one instance of this class
 # It's the toolbar on the right side of the Dependency Analysis tab
@@ -1636,14 +1636,13 @@ class MainWindow(QMainWindow):
 
 def train_model(epoch,trainer: LSTMTrainer):
     current_loss = 0
-    for e in range(trainer.plot_every):
+    for e in range(trainer.epoch_size):
         line,output,expected_output,loss = trainer.iterate_once()
         current_loss += loss
+    
+    avg_loss = current_loss/trainer.epoch_size
     # Print epoch number, loss, name and guess
-    return [trainer, current_loss/trainer.plot_every,time.time(),epoch]
-    #queue.put('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / self.LSTMTrainer.n_epochs * 100, self.LSTMTrainer.timeSince(start), loss, line, output, expected_output))
-    #queue.put(current_loss)
-    #return [line,output,expected_output,loss,current_loss/trainer.print_every, trainer.timeSince(start),epoch]
+    return [trainer, avg_loss,time.time(),epoch]
 
 def train_iterator():
     # Keep track of losses for plotting
@@ -1655,15 +1654,11 @@ def train_iterator():
     window.loss_fig = plt.plot(window.loss_x,window.loss_y)[0]
     plt.ylim(0,1)
     
-    pool.apply_async(train_model,args=[0,trainer],callback=async_callback)
+    for i in range(trainer.n_epochs):
+        pool.apply_async(train_model,args=[i,trainer],callback=async_callback)
+    #pool.apply_async(train_model,args=[0,trainer],callback=async_callback)
 
 def async_callback(func_result):
-    trainer = func_result[0]
-    
-    threshold = (int)(trainer.n_epochs/trainer.plot_every)
-    if(func_result[3]<threshold-1):
-        pool.apply_async(train_model,args=[func_result[3]+1,trainer],callback=async_callback)
-        
     print(func_result)
     # updating the data
     #line,output,expected_output,loss,avg_loss,del_time,epoch = func_result
@@ -1684,7 +1679,7 @@ def async_callback(func_result):
 
 if __name__ == "__main__":
     # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    pool = mp.Pool(1)
+    pool = mp.Pool(NUM_PROCESSES)
     mp.set_start_method('spawn', force=True)
     trainer = LSTMTrainer()
     logger = mp.log_to_stderr(logging.INFO)
