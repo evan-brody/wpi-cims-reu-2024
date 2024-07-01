@@ -104,6 +104,9 @@ class DepGraph:
 
         self.n += 1
 
+    def add_AND_gate(self, ref: QGraphicsRectItem) -> None:
+        pass
+
     # edge is a tuple (a, b) where a -> b
     def add_edge(self, edge: tuple[QGraphicsRectItem], weight: float=None) -> None:
         n = self.n

@@ -31,6 +31,10 @@ TODO: UI Bug fixes
     TODO: detectability recommendation should reset when selected component is changed
     TODO: auto refresh on statistics page
     TODO: fix dependency arrow snapping when dragging rectangles over each other
+
+TODO:
+    # New names for each component of same type (A, B, C)
+    # Success criteria: fails if n or more components fail
 """
 
 import os, sys, sqlite3, time, logging
@@ -307,6 +311,50 @@ class DepQGraphicsScene(QGraphicsScene):
         text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
         proxy.setPos(text_pos)
 
+    def add_AND_gate(self, event: QGraphicsSceneMouseEvent) -> None:
+        # Create and add rectangle
+        rect_w, rect_h = self.RECT_DIMS
+        rect_x = event.scenePos().x() - rect_w // 2
+        rect_y = event.scenePos().y() - rect_h // 2
+        brush = QBrush(Qt.white)
+
+        rect_item = self.addRect(0, 0, rect_w, rect_h, QPen(), brush)
+        rect_item.setPos(rect_x, rect_y)
+        rect_item.setFlags(QGraphicsItem.ItemIsSelectable)
+
+        self.rect_depends_on[rect_item] = []
+        self.rect_influences[rect_item] = []
+        self.rect_arrs_in[rect_item] = []
+        self.rect_arrs_out[rect_item] = []
+        self.dg.add_AND_gate(rect_item)
+
+        # Create text
+        text_widg = QLabel("AND")
+        text_widg.setWordWrap(True)
+        text_widg.setAlignment(Qt.AlignHCenter)
+
+        # Edit font to be bold and brash
+        font = text_widg.font()
+        font.setBold(True)
+        font.setPointSize(16)
+        text_widg.setFont(font)
+
+        # Match background color to rectangle
+        pal = text_widg.palette()
+        pal.setBrush(QPalette.Window, QBrush(Qt.NoBrush))
+        text_widg.setPalette(pal)
+
+        # Set up proxy for binding to scene
+        proxy = QGraphicsProxyWidget(parent=rect_item)
+        proxy.setWidget(text_widg)
+
+        # Center within rectangle
+        text_pos = rect_item.mapFromScene(rect_item.pos())
+        text_w = proxy.boundingRect().width()
+        text_h = proxy.boundingRect().height()
+        text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
+        proxy.setPos(text_pos)
+
     def del_select_rect_item(self) -> None:
         # Remove selection box
         if self.select_rect_item:
@@ -335,11 +383,6 @@ class DepQGraphicsScene(QGraphicsScene):
                 self.mousePressEventR(event)
 
     def mousePressEventL(self, event: QGraphicsSceneMouseEvent) -> None:
-        if self.dep_origin:
-            self.del_dyn_arr()
-            self.dep_origin = None
-            return
-        
         self.mouse_down_l = True
         pos = event.scenePos()
         self.select_start = pos
@@ -482,29 +525,32 @@ class DepQGraphicsScene(QGraphicsScene):
                 self.mouseReleaseEventL(event)
             case Qt.RightButton:
                 self.clearSelection()
-                self.mouseReleaseEventR(event)
 
     def mouseReleaseEventL(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_l = False
         pos = event.scenePos()
+        self.clearSelection()
         
         # Handle single clicks
         self.select_end = pos
         single_click = self.select_start == self.select_end
         self.released_on_1 = self.top_rect_at(pos)
         if single_click:
-            if self.released_on_1: # Select component if clicking on it
-                self.clearSelection()
-                self.released_on_1.setSelected(True)
-            else: # Add new component if just clicking in free area
-                match self.parent_window.dep_toolbar.selected_tool:
-                    case self.parent_window.comp_button:
+            match self.parent_window.dep_toolbar.selected_tool:
+                case self.parent_window.comp_button:
+                    if self.released_on_1:
+                        self.released_on_1.setSelected(True)
+                    else:
                         self.add_component(event)
-                    case self.parent_window.edge_button:
-                        pass # TODO: Handle edge creation here
-                    case self.parent_window.AND_gate_button:
-                        pass # TODO: Handle AND gate creation here
-                self.clearSelection()
+                case self.parent_window.edge_button:
+                    if self.released_on_1:
+                        self.mouseReleaseEventEdge(event)
+                    else:
+                        self.del_dyn_arr()
+                        self.dep_origin = None
+                case self.parent_window.AND_gate_button:
+                    if not self.released_on_1:
+                        self.add_AND_gate(event)
             return
         
         if not self.select_rect_item:
@@ -524,7 +570,7 @@ class DepQGraphicsScene(QGraphicsScene):
             self.clearSelection()
             self.clicked_on_l.setSelected(True)
 
-    def mouseReleaseEventR(self, event: QGraphicsSceneMouseEvent) -> None:
+    def mouseReleaseEventEdge(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_r = False
         pos = event.scenePos()
 
@@ -653,7 +699,7 @@ class MainWindow(QMainWindow):
         self.refreshing_table = False
         self.risk_threshold = self.DEFAULT_RISK_THRESHOLD
 
-        self.setWindowTitle("Failure Modes, Effects, and Criticality Analysis (FMECA)")
+        self.setWindowTitle("System Reliability Analysis")
         self.setGeometry(100, 100, 1000, 572)
         self.setStyleSheet(
             "QPushButton { color: white; background-color: #C02F1D; }"
