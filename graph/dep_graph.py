@@ -6,6 +6,8 @@ import numpy as np
 from itertools import chain, compress, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
+# TODO: delete_edge works with AND gates
+
 class DepGraph:
     MAX_VERTICES = 512
     DEFAULT_EDGE_WEIGHT = 1
@@ -131,10 +133,6 @@ class DepGraph:
 
     # edge is a tuple (a, b) where a -> b
     def add_edge(self, edge: tuple[QGraphicsRectItem], weight: float=None) -> None:
-        # TODO: how to model sequential AND gates ?
-        # e.g. a     b  ->   AND  ->   AND  ->   AND
-        # if we add edge (a, b), difficult to update all
-        # AND gates
         n = self.n
         a, b = self.refi[edge[0]], self.refi[edge[1]]
         weight = weight if weight else self.DEFAULT_EDGE_WEIGHT
@@ -150,41 +148,45 @@ class DepGraph:
 
         A_c_full = self.calc_A_c_full()
 
-        # If we're not dealing with an AND gate as b,
-        # collapse paths starting at a and passing through b
-        if not self.is_AND[b]:
-            for i in range(n):
-                new_path = weight * A_c_full[i, b]
-                if 1 == new_path:
-                    self.one_count[i, a] += 1
-                else:
-                    # a -> i OR (a -> b AND b -> i)
-                    self.A_collapse[i, a] = self.scl_or_scl(
-                        self.A_collapse[i, a], new_path
-                    )
+        # Collapse paths starting at a and passing through b
+        # If we're dealing with an AND gate as B, we should
+        # only collapse paths leading to other and gates
+        # Skip b because we don't care about loops
+        to_update_to = np.copy(self.is_AND[:n]) if self.is_AND[b] else [True] * n
+        to_update_to[b] = False
+        for i in compress(range(n), to_update_to):
+            new_path = weight * A_c_full[i, b]
+            if 1 == new_path:
+                self.one_count[i, a] += 1
+            else:
+                # a -> i OR (a -> b AND b -> i)
+                self.A_collapse[i, a] = self.scl_or_scl(
+                    self.A_collapse[i, a], new_path
+                )
 
         # Make sure a doesn't loop on itself
         self.A_collapse[a, a] = 0
         self.one_count[a, a] = 0
         
-        # If a isn't an AND gate,
-        # collapse other paths that pass through a to b
+        # Collapse other paths that pass through a to b
         # Skip a's and b's columns. A's because we already
         # calculated its values, b's because we don't care
         # about loops
-        if not self.is_AND[a]:
-            lesser_i, greater_i = min(a, b), max(a, b)
-            for j in chain(range(lesser_i), \
-                        range(lesser_i + 1, greater_i), \
-                        range(greater_i + 1, n)):
-                for i in range(n):
-                    # j -> i OR (j -> a AND a -> i)
-                    new_path = A_c_full[a, j] * A_c_full[i, a]
-                    
-                    if 1 == new_path:
-                        self.one_count[i, j] += 1
-                    else:
-                        self.A_collapse[i, j] = self.scl_or_scl(self.A_collapse[i, j], new_path)
+        # If we're dealing with an AND gate as a, 
+        to_update_to = np.copy(self.is_AND[:n]) if self.is_AND[a] else [True] * n
+        to_update_to[a] = False
+        to_update_from = [True] * n
+        to_update_from[a] = False
+        to_update_from[b] = False
+        for j in compress(range(n), to_update_from):
+            for i in compress(range(n), to_update_to):
+                # j -> i OR (j -> a AND a -> i)
+                new_path = A_c_full[a, j] * A_c_full[i, a]
+                
+                if 1 == new_path:
+                    self.one_count[i, j] += 1
+                else:
+                    self.A_collapse[i, j] = self.scl_or_scl(self.A_collapse[i, j], new_path)
 
         # Remove any loops we've created
         np.fill_diagonal(self.A_collapse[:n, :n], 0)
@@ -237,15 +239,17 @@ class DepGraph:
     def delete_vertex(self, ref: QGraphicsRectItem) -> None:
         n = self.n
         vi = self.refi[ref]
-        del self.refi[ref]
-
-        self.iref[vi:n - 1] = self.iref[vi + 1:n]
-        self.r0[vi:n - 1] = self.r0[vi + 1:n]
 
         # Delete edges before we lose their information
         for i, j in chain(product((vi,), range(n)), product(range(n), (vi,))):
             if self.A[i, j]:
                 self.delete_edge_i((j, i))
+
+        del self.refi[ref]
+
+        self.iref[vi:n - 1] = self.iref[vi + 1:n]
+        self.r0[vi:n - 1] = self.r0[vi + 1:n]
+        self.is_AND[vi:n - 1] = self.is_AND[vi + 1:n]
 
         self.A[vi:n - 1, :n] = self.A[vi + 1:n, :n]
         self.A[:n - 1, vi:n - 1] = self.A[:n - 1, vi + 1:n]
@@ -262,105 +266,139 @@ class DepGraph:
         for ref in refs:
             self.delete_vertex(ref)
 
+    def update_AND_weights(self) -> None:
+        n = self.n
+        A_c_full = self.calc_A_c_full()
+        for i in compress(range(n), self.is_AND[:n]):
+            # We only care about edges (c -> AND) where c is a component
+            to_update_from = np.logical_not(self.is_AND[:n])
+            if not np.any(A_c_full[i, to_update_from]):
+                self.r0[i] = 0
+                continue
+
+            self.r0[i] = 1
+            for j in compress(range(n), to_update_from):
+                # Reduction of j -> (j -> i)
+                path_weight = A_c_full[i, j] * self.r0[j]
+                if path_weight:
+                    self.r0[i] *= path_weight
+
+    # Note: self.r values for AND gates are garbage values
     def calc_r(self) -> None:
         n = self.n
+        self.update_AND_weights()
         self.r = self.mat_or_vec(self.I[:n, :n] + self.calc_A_c_full(), self.r0[:n])
         return self.r
     
     def get_r_dict(self) -> dict:
-        return { self.iref[i] : risk for i, risk in enumerate(self.r) }
+        n = self.n
+        return { self.iref[i] : risk for i, risk in compress(enumerate(self.r), np.logical_not(self.is_AND[:n])) }
 
 if __name__ == "__main__":
     ########### Testing code ################
     # Test 1
-    dg = DepGraph()
+    def test_suite_1():
+        dg = DepGraph()
 
-    dg.add_vertices(['s', 'c', 'v', 'p'], [0.25] * 4)
-    dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1 / 3] * 3)
+        dg.add_vertices(['s', 'c', 'v', 'p'], [0.25] * 4)
+        dg.add_edges([('s', 'v'), ('c', 'v'), ('v', 'p')], [1 / 3] * 3)
 
-    print(dg.calc_r())
+        print(dg.calc_r())
 
-    # Test 2
-    dg = DepGraph()
-    dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
-    dg.add_edge(('b', 'd'))
-    dg.add_edge(('c', 'd'))
-    dg.add_edge(('a', 'b'))
-    dg.add_edge(('a', 'c'))
-    n = dg.n
+        # Test 2
+        dg = DepGraph()
+        dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
+        dg.add_edge(('b', 'd'))
+        dg.add_edge(('c', 'd'))
+        dg.add_edge(('a', 'b'))
+        dg.add_edge(('a', 'c'))
+        n = dg.n
 
-    print(dg.A[:n, :n])
-    print(dg.A_collapse[:n, :n])
-    print(dg.member_paths[3, 0])
+        print(dg.A[:n, :n])
+        print(dg.A_collapse[:n, :n])
+        print(dg.member_paths[3, 0])
 
-    dg.delete_edge(('b', 'd'))
-    dg.delete_edge(('c', 'd'))
+        dg.delete_edge(('b', 'd'))
+        dg.delete_edge(('c', 'd'))
 
-    print()
-    print(dg.A[:n, :n])
-    print(dg.A_collapse[:n, :n])
-    print(dg.member_paths[3, 0])
-    print(dg.calc_r())
+        print()
+        print(dg.A[:n, :n])
+        print(dg.A_collapse[:n, :n])
+        print(dg.member_paths[3, 0])
+        print(dg.calc_r())
 
-    # Test 3
-    dg = DepGraph()
-    dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
-    dg.add_edge(('b', 'd'))
-    dg.add_edge(('c', 'd'))
-    dg.add_edge(('a', 'b'))
-    dg.add_edge(('a', 'c'))
-    n = dg.n
+        # Test 3
+        dg = DepGraph()
+        dg.add_vertices(['a', 'b', 'c', 'd'], [0.25] * 4)
+        dg.add_edge(('b', 'd'))
+        dg.add_edge(('c', 'd'))
+        dg.add_edge(('a', 'b'))
+        dg.add_edge(('a', 'c'))
+        n = dg.n
 
-    print(dg.A[:n, :n])
-    print(dg.A_collapse[:n, :n])
-    print(dg.member_paths[3, 0])
-    print("\nCALC_R")
-    print(dg.calc_r())
+        print(dg.A[:n, :n])
+        print(dg.A_collapse[:n, :n])
+        print(dg.member_paths[3, 0])
+        print("\nCALC_R")
+        print(dg.calc_r())
 
-    dg.delete_vertex('a')
-    n = dg.n
+        dg.delete_vertex('a')
+        n = dg.n
 
-    print()
-    print(dg.A[:n, :n])
-    print(dg.A_collapse[:n, :n])
-    print(dg.member_paths[3, 0])
-    print("\nCALC_R")
-    print(dg.calc_r())
+        print()
+        print(dg.A[:n, :n])
+        print(dg.A_collapse[:n, :n])
+        print(dg.member_paths[3, 0])
+        print("\nCALC_R")
+        print(dg.calc_r())
 
-    print("TEST 4")
+        print("TEST 4")
 
-    dg = DepGraph()
-    dg.add_vertices(['a', 'b', 'c', 'd'], [0.5] * 4)
-    dg.add_edge(('c', 'd'), 1)
-    dg.add_edge(('b', 'c'), 1)
-    dg.add_edge(('a', 'b'), 1)
+        dg = DepGraph()
+        dg.add_vertices(['a', 'b', 'c', 'd'], [0.5] * 4)
+        dg.add_edge(('c', 'd'), 1)
+        dg.add_edge(('b', 'c'), 1)
+        dg.add_edge(('a', 'b'), 1)
 
-    n = dg.n
-    print("\nInitial paths:")
-    print(dg.A_collapse[:n, :n])
-    print(dg.one_count[:n, :n])
+        n = dg.n
+        print("\nInitial paths:")
+        print(dg.A_collapse[:n, :n])
+        print(dg.one_count[:n, :n])
 
-    print("\nInitial r:")
-    print(dg.calc_r())
+        print("\nInitial r:")
+        print(dg.calc_r())
 
-    dg.delete_edge(('b', 'c'))
+        dg.delete_edge(('b', 'c'))
 
-    print("\nFinal paths:")
-    print(dg.A_collapse[:n, :n])
-    print(dg.one_count[:n, :n])
+        print("\nFinal paths:")
+        print(dg.A_collapse[:n, :n])
+        print(dg.one_count[:n, :n])
 
-    print("\nFinal r:")
-    print(dg.calc_r())
+        print("\nFinal r:")
+        print(dg.calc_r())
 
-    a = np.array([[1, 2],
-                  [3, 4]])
-    b = np.array([[5, 6],
-                  [7, 8]])
-    c = np.vectorize(lambda i, j: max(i, j))
+        a = np.array([[1, 2],
+                        [3, 4]])
+        b = np.array([[5, 6],
+                        [7, 8]])
+        c = np.vectorize(lambda i, j: max(i, j))
 
-    print(c(a, b))
+        print(c(a, b))
+        print()
 
-    print("\nTEST 5")
-    a = np.empty((3, 3), np.double)
-    a[[True, False, True], :] = 9
-    print(a)
+    def test_suite_2():
+        print("TEST 1")
+        dg = DepGraph()
+        dg.add_vertices(['a', 'b', 'c'], [0.5] * 3)
+        dg.add_AND_gate("AND")
+        dg.add_edge(('AND', 'c'), 1)
+        dg.add_edge(('a', 'AND'), 1)
+        dg.add_edge(('b', 'AND'), 1)
+        n = dg.n
+
+        print(dg.calc_A_c_full()[:n, :n])
+
+        print("AND calc_r:")
+        print(dg.calc_r())
+
+    test_suite_2()
