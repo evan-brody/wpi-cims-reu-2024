@@ -21,6 +21,8 @@ class DepGraph:
         self.n = 0
         # Direct risk vector
         self.r0 = np.empty((self.MAX_VERTICES,), np.double)
+        # self.is_AND[i] stores whether vi is an AND gate
+        self.is_AND = np.empty((self.MAX_VERTICES,), bool)
         # Adjacency matrix
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
         # Path information. Updated when calc_r is called
@@ -58,9 +60,13 @@ class DepGraph:
     
     def calc_A_c_full(self) -> np.ndarray:
         n = self.n
-        A_c_full = np.ndarray((n, n), np.double)
+        A_c_full = np.empty((n, n), np.double)
         for i, j in product(range(n), repeat=2):
             A_c_full[i, j] = max(self.A_collapse[i, j], int(bool(self.one_count[i, j])))
+
+        # If we're updating to add an edge, we should clear
+        # outgoing edges from AND gates. If we're calculating
+        # final risk, we should clear incoming connections
         
         return A_c_full
     
@@ -76,6 +82,8 @@ class DepGraph:
             self.r0[n:n + d] = direct_risks
         else:
             self.r0[n:n + d] = self.DEFAULT_DR
+
+        self.is_AND[n:n + d] = False
 
         self.A[n:n + d, :n + d] = 0
         self.A[:n, n:n + d] = 0
@@ -95,20 +103,38 @@ class DepGraph:
         self.iref[n] = ref
 
         self.r0[n] = direct_risk
+        self.is_AND[n] = False
 
         self.A[n, :n + 1] = 0
         self.A[:n, n] = 0
 
-        self.A_collapse[n:n + 1, :n + 1] = 0
-        self.A_collapse[:n, n:n + 1] = 0
+        self.A_collapse[n, :n + 1] = 0
+        self.A_collapse[:n, n] = 0
 
         self.n += 1
 
     def add_AND_gate(self, ref: QGraphicsRectItem) -> None:
-        pass
+        n = self.n
+        self.refi[ref] = n
+        self.iref[n] = ref
+
+        self.r0[n] = 0
+        self.is_AND[n] = True
+
+        self.A[n, :n + 1] = 0
+        self.A[:n, n] = 0
+
+        self.A_collapse[n, :n + 1] = 0
+        self.A_collapse[:n, n] = 0
+
+        self.n += 1
 
     # edge is a tuple (a, b) where a -> b
     def add_edge(self, edge: tuple[QGraphicsRectItem], weight: float=None) -> None:
+        # TODO: how to model sequential AND gates ?
+        # e.g. a     b  ->   AND  ->   AND  ->   AND
+        # if we add edge (a, b), difficult to update all
+        # AND gates
         n = self.n
         a, b = self.refi[edge[0]], self.refi[edge[1]]
         weight = weight if weight else self.DEFAULT_EDGE_WEIGHT
@@ -124,37 +150,41 @@ class DepGraph:
 
         A_c_full = self.calc_A_c_full()
 
-        # Collapse paths starting at a and passing through b
-        for i in range(n):
-            new_path = weight * A_c_full[i, b]
-            if 1 == new_path:
-                self.one_count[i, a] += 1
-            else:
-                # a -> i OR (a -> b AND b -> i)
-                self.A_collapse[i, a] = self.scl_or_scl(
-                    self.A_collapse[i, a], new_path
-                )
+        # If we're not dealing with an AND gate as b,
+        # collapse paths starting at a and passing through b
+        if not self.is_AND[b]:
+            for i in range(n):
+                new_path = weight * A_c_full[i, b]
+                if 1 == new_path:
+                    self.one_count[i, a] += 1
+                else:
+                    # a -> i OR (a -> b AND b -> i)
+                    self.A_collapse[i, a] = self.scl_or_scl(
+                        self.A_collapse[i, a], new_path
+                    )
 
         # Make sure a doesn't loop on itself
         self.A_collapse[a, a] = 0
         self.one_count[a, a] = 0
         
-        # Collapse other paths that pass through a to b
+        # If a isn't an AND gate,
+        # collapse other paths that pass through a to b
         # Skip a's and b's columns. A's because we already
         # calculated its values, b's because we don't care
         # about loops
-        lesser_i, greater_i = min(a, b), max(a, b)
-        for j in chain(range(lesser_i), \
-                       range(lesser_i + 1, greater_i), \
-                       range(greater_i + 1, n)):
-            for i in range(n):
-                # j -> i OR (j -> a AND a -> i)
-                new_path = A_c_full[a, j] * A_c_full[i, a]
-                
-                if 1 == new_path:
-                    self.one_count[i, j] += 1
-                else:
-                    self.A_collapse[i, j] = self.scl_or_scl(self.A_collapse[i, j], new_path)
+        if not self.is_AND[a]:
+            lesser_i, greater_i = min(a, b), max(a, b)
+            for j in chain(range(lesser_i), \
+                        range(lesser_i + 1, greater_i), \
+                        range(greater_i + 1, n)):
+                for i in range(n):
+                    # j -> i OR (j -> a AND a -> i)
+                    new_path = A_c_full[a, j] * A_c_full[i, a]
+                    
+                    if 1 == new_path:
+                        self.one_count[i, j] += 1
+                    else:
+                        self.A_collapse[i, j] = self.scl_or_scl(self.A_collapse[i, j], new_path)
 
         # Remove any loops we've created
         np.fill_diagonal(self.A_collapse[:n, :n], 0)
@@ -329,3 +359,8 @@ if __name__ == "__main__":
     c = np.vectorize(lambda i, j: max(i, j))
 
     print(c(a, b))
+
+    print("\nTEST 5")
+    a = np.empty((3, 3), np.double)
+    a[[True, False, True], :] = 9
+    print(a)
