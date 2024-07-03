@@ -37,7 +37,7 @@ TODO:
     # Success criteria: fails if n or more components fail
 """
 
-import os, sys, sqlite3, time, logging
+import os, sys, sqlite3
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -51,11 +51,11 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+import torch.multiprocessing as mp
 from stats_and_charts.charts import Charts
 import lstm.train_lstm as train_lstm
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from graph.dep_graph import DepGraph
-import torch.multiprocessing as mp
 
 # database_data = {}
 NUM_PROCESSES = 4
@@ -1221,10 +1221,12 @@ class MainWindow(QMainWindow):
         # Create and add the submit button
         self.train_button_lstm = QPushButton("Train Model")
         self.right_layout_lstm.addWidget(self.train_button_lstm)
-        # self.train_button_lstm.clicked.connect(
-        #     lambda: pool.apply_async(train_helper,args=[self])
-        # )
         self.train_button_lstm.clicked.connect(train_lstm.start_training)
+        
+        # Stop training
+        self.stop_train_button_lstm = QPushButton("Stop Training")
+        self.right_layout_lstm.addWidget(self.stop_train_button_lstm)
+        self.stop_train_button_lstm.clicked.connect(stop_training)
         
         # Create the matplotlib figure and canvas
         self.loss_fig = plt.figure()
@@ -1679,12 +1681,15 @@ class MainWindow(QMainWindow):
         for name in components:
             field.addItem(name)
 
+def stop_training():
+    train_lstm.stop_training()
+    if __name__ == "__main__":
+        pool = mp.Pool(NUM_PROCESSES)
+        train_lstm.pool = pool
+
 if __name__ == "__main__":
     # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     pool = mp.Pool(NUM_PROCESSES)
-    mp.set_start_method('spawn', force=True)
-    logger = mp.log_to_stderr(logging.INFO)
-    
     app = QApplication(sys.argv)
     window = MainWindow()
     

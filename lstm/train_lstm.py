@@ -70,7 +70,6 @@ def lineToTensor(line,device):
 
 ######## END OF DATA LOADING ########
 
-
 def train(expected_output, line_tensor):
     optimizer.zero_grad()
     
@@ -118,6 +117,11 @@ def start_training():
     for i in range(N_EPOCHS):
         pool.apply_async(iterate,args=[i],callback=async_callback)
     #pool.apply_async(train,args=[0,trainer],callback=async_callback)
+
+def stop_training():
+    pool.terminate()
+    #pool.close()
+    return
 
 def async_callback(func_result):
     print(func_result)
