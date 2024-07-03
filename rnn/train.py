@@ -38,8 +38,8 @@ def randomTrainingPair():
     line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')],device))
     return line, expected_output, line_tensor
 
-#rnn = RNN(n_letters, n_hidden, 3)
-rnn = LSTM(n_letters,n_hidden,3).to(device)
+rnn = RNN(n_letters, n_hidden, 3)
+#rnn = LSTM(n_letters,n_hidden,3).to(device)
 optimizer = torch.optim.Adam(rnn.parameters(), lr=learning_rate)
 #optimizer = torch.optim.SGD(rnn.parameters(), lr=learning_rate)
 criterion = nn.MSELoss()

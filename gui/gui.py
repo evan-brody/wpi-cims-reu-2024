@@ -52,7 +52,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from stats_and_charts.charts import Charts
-from lstm.LSTMTrainer import LSTMTrainer
+import lstm.train_lstm as train_lstm
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from graph.dep_graph import DepGraph
 import torch.multiprocessing as mp
@@ -1224,7 +1224,7 @@ class MainWindow(QMainWindow):
         # self.train_button_lstm.clicked.connect(
         #     lambda: pool.apply_async(train_helper,args=[self])
         # )
-        self.train_button_lstm.clicked.connect(train_iterator)
+        self.train_button_lstm.clicked.connect(train_lstm.start_training)
         
         # Create the matplotlib figure and canvas
         self.loss_fig = plt.figure()
@@ -1679,58 +1679,17 @@ class MainWindow(QMainWindow):
         for name in components:
             field.addItem(name)
 
-
-def train_model(epoch,trainer: LSTMTrainer):
-    current_loss = 0
-    for e in range(trainer.epoch_size):
-        line,output,expected_output,loss = trainer.iterate_once()
-        current_loss += loss
-    
-    avg_loss = current_loss/trainer.epoch_size
-    # Print epoch number, loss, name and guess
-    return [trainer, avg_loss,time.time(),epoch]
-
-def train_iterator():
-    # Keep track of losses for plotting
-    
-    window.start_time = time.time()
-    window.loss_x = [0]
-    window.loss_y = [0]
-    # plotting the first frame
-    window.loss_fig = plt.plot(window.loss_x,window.loss_y)[0]
-    plt.ylim(0,1)
-    
-    for i in range(trainer.n_epochs):
-        pool.apply_async(train_model,args=[i,trainer],callback=async_callback)
-    #pool.apply_async(train_model,args=[0,trainer],callback=async_callback)
-
-def async_callback(func_result):
-    print(func_result)
-    # updating the data
-    #line,output,expected_output,loss,avg_loss,del_time,epoch = func_result
-    window.loss_x.append(func_result[2]-window.start_time)
-    if(func_result[3] == 0):
-        window.loss_y[0] = func_result[1]
-    window.loss_y.append(func_result[1])
-    #print('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / 10, x[-1], loss, line, output, expected_output))
-    # removing the older graph
-    window.loss_fig.remove()
-    
-    # # plotting newer graph
-    with plt.ion():
-        window.loss_fig = plt.plot(window.loss_x,window.loss_y,color = 'g')[0]
-        plt.xlim(window.loss_x[0], window.loss_x[-1])
-        plt.ylim(0, max(window.loss_y))
-
-
 if __name__ == "__main__":
     # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     pool = mp.Pool(NUM_PROCESSES)
     mp.set_start_method('spawn', force=True)
-    trainer = LSTMTrainer()
     logger = mp.log_to_stderr(logging.INFO)
     
     app = QApplication(sys.argv)
     window = MainWindow()
+    
+    train_lstm.window = window
+    train_lstm.pool = pool
+    
     window.show()
     sys.exit(app.exec_())
