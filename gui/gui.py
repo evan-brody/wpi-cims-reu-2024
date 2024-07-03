@@ -142,6 +142,10 @@ class DepQGraphicsScene(QGraphicsScene):
         self.rect_arrs_out = {}
         self.rect_risks = {}
 
+        # How many of each components have we created ?
+        # This should not decrement on component deletion
+        self.component_counts = {}
+
     def top_rect_at(self, pos: QPointF) -> QGraphicsRectItem:
         collision_line = self.addLine(
             QLineF(pos, pos),
@@ -290,8 +294,15 @@ class DepQGraphicsScene(QGraphicsScene):
         self.rect_risks = self.dg.get_r_dict()
         self.update_rect_colors()
 
+        # Update count dictionary
+        comp_count = self.component_counts.get(comp_str, 0)
+        comp_label = comp_str
+        if 0 < comp_count:
+            comp_label += f" ({comp_count})"
+        self.component_counts[comp_str] = comp_count + 1
+
         # Create text
-        text_widg = QLabel(comp_str)
+        text_widg = QLabel(comp_label)
         text_widg.setWordWrap(True)
         text_widg.setAlignment(Qt.AlignHCenter)
 
