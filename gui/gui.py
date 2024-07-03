@@ -750,7 +750,6 @@ class MainWindow(QMainWindow):
         self.init_dep_tab()
         self.init_lstm_tab()
 
-        self.counter = 0
         self.qindex = 0
         self.charts = Charts(self)
 
