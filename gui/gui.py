@@ -1223,15 +1223,19 @@ class MainWindow(QMainWindow):
         self.lstm_label_tag = QLabel("LSTM Training: ")
         self.right_layout_lstm.addWidget(self.lstm_label_tag)
 
+        self.start_and_stop_layout = QHBoxLayout()
+
         # Create and add the submit button
         self.train_button_lstm = QPushButton("Train Model")
-        self.right_layout_lstm.addWidget(self.train_button_lstm)
+        self.start_and_stop_layout.addWidget(self.train_button_lstm)
         self.train_button_lstm.clicked.connect(train_lstm.start_training)
         
         # Stop training
         self.stop_train_button_lstm = QPushButton("Stop Training")
-        self.right_layout_lstm.addWidget(self.stop_train_button_lstm)
+        self.start_and_stop_layout.addWidget(self.stop_train_button_lstm)
         self.stop_train_button_lstm.clicked.connect(stop_training)
+        
+        self.right_layout_lstm.addLayout(self.start_and_stop_layout)
         
         # Create the matplotlib figure and canvas
         self.loss_fig = plt.figure()
@@ -1242,38 +1246,45 @@ class MainWindow(QMainWindow):
         self.lstm_toolbar = NavigationToolbar(self.lstm_canvas, self)
         self.right_layout_lstm.addWidget(self.lstm_toolbar)
 
+        #Add hyperparameter adjusting in gui
+        self.hyperparameter_layout_labels = QHBoxLayout()
+        self.hyperparameter_layout_boxes = QHBoxLayout()
+        
+        self.n_hidden_text = QLabel("N_HIDDEN")
+        self.n_hidden_box = QLineEdit()
+        self.n_hidden_box.setText(str(train_lstm.N_HIDDEN))
+        self.n_hidden_box.editingFinished.connect(self.update_hyperparams)
+        
+        self.n_epochs_text = QLabel("N_EPOCHS")
+        self.n_epochs_box = QLineEdit()
+        self.n_epochs_box.setText(str(train_lstm.N_EPOCHS))
+        self.n_epochs_box.editingFinished.connect(self.update_hyperparams)
+        
+        self.epoch_size_text = QLabel("EPOCH_SIZE")
+        self.epoch_size_box = QLineEdit()
+        self.epoch_size_box.setText(str(train_lstm.EPOCH_SIZE))
+        self.epoch_size_box.editingFinished.connect(self.update_hyperparams)
+        
+        self.learning_rate_text = QLabel("LEARNING_RATE")
+        self.learning_rate_box = QLineEdit()
+        self.learning_rate_box.setText(str(train_lstm.LEARNING_RATE))
+        self.learning_rate_box.editingFinished.connect(self.update_hyperparams)
+        
+        self.hyperparameter_layout_labels.addWidget(self.n_hidden_text)
+        self.hyperparameter_layout_labels.addWidget(self.n_epochs_text)
+        self.hyperparameter_layout_labels.addWidget(self.epoch_size_text)
+        self.hyperparameter_layout_labels.addWidget(self.learning_rate_text)
+        
+        self.hyperparameter_layout_boxes.addWidget(self.n_hidden_box)
+        self.hyperparameter_layout_boxes.addWidget(self.n_epochs_box)
+        self.hyperparameter_layout_boxes.addWidget(self.epoch_size_box)
+        self.hyperparameter_layout_boxes.addWidget(self.learning_rate_box)
+        
+        self.right_layout_lstm.addLayout(self.hyperparameter_layout_labels)
+        self.right_layout_lstm.addLayout(self.hyperparameter_layout_boxes)
+        
         self.right_layout_lstm.addStretch()
         
-        # # Create dropdown menu for holding charts we want to give the option of generating
-        # self.chart_name_field_stats = QComboBox(self)
-        # self.chart_name_field_stats.addItem("Select a Chart")
-        # self.chart_name_field_stats.addItem("Weibull Distribution")
-        # self.chart_name_field_stats.addItem("Rayleigh Distribution")
-        # self.chart_name_field_stats.addItem("Bathtub Curve")
-        # right_layout_stats.addWidget(self.chart_name_field_stats)
-
-        # # Matplotlib canvases with tab widget (hardcoded for one component)
-        # self.stats_tab = QTabWidget()
-        # self.stats_tab_canvas1 = FigureCanvas(Figure())
-        # # self.stats_tab_canvas2 = FigureCanvas(Figure())
-        # # self.stats_tab_canvas3 = FigureCanvas(Figure())
-        # self.stats_tab.addTab(self.stats_tab_canvas1, "Failure Mode 1")
-        # # self.stats_tab.addTab(self.stats_tab_canvas2, "Failure Mode 2")
-        # # self.stats_tab.addTab(self.stats_tab_canvas3, "Failure Mode 3")
-        # right_layout_stats.addWidget(self.stats_tab)
-
-        # # Create and add the generate chart button
-        # self.generate_chart_button_stats = QPushButton("Generate Chart")
-        # self.generate_chart_button_stats.clicked.connect(self.generate_stats_chart)
-        # right_layout_stats.addWidget(self.generate_chart_button_stats)
-
-        # # Create and add the download chart button (non-functional)
-        # self.download_chart_button_stats = QPushButton("Download Chart")
-        # self.download_chart_button_stats.clicked.connect(
-        #     lambda: self.download_chart(self.stats_tab_canvas1.figure)
-        # )
-        # right_layout_stats.addWidget(self.download_chart_button_stats)
-
         # Add left and right layouts to the main layout
         self.lstm_layout.addLayout(self.left_layout_lstm, 4)
         self.lstm_layout.addLayout(self.right_layout_lstm, 6)
@@ -1685,6 +1696,16 @@ class MainWindow(QMainWindow):
         field.addItem("Select a Component")
         for name in components:
             field.addItem(name)
+    
+    def update_hyperparams(self):
+        try:
+            train_lstm.N_HIDDEN = int(self.n_hidden_box.text())
+            train_lstm.N_EPOCHS = int(self.n_epochs_box.text())
+            train_lstm.EPOCH_SIZE = int(self.epoch_size_box.text())
+            train_lstm.LEARNING_RATE = float(self.learning_rate_box.text())
+        except:
+            QMessageBox.warning(self, "Cast Error", "Input values aren't able to be cast to ints")
+            return
 
 def stop_training():
     train_lstm.stop_training()
@@ -1692,11 +1713,14 @@ def stop_training():
         pool = mp.Pool(NUM_PROCESSES)
         train_lstm.pool = pool
 
+
+
 if __name__ == "__main__":
     # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     pool = mp.Pool(NUM_PROCESSES)
     app = QApplication(sys.argv)
     window = MainWindow()
+    plt.ioff()
     
     train_lstm.window = window
     train_lstm.pool = pool
