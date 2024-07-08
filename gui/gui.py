@@ -56,9 +56,13 @@ from stats_and_charts.charts import Charts
 import lstm.train_lstm as train_lstm
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from graph.dep_graph import DepGraph
+from nlp import csv_loader_tab
+from nlp import subtab
+
 
 # database_data = {}
 NUM_PROCESSES = 4
+
 
 # There should be only one instance of this class
 # It's the toolbar on the right side of the Dependency Analysis tab
@@ -67,6 +71,7 @@ class DepQToolBar(QToolBar):
         super().__init__()
 
         self.selected_tool = None
+
 
 # Instances of this class are the buttons on the
 # right side of the Dependency Analysis tab
@@ -84,11 +89,12 @@ class DepQAction(QAction):
     def clearOtherSelections(self, checked: bool) -> None:
         if not checked:
             return
-        
+
         for action in self.toolbar.actions():
             action.setChecked(action == self)
 
         self.toolbar.selected_tool = self
+
 
 # Custom QGraphicsScene class for the dependency tab
 class DepQGraphicsScene(QGraphicsScene):
@@ -97,8 +103,8 @@ class DepQGraphicsScene(QGraphicsScene):
     IS_COMPONENT = 1
 
     # The tip of a dependency arrow is an isosceles triangle
-    ARR_LONG = 30 # The length of the middle axis
-    ARR_SHORT = 15 # Half the length of the base
+    ARR_LONG = 30  # The length of the middle axis
+    ARR_SHORT = 15  # Half the length of the base
 
     RECT_DIMS = (300, 150)
 
@@ -147,23 +153,21 @@ class DepQGraphicsScene(QGraphicsScene):
         self.component_counts = {}
 
     def top_rect_at(self, pos: QPointF) -> QGraphicsRectItem:
-        collision_line = self.addLine(
-            QLineF(pos, pos),
-            QPen(QColor(0, 0, 0, 0))
-        )
+        collision_line = self.addLine(QLineF(pos, pos), QPen(QColor(0, 0, 0, 0)))
         moused_over = self.collidingItems(collision_line)
         top_rect = None
         if moused_over:
-            maxz = float('-inf')
+            maxz = float("-inf")
             for item in moused_over:
-                if isinstance(item, QGraphicsRectItem) and \
-                    item.zValue() > maxz:
+                if isinstance(item, QGraphicsRectItem) and item.zValue() > maxz:
                     top_rect, maxz = item, item.zValue()
 
         self.removeItem(collision_line)
         return top_rect
-    
-    def draw_arr(self, start_pos: QPointF, end_pos: QPointF, pen: QPen) -> QGraphicsItemGroup:
+
+    def draw_arr(
+        self, start_pos: QPointF, end_pos: QPointF, pen: QPen
+    ) -> QGraphicsItemGroup:
         self.del_dyn_arr()
 
         elbow = None
@@ -220,30 +224,18 @@ class DepQGraphicsScene(QGraphicsScene):
                 elbow = None
             # If we're coming in from the left
             elif start_pos.x() < end_pos.x():
-                    arr_tip_pos.setX(left_bound)
+                arr_tip_pos.setX(left_bound)
             # Coming in from the right
             else:
                 arr_tip_pos.setX(right_bound)
 
         if elbow:
-            arr_v = self.addLine(
-                QLineF(arr_start_pos, elbow),
-                pen
-            )
-            arr_h = self.addLine(
-                QLineF(elbow, arr_tip_pos),
-                pen
-            )
+            arr_v = self.addLine(QLineF(arr_start_pos, elbow), pen)
+            arr_h = self.addLine(QLineF(elbow, arr_tip_pos), pen)
         else:
             # Dummy arrow
-            arr_v = self.addLine(
-                QLineF(arr_start_pos, arr_tip_pos),
-                QPen()
-            )
-            arr_h = self.addLine(
-                QLineF(arr_start_pos, arr_tip_pos),
-                pen
-            )
+            arr_v = self.addLine(QLineF(arr_start_pos, arr_tip_pos), QPen())
+            arr_h = self.addLine(QLineF(arr_start_pos, arr_tip_pos), pen)
 
         # Which way should the arrow point ?
         if point_down:
@@ -260,9 +252,7 @@ class DepQGraphicsScene(QGraphicsScene):
             arr_bot_r = arr_tip_pos + QPointF(-self.ARR_LONG, self.ARR_SHORT)
 
         arr_tip = self.addPolygon(
-            QPolygonF([arr_tip_pos, arr_bot_l, arr_bot_r]),
-            QPen(),
-            QBrush(Qt.black)
+            QPolygonF([arr_tip_pos, arr_bot_l, arr_bot_r]), QPen(), QBrush(Qt.black)
         )
 
         arr = self.createItemGroup([arr_v, arr_h, arr_tip])
@@ -406,9 +396,10 @@ class DepQGraphicsScene(QGraphicsScene):
             self.select_rect_item = self.addRect(
                 self.select_start.x(),
                 self.select_start.y(),
-                0, 0,
+                0,
+                0,
                 QPen(Qt.black),
-                QBrush(Qt.NoBrush)
+                QBrush(Qt.NoBrush),
             )
         else:
             if 1 == len(self.selectedItems()):
@@ -419,7 +410,7 @@ class DepQGraphicsScene(QGraphicsScene):
             # Establish vectors from mouse to items
             for item in self.selectedItems():
                 item.setData(self.MOUSE_DELTA, item.scenePos() - pos)
-    
+
     def mousePressEventR(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_r = True
 
@@ -436,8 +427,7 @@ class DepQGraphicsScene(QGraphicsScene):
         pos = event.scenePos()
 
         # Drags objects around, if we should
-        if self.clicked_on_l is not None and \
-            self.select_start is not None:
+        if self.clicked_on_l is not None and self.select_start is not None:
             selected = self.selectedItems()
             # Move everything before we redraw arrows
             for item in selected:
@@ -463,13 +453,15 @@ class DepQGraphicsScene(QGraphicsScene):
                         continue
 
                     item_center = item.scenePos()
-                    item_center += QPointF(item.rect().width() / 2,
-                                            item.rect().height() / 2)
+                    item_center += QPointF(
+                        item.rect().width() / 2, item.rect().height() / 2
+                    )
 
                     dep_center = dependency.scenePos()
-                    dep_center += QPointF(dependency.rect().width() / 2,
-                                            dependency.rect().height() / 2)
-                    
+                    dep_center += QPointF(
+                        dependency.rect().width() / 2, dependency.rect().height() / 2
+                    )
+
                     new_arr = self.draw_arr(item_center, dep_center, QPen())
 
                     self.rect_arrs_out[item].append(new_arr)
@@ -477,18 +469,20 @@ class DepQGraphicsScene(QGraphicsScene):
 
                     redrawn.add((item, dependency))
 
-                # Redraw the arrows that are going into the item  
+                # Redraw the arrows that are going into the item
                 for influence in self.rect_influences[item]:
                     if not influence.scene() or (influence, item) in redrawn:
                         continue
 
                     inf_center = influence.scenePos()
-                    inf_center += QPointF(influence.rect().width() / 2,
-                                          influence.rect().height() / 2)
+                    inf_center += QPointF(
+                        influence.rect().width() / 2, influence.rect().height() / 2
+                    )
 
                     item_center = item.scenePos()
-                    item_center += QPointF(item.rect().width() / 2,
-                                            item.rect().height() / 2)
+                    item_center += QPointF(
+                        item.rect().width() / 2, item.rect().height() / 2
+                    )
 
                     new_arr = self.draw_arr(inf_center, item_center, QPen())
 
@@ -508,27 +502,21 @@ class DepQGraphicsScene(QGraphicsScene):
 
         self.del_select_rect_item()
         self.select_rect_item = self.addRect(
-            ax, ay,
-            bx, by,
-            QPen(Qt.DashLine),
-            QBrush(Qt.NoBrush)
+            ax, ay, bx, by, QPen(Qt.DashLine), QBrush(Qt.NoBrush)
         )
 
     def mouseMoveEventR(self, event: QGraphicsSceneMouseEvent) -> None:
         # Important to note that y-values increase as we go down
         pos = event.scenePos()
         arr_start_pos = self.dep_origin.scenePos()
-        arr_start_pos += QPointF(self.dep_origin.rect().width() / 2,
-                                 self.dep_origin.rect().height() / 2)
-        
+        arr_start_pos += QPointF(
+            self.dep_origin.rect().width() / 2, self.dep_origin.rect().height() / 2
+        )
+
         if self.dep_origin == self.top_rect_at(pos):
             return
 
-        self.dyn_arr = self.draw_arr(
-            arr_start_pos, 
-            pos,
-            QPen(Qt.DashLine)
-        )
+        self.dyn_arr = self.draw_arr(arr_start_pos, pos, QPen(Qt.DashLine))
 
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         match event.button():
@@ -541,7 +529,7 @@ class DepQGraphicsScene(QGraphicsScene):
         self.mouse_down_l = False
         pos = event.scenePos()
         self.clearSelection()
-        
+
         # Handle single clicks
         self.select_end = pos
         single_click = self.select_start == self.select_end
@@ -563,7 +551,7 @@ class DepQGraphicsScene(QGraphicsScene):
                     if not self.released_on_1:
                         self.add_AND_gate(event)
             return
-        
+
         if not self.select_rect_item:
             return
         self.del_select_rect_item()
@@ -592,16 +580,22 @@ class DepQGraphicsScene(QGraphicsScene):
             else:
                 # Don't draw an arrow from a component to itself
                 # or redraw an arrow that's already been created
-                if self.dep_origin != self.released_on_r and \
-                   self.released_on_r not in self.rect_depends_on[self.dep_origin]:
+                if (
+                    self.dep_origin != self.released_on_r
+                    and self.released_on_r not in self.rect_depends_on[self.dep_origin]
+                ):
                     arr_start_pos = self.dep_origin.scenePos()
-                    arr_start_pos += QPointF(self.dep_origin.rect().width() / 2,
-                                                self.dep_origin.rect().height() / 2)
-                    
+                    arr_start_pos += QPointF(
+                        self.dep_origin.rect().width() / 2,
+                        self.dep_origin.rect().height() / 2,
+                    )
+
                     arr_end_pos = self.released_on_r.scenePos()
-                    arr_end_pos += QPointF(self.released_on_r.rect().width() / 2,
-                                            self.released_on_r.rect().height() / 2)
-                    
+                    arr_end_pos += QPointF(
+                        self.released_on_r.rect().width() / 2,
+                        self.released_on_r.rect().height() / 2,
+                    )
+
                     arr = self.draw_arr(arr_start_pos, arr_end_pos, QPen())
 
                     self.rect_arrs_out[self.dep_origin].append(arr)
@@ -639,6 +633,7 @@ class DepQGraphicsScene(QGraphicsScene):
 
                 self.update_rect_colors()
 
+
 """
 
 Name: MainWindow
@@ -646,6 +641,7 @@ Type: class
 Description: MainWindow class that holds all of our functions for the GUI.
 
 """
+
 
 class MainWindow(QMainWindow):
     DEFAULT_RISK_THRESHOLD = 1
@@ -737,13 +733,11 @@ class MainWindow(QMainWindow):
             self.statistics_tab, "Statistics"
         )  # Add the tab to the QTabWidget
         self.dep_tab = QWidget()
-        self.central_widget.addTab(
-            self.dep_tab, "Dependencies"
-        )
+        self.central_widget.addTab(self.dep_tab, "Dependencies")
         self.lstm_tab = QWidget()
-        self.central_widget.addTab(
-            self.lstm_tab, "lstm"
-        )
+        self.central_widget.addTab(self.lstm_tab, "lstm")
+        self.nlp_tab = QWidget()
+        self.central_widget.addTab(subtab.NestedTabWidget(), "NLP")
 
         self.init_main_tab()
         self.init_stats_tab()
@@ -773,7 +767,6 @@ class MainWindow(QMainWindow):
             case _:
                 event.ignore()
 
-
     def init_main_tab(self):
         ### START OF MAIN TAB SETUP ###
 
@@ -799,16 +792,17 @@ class MainWindow(QMainWindow):
                 self.update_layout(),
             )
         )
-        self.populate_component_dropdown(self.component_name_field, self.components["name"])
+        self.populate_component_dropdown(
+            self.component_name_field, self.components["name"]
+        )
 
         self.component_search_field = QLineEdit(self)
         self.component_search_field.setPlaceholderText("Search for a component...")
         self.component_search_field.textChanged.connect(
             self.filter_components(
-                self.populate_component_dropdown,
-                self.component_name_field
-                )
+                self.populate_component_dropdown, self.component_name_field
             )
+        )
 
         self.search_and_dropdown_layout_main.addWidget(self.component_search_field)
         self.search_and_dropdown_layout_main.addWidget(self.component_name_field)
@@ -967,19 +961,24 @@ class MainWindow(QMainWindow):
                 self.update_layout(),
             )
         )
-        
-        self.populate_component_dropdown(self.component_name_field_stats, self.components["name"])
+
+        self.populate_component_dropdown(
+            self.component_name_field_stats, self.components["name"]
+        )
 
         self.component_search_field_stats = QLineEdit(self)
-        self.component_search_field_stats.setPlaceholderText("Search for a component...")
+        self.component_search_field_stats.setPlaceholderText(
+            "Search for a component..."
+        )
         self.component_search_field_stats.textChanged.connect(
             self.filter_components(
-                self.populate_component_dropdown,
-                self.component_name_field_stats
-                )
+                self.populate_component_dropdown, self.component_name_field_stats
             )
+        )
 
-        self.search_and_dropdown_layout_stats.addWidget(self.component_search_field_stats)
+        self.search_and_dropdown_layout_stats.addWidget(
+            self.component_search_field_stats
+        )
         self.search_and_dropdown_layout_stats.addWidget(self.component_name_field_stats)
 
         self.left_layout_stats.addLayout(self.search_and_dropdown_layout_stats)
@@ -1094,10 +1093,7 @@ class MainWindow(QMainWindow):
         # Set up component selection dropdown
         self.dep_comp_select = QComboBox(self)
         self.dep_comp_select.addItem("Select a Component")
-        self.populate_component_dropdown(
-            self.dep_comp_select,
-            self.components["name"]
-        )
+        self.populate_component_dropdown(self.dep_comp_select, self.components["name"])
 
         # Set up component search field
         self.dep_comp_search = QLineEdit(self)
@@ -1105,13 +1101,13 @@ class MainWindow(QMainWindow):
         self.dep_comp_search.textChanged.connect(
             self.filter_components(
                 self.populate_component_dropdown, self.dep_comp_select
-                )
             )
+        )
 
         # Add widgets to top layout
         self.dep_select_layout.addWidget(self.dep_comp_search, stretch=1)
         self.dep_select_layout.addWidget(self.dep_comp_select, stretch=1)
-                
+
         # Setting up system dependency view
         self.system_vis_scene = DepQGraphicsScene(self)
         self.system_vis_scene.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
@@ -1135,7 +1131,9 @@ class MainWindow(QMainWindow):
 
         # AND gate button
         self.AND_gate_icon = QIcon(os.path.join(self.IMAGES_PATH, "and_gate.png"))
-        self.AND_gate_button = DepQAction(self.AND_gate_icon, "Add AND Gate", self.dep_toolbar)
+        self.AND_gate_button = DepQAction(
+            self.AND_gate_icon, "Add AND Gate", self.dep_toolbar
+        )
 
         # Add widgets separate from setup
         self.dep_left_layout.addLayout(self.dep_select_layout, stretch=1)
@@ -1172,23 +1170,24 @@ class MainWindow(QMainWindow):
                 self.update_layout(),
             )
         )
-        
-        self.populate_component_dropdown(self.component_name_field_lstm, self.components["name"])
+
+        self.populate_component_dropdown(
+            self.component_name_field_lstm, self.components["name"]
+        )
 
         self.component_search_field_lstm = QLineEdit(self)
         self.component_search_field_lstm.setPlaceholderText("Search for a component...")
         self.component_search_field_lstm.textChanged.connect(
             self.filter_components(
-                self.populate_component_dropdown,
-                self.component_name_field_lstm
-                )
+                self.populate_component_dropdown, self.component_name_field_lstm
             )
+        )
 
         self.search_and_dropdown_layout_lstm.addWidget(self.component_search_field_lstm)
         self.search_and_dropdown_layout_lstm.addWidget(self.component_name_field_lstm)
 
         self.left_layout_lstm.addLayout(self.search_and_dropdown_layout_lstm)
-        
+
         # Create and add the submit button
         self.submit_button_lstm = QPushButton("Show Table")
         self.submit_button_lstm.clicked.connect(
@@ -1229,14 +1228,14 @@ class MainWindow(QMainWindow):
         self.train_button_lstm = QPushButton("Train Model")
         self.start_and_stop_layout.addWidget(self.train_button_lstm)
         self.train_button_lstm.clicked.connect(train_lstm.start_training)
-        
+
         # Stop training
         self.stop_train_button_lstm = QPushButton("Stop Training")
         self.start_and_stop_layout.addWidget(self.stop_train_button_lstm)
         self.stop_train_button_lstm.clicked.connect(stop_training)
-        
+
         self.right_layout_lstm.addLayout(self.start_and_stop_layout)
-        
+
         # Create the matplotlib figure and canvas
         self.loss_fig = plt.figure()
         self.lstm_canvas = FigureCanvas(self.loss_fig)
@@ -1246,51 +1245,51 @@ class MainWindow(QMainWindow):
         self.lstm_toolbar = NavigationToolbar(self.lstm_canvas, self)
         self.right_layout_lstm.addWidget(self.lstm_toolbar)
 
-        #Add hyperparameter adjusting in gui
+        # Add hyperparameter adjusting in gui
         self.hyperparameter_layout_labels = QHBoxLayout()
         self.hyperparameter_layout_boxes = QHBoxLayout()
-        
+
         self.n_hidden_text = QLabel("N_HIDDEN")
         self.n_hidden_box = QLineEdit()
         self.n_hidden_box.setText(str(train_lstm.N_HIDDEN))
         self.n_hidden_box.editingFinished.connect(self.update_hyperparams)
-        
+
         self.n_epochs_text = QLabel("N_EPOCHS")
         self.n_epochs_box = QLineEdit()
         self.n_epochs_box.setText(str(train_lstm.N_EPOCHS))
         self.n_epochs_box.editingFinished.connect(self.update_hyperparams)
-        
+
         self.epoch_size_text = QLabel("EPOCH_SIZE")
         self.epoch_size_box = QLineEdit()
         self.epoch_size_box.setText(str(train_lstm.EPOCH_SIZE))
         self.epoch_size_box.editingFinished.connect(self.update_hyperparams)
-        
+
         self.learning_rate_text = QLabel("LEARNING_RATE")
         self.learning_rate_box = QLineEdit()
         self.learning_rate_box.setText(str(train_lstm.LEARNING_RATE))
         self.learning_rate_box.editingFinished.connect(self.update_hyperparams)
-        
+
         self.hyperparameter_layout_labels.addWidget(self.n_hidden_text)
         self.hyperparameter_layout_labels.addWidget(self.n_epochs_text)
         self.hyperparameter_layout_labels.addWidget(self.epoch_size_text)
         self.hyperparameter_layout_labels.addWidget(self.learning_rate_text)
-        
+
         self.hyperparameter_layout_boxes.addWidget(self.n_hidden_box)
         self.hyperparameter_layout_boxes.addWidget(self.n_epochs_box)
         self.hyperparameter_layout_boxes.addWidget(self.epoch_size_box)
         self.hyperparameter_layout_boxes.addWidget(self.learning_rate_box)
-        
+
         self.right_layout_lstm.addLayout(self.hyperparameter_layout_labels)
         self.right_layout_lstm.addLayout(self.hyperparameter_layout_boxes)
-        
+
         self.right_layout_lstm.addStretch()
-        
+
         # Add left and right layouts to the main layout
         self.lstm_layout.addLayout(self.left_layout_lstm, 4)
         self.lstm_layout.addLayout(self.right_layout_lstm, 6)
 
         ### END OF LSTM TAB SETUP ###
-    
+
     def update_layout(self):
         self.refreshing_table = True
         self.populate_table(self.table_widget, self.comp_fails)
@@ -1497,9 +1496,13 @@ class MainWindow(QMainWindow):
             ],
             True,
         )
-        self.df = pd.merge(self.comp_fails, self.components, left_on="comp_id", right_on="id")
+        self.df = pd.merge(
+            self.comp_fails, self.components, left_on="comp_id", right_on="id"
+        )
         self.df = pd.merge(self.df, self.fail_modes, left_on="fail_id", right_on="id")
-        self.df.drop(labels=["cf_id", "comp_id", "fail_id", "id_x", "id_y"], axis=1, inplace=True)
+        self.df.drop(
+            labels=["cf_id", "comp_id", "fail_id", "id_x", "id_y"], axis=1, inplace=True
+        )
 
     def reset_df(self) -> None:
         if not (hasattr(self, "comp_fails") and hasattr(self, "default_comp_fails")):
@@ -1579,9 +1582,13 @@ class MainWindow(QMainWindow):
     """
 
     def values(self):
-        return np.array([self.comp_data.at[self.current_row,'lower_bound'],
-                         self.comp_data.at[self.current_row,'best_estimate'],
-                         self.comp_data.at[self.current_row,'upper_bound']])
+        return np.array(
+            [
+                self.comp_data.at[self.current_row, "lower_bound"],
+                self.comp_data.at[self.current_row, "best_estimate"],
+                self.comp_data.at[self.current_row, "upper_bound"],
+            ]
+        )
 
     # Executes and commits an SQL query on this window's database connection
     def exec_SQL(self, query) -> None:
@@ -1696,7 +1703,7 @@ class MainWindow(QMainWindow):
         field.addItem("Select a Component")
         for name in components:
             field.addItem(name)
-    
+
     def update_hyperparams(self):
         try:
             train_lstm.N_HIDDEN = int(self.n_hidden_box.text())
@@ -1704,8 +1711,11 @@ class MainWindow(QMainWindow):
             train_lstm.EPOCH_SIZE = int(self.epoch_size_box.text())
             train_lstm.LEARNING_RATE = float(self.learning_rate_box.text())
         except:
-            QMessageBox.warning(self, "Cast Error", "Input values aren't able to be cast to ints")
+            QMessageBox.warning(
+                self, "Cast Error", "Input values aren't able to be cast to ints"
+            )
             return
+
 
 def stop_training():
     train_lstm.stop_training()
@@ -1714,16 +1724,15 @@ def stop_training():
         train_lstm.pool = pool
 
 
-
 if __name__ == "__main__":
     # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     pool = mp.Pool(NUM_PROCESSES)
     app = QApplication(sys.argv)
     window = MainWindow()
     plt.ioff()
-    
+
     train_lstm.window = window
     train_lstm.pool = pool
-    
+
     window.show()
     sys.exit(app.exec_())
