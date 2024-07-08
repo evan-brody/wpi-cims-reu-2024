@@ -1,0 +1,100 @@
+BscStartDate,Asset,OriginalShorttext,PMType,Cost
+2004-07-01,A,BUCKET WON'T OPEN,PM01,183.05
+2005-03-20,A,L/H BUCKET CYL LEAKING.,PM01,407.4
+2006-05-05,A,SWAP BUCKET,PM01,0
+2006-07-11,A,FIT BUCKET TOOTH,PM01,0
+2006-11-10,A,REFIT BUCKET TOOTH,PM01,1157.27
+2008-04-21,A,REPAIR LOOSE BUCKET CYLINDER,PM01,0
+2008-10-02,A,REPLACE 2 BUCKET TEETH,PM01,1256.62
+2001-07-12,B,REPLACE MISSING LIP TIPS,PM01,1281.36
+2001-07-19,B,REPLACE LIP,PM01,1251.52
+2001-10-01,B,rebuild lip #3,PM01,0
+2001-10-10,B,REPLACE BUCKET TEETH.,PM01,681.1
+2001-10-29,B,Repair RH120 lip at P&H,PM01,22611.06
+2001-11-06,B,replace missing tip,PM01,1239.29
+2001-11-13,B,replace missing tip& adaptor.,PM01,221.15
+2001-11-16,B,Replace centre and LH lip shrouds,PM01,2118.87
+2002-01-15,B,OIL LEAK ON BUCKET....,PM01,0
+2002-02-06,B,REPLACE ADAPTOR LOCK,PM01,346.47
+2002-02-22,B,Fit a lip shroud,PM01,56.59
+2002-02-27,B,Refit left lip shroud,PM01,627.85
+2002-03-08,B,refit adapter and tooth,PM01,1186.45
+2002-03-12,B,FIT NEW TOOTH,PM01,397.57
+2002-03-12,B,cut off broken wear package,PM01,0
+2002-03-15,B,CHANGE ADAPTOR AND TOOTH,PM01,0
+2002-03-17,B,replace adaptor & tooth,PM01,453.95
+2002-03-17,B,replace lip shroud pin,PM01,107.42
+2002-03-25,B,Replace adaptors as required,PM01,464.51
+2002-03-25,B,repalced adaptor pins,PM01,464.52
+2002-04-02,B,REPLACE L/H BUCKET CYLINDER GREASE LINE,PM01,11.2
+2002-04-04,B,replace adaptor and tip,PM01,203.65
+2002-04-10,B,"loose grease line on bucket ,",PM01,0
+2002-04-16,B,O-RING U/S  ON BUCKET RAM,PM01,507.42
+2002-04-17,B,TWO BUCKET TEETH AND ADAPTORS MISSING.,PM01,36.58
+2002-04-19,B,Replace broken adaptor,PM01,378.47
+2002-04-21,B,PARTS FOR BUCKET,PM01,129.33
+2002-04-23,B,fitted two new adaptors,PM01,59.24
+2002-04-26,B,replace bucket tip & pins,PM01,739.68
+2002-04-26,B,REPLACE TOOTH & ADAPTOR,PM01,317.14
+2002-04-29,B,BROKEN GREASE LINE ON BUCKET.,PM01,120
+2002-05-06,B,repair to bucket,PM01,995.32
+2002-05-09,B,Replace missing adaptors,PM01,6491.7
+2002-05-11,B,lh outer lip shroud lost,PM01,283.12
+2002-05-29,B,Rebuild spare lip GET,PM01,6454.45
+2002-05-30,B,REFIT RH OUTER ADAPTER,PM01,143.25
+2002-06-08,B,replace bent adapter pin,PM01,341.42
+2002-06-14,B,RH120C-BUCKET FRONT LIP CHANGEOUT,PM02,0
+2002-06-18,B,Change LH bucket roll cylinder,PM01,12803.84
+2002-06-18,B,Change bucket lip.,PM01,778.56
+2002-06-18,B,fit teeth to bucket,PM01,258.72
+2002-06-20,B,REPLACE WEAR PACKAGE LOWER WALL,PM01,214.88
+2002-06-27,B,air con. not getting cold.,PM01,214.88
+2002-08-02,B,"Missing adapter,tooth and pins",PM01,159.25
+2002-09-12,B,L/H BUCKET CYL GLAND SEAL LEAKING,PM01,0
+2002-10-03,B,REPLACE MISSING BUCKET TOOTH,PM01,1532.37
+2002-10-14,B,repair wear package rhs inside bkt wall,PM01,1739.36
+2002-10-29,B,replace tip,PM01,676.11
+2003-01-10,B,replace adaptor & tip,PM01,641.62
+2003-01-20,B,replace lip shroud,PM01,153.67
+2003-01-28,B,WELD CRACK IN LH LIP EAR(FRONT),PM01,0
+2003-02-08,B,replace tip,PM01,166.81
+2003-02-14,B,change out damaged lip,PM01,8774.59
+2003-02-19,B,replaced adaptor,PM01,844.6
+2003-02-22,B,replace stick to bucket hose,PM01,1203.26
+2003-04-08,B,REPLACE BUSTED LIP PIVOT GREASE LINES,PM01,59.38
+2003-04-11,B,LH LIP EAR CRACKED,PM01,118.76
+2003-04-13,B,Change out bucket clam (lip),PM01,4853.36
+2003-04-27,B,replace 2 lost tips,PM01,606.92
+2003-05-01,B,replace lh outer adapter & tip,PM01,442.73
+2003-05-20,B,recover lower wear edge plate (CC1500),PM01,893.1
+2003-06-05,B,replace tooth,PM01,1043.88
+2003-06-09,B,refit lip shroud,PM01,268.5
+2003-06-11,B,replace tooth & adaptor,PM01,3244.06
+2003-06-23,B,oil leak rh boom valve clam pipe adapter,PM01,124.12
+2003-06-29,B,replace tooth & adaptor,PM01,0
+2003-07-04,B,repair crack in lh front lip ear,PM01,631.5
+2003-07-18,B,replace rh lip shroud!,PM01,244.04
+2003-08-01,B,fit new tooth,PM01,528.59
+2003-08-10,B,replace adaptor  COMPLETED,PM01,491.98
+2003-08-11,B,replace teeth,PM01,159.61
+2003-08-27,B,replace tip & pin  completed,PM01,180.8
+2003-09-07,B,replace busted grease hose bucket pin,PM01,892.22
+2003-09-18,B,R/H BUCKET ROD CYL GLAND SEAL LEAKING,PM01,2881.21
+2003-10-03,B,Repair broken grease line on bucket,PM01,0
+2003-10-27,B,replace adaptor & tooth,PM01,1264.05
+2003-11-14,B,lost tooth COMPLETED,PM01,162.47
+2003-11-24,B,replace lip shroud lock,PM01,148.19
+2003-12-31,B,bucket clam gard is falling off,PM01,295.06
+2004-01-01,B,replace grease line on bucket,PM01,300.49
+2004-02-16,B,Replace centre tooth,PM01,557.5
+2004-02-18,B,oil leak dist. block rear of bucket,PM01,4.53
+2004-02-24,B,replace broken bucket lube fittings,PM01,465.54
+2004-02-25,B,REPAIR BROKEN GREASE FITTING ON BUCKET.,PM01,399.04
+2004-03-09,B,replace tooth,PM01,862.46
+2004-03-11,B,Reorder bucket tips SHD16,PM01,930
+2004-03-23,B,Replace bucket tip,PM01,153.96
+2004-04-06,B,GET SUSPENTION ROPE SOCKETS,PM01,244.74
+2004-04-06,B,REPLACE LEFT HAND LIP SHROUD,PM01,1028.19
+2004-04-12,B,replace tooth,PM01,354.1
+2004-04-12,B,Broken grease line on bucket,PM01,244.74
+2004-04-13,B,replace adaptor keeper pin,PM01,249.55
