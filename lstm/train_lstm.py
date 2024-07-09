@@ -1,9 +1,13 @@
-import torch, sys, os, random, time, math, unicodedata, string
+import torch, sys, os, random, time, math, unicodedata, string, gui.gui as gui
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
 from lstm.model_lstm import *
 import matplotlib.pyplot as plt
+
+if __name__ == "__main__":
+    window = gui.window
+    pool = gui.pool
 
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
@@ -11,15 +15,16 @@ device = torch.device("cpu")
 ALL_LETTERS = string.ascii_letters + " .,;'-"
 N_LETTERS = len(ALL_LETTERS)
 
-NORMALIZATION_CONSTANT = 0.0001
-N_HIDDEN = 256
-N_EPOCHS = 100
-EPOCH_SIZE = 10
+NORMALIZATION_CONSTANT = 0.01
+N_HIDDEN = 512
+N_EPOCHS = 1000
+EPOCH_SIZE = 100
 LEARNING_RATE = 0.001 # If you set this too high, it might explode. If too low, it might not learn
 
 lstm = LSTM(N_LETTERS,N_HIDDEN,3).to(device)
 lstm.share_memory()
 optimizer = torch.optim.Adam(lstm.parameters(), lr=LEARNING_RATE)
+#optimizer = torch.optim.SGD(lstm.parameters(), lr=LEARNING_RATE)
 criterion = nn.MSELoss()
 
 ######## DATA LOADING ########
@@ -30,14 +35,14 @@ def randomChoice(l):
 def randomTrainingPair():
     #category = randomChoice(all_categories)
     row = comp_fails.sample()
-    line = row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')]
+    line = row.iloc[0,row.columns.get_loc('name')] + "," + row.iloc[0,row.columns.get_loc('desc')]
     expected_output = Variable(
         torch.mul(torch.tensor(
             [row.iloc[0,row.columns.get_loc('lower_bound')],
             row.iloc[0,row.columns.get_loc('best_estimate')],
             row.iloc[0,row.columns.get_loc('upper_bound')]]
             ,dtype=torch.float32),NORMALIZATION_CONSTANT)).to(device)
-    line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + " " + row.iloc[0,row.columns.get_loc('desc')],device))
+    line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + "," + row.iloc[0,row.columns.get_loc('desc')]))
     return line, expected_output, line_tensor
 
 # Turn a Unicode string to plain ASCII, thanks to http://stackoverflow.com/a/518232/2809427
@@ -62,7 +67,7 @@ def letterToIndex(letter):
 
 # Turn a line into a <line_length x 1 x N_LETTERS>,
 # or an array of one-hot letter vectors
-def lineToTensor(line,device):
+def lineToTensor(line: str):
     tensor = torch.zeros(len(line), 1, N_LETTERS,dtype=torch.float32).to(device)
     for li, letter in enumerate(line):
         tensor[li][0][letterToIndex(letter)] = 1
@@ -71,14 +76,13 @@ def lineToTensor(line,device):
 ######## END OF DATA LOADING ########
 
 def train(expected_output, line_tensor):
-    optimizer.zero_grad()
-    
     lstm.train()
     output= lstm(line_tensor)
     
     loss = criterion(output, expected_output)
+    optimizer.zero_grad()
     loss.backward()
-
+    
     optimizer.step()
     return output, loss.data.item()
 
@@ -131,6 +135,7 @@ def async_callback(func_result):
     window.loss_y.append(func_result[0])
     #print('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / 10, x[-1], loss, line, output, expected_output))
     # removing the older graph
+    window.update_prediction()
     window.loss_fig.remove()
     
     # # plotting newer graph
@@ -138,3 +143,8 @@ def async_callback(func_result):
         window.loss_fig = plt.plot(window.loss_x,window.loss_y,color = 'g')[0]
         plt.xlim(window.loss_x[0], window.loss_x[-1])
         plt.ylim(0, max(window.loss_y))
+
+
+def predict(line: str) -> torch.Tensor:
+    line_tensor = lineToTensor(line)
+    return lstm(line_tensor)

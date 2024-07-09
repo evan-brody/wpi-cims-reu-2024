@@ -1282,6 +1282,20 @@ class MainWindow(QMainWindow):
         self.right_layout_lstm.addLayout(self.hyperparameter_layout_labels)
         self.right_layout_lstm.addLayout(self.hyperparameter_layout_boxes)
 
+        self.predict_input_label = QLabel("Predictor")
+        self.predict_input_field = QLineEdit()
+        self.predict_input_field.setPlaceholderText("Input String...")
+        self.predict_input_field.textEdited.connect(self.update_prediction)
+        self.predict_output_field = QLineEdit()
+        self.predict_output_field.setPlaceholderText("Output Value...")
+        
+        self.predict_field_layout = QHBoxLayout()
+        self.predict_field_layout.addWidget(self.predict_input_field)
+        self.predict_field_layout.addWidget(self.predict_output_field)
+        
+        self.right_layout_lstm.addWidget(self.predict_input_label)
+        self.right_layout_lstm.addLayout(self.predict_field_layout)
+        
         self.right_layout_lstm.addStretch()
 
         # Add left and right layouts to the main layout
@@ -1716,6 +1730,13 @@ class MainWindow(QMainWindow):
             )
             return
 
+    def update_prediction(self):
+        txt = self.predict_input_field.text()
+        if(len(txt)==0):
+            self.predict_output_field.setText("")
+            return
+        prediction = train_lstm.predict(self.predict_input_field.text())
+        self.predict_output_field.setText((str)(prediction.tolist()))
 
 def stop_training():
     train_lstm.stop_training()
