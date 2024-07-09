@@ -60,10 +60,7 @@ from nlp import csv_loader_tab
 from nlp import subtab
 from nlp import similar
 
-
-# database_data = {}
 NUM_PROCESSES = 4
-
 
 # There should be only one instance of this class
 # It's the toolbar on the right side of the Dependency Analysis tab
@@ -644,21 +641,13 @@ Description: MainWindow class that holds all of our functions for the GUI.
 
 """
 
-
 class MainWindow(QMainWindow):
     DEFAULT_RISK_THRESHOLD = 1
     CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     DB_PATH = os.path.join(os.path.dirname(__file__), os.pardir, "data")
     IMAGES_PATH = os.path.join(os.path.dirname(__file__), "images")
     DB_NAME = "part_info.db"
-    # RECOMMENDATIONS = (
-    #     "Recommended Detectability: 9-10 (Unacceptable)",
-    #     "Recommended Detectability: 7-8 (Severe)",
-    #     "Recommended Detectability: 4-6 (Medium)",
-    #     "Recommended Detectability: 1-3 (Low)",
-    # )
-    # Columns to show in the failure mode table.
-    # These are DataFrame columns.
+    # These are DataFrame columns
     FAIL_MODE_COLUMNS = (
         "desc",
         "rpn",
@@ -722,10 +711,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
 
         # Creating the tabs
-        # self.user_instructions_tab = QWidget()  # Create a new tab
-        # self.central_widget.addTab(
-        #     self.user_instructions_tab, "User Instructions"
-        # )  # Add the tab to the QTabWidget
         self.main_tool_tab = QWidget()  # Create a new tab
         self.central_widget.addTab(
             self.main_tool_tab, "Main Tool"
@@ -851,7 +836,6 @@ class MainWindow(QMainWindow):
         self.table_widget.setColumnWidth(6, 110)  # Best Estimate
         self.table_widget.setColumnWidth(7, 110)  # Upper Bound
         self.table_widget.setColumnWidth(8, 110)  # Mission Time
-        # self.table_widget.setColumnWidth(10, 150)  # Mission Time
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
@@ -892,18 +876,6 @@ class MainWindow(QMainWindow):
         # Scrolling and zoom in/out functionality
         self.toolbar = NavigationToolbar(self.canvas, self)
         self.right_layout.addWidget(self.toolbar)
-
-        # Create and add the generate chart button
-        # self.generate_chart_button = QPushButton("Generate Chart")
-        # self.generate_chart_button.clicked.connect(self.generate_main_chart)
-        # self.right_layout.addWidget(self.generate_chart_button)
-
-        # Create and add the download chart button
-        # self.download_chart_button = QPushButton("Download Chart")
-        # self.download_chart_button.clicked.connect(
-        #     lambda: self.download_chart(self.main_figure)
-        # )
-        # self.right_layout.addWidget(self.download_chart_button)
 
         # Add a stretch to the right layout
         self.right_layout.addStretch()
@@ -993,13 +965,6 @@ class MainWindow(QMainWindow):
         )
         self.left_layout_stats.addWidget(self.submit_button_stats)
 
-        # Create button for detectability recommendation
-        # self.detectability_button_stats = QPushButton(
-        #     "Get Detectability Recommendation"
-        # )
-        # self.detectability_button_stats.clicked.connect(self.ask_questions)
-        # left_layout_stats.addWidget(self.detectability_button_stats)
-
         # Create and add the table widget
         self.table_widget_stats = QTableWidget()
         self.table_widget_stats.setColumnCount(len(self.HORIZONTAL_HEADER_LABELS))
@@ -1060,11 +1025,7 @@ class MainWindow(QMainWindow):
         # Matplotlib canvases with tab widget (hardcoded for one component)
         self.stats_tab = QTabWidget()
         self.stats_tab_canvas1 = FigureCanvas(Figure())
-        # self.stats_tab_canvas2 = FigureCanvas(Figure())
-        # self.stats_tab_canvas3 = FigureCanvas(Figure())
         self.stats_tab.addTab(self.stats_tab_canvas1, "Failure Mode 1")
-        # self.stats_tab.addTab(self.stats_tab_canvas2, "Failure Mode 2")
-        # self.stats_tab.addTab(self.stats_tab_canvas3, "Failure Mode 3")
         self.right_layout_stats.addWidget(self.stats_tab)
 
         # Create and add the generate chart button
@@ -1384,29 +1345,14 @@ class MainWindow(QMainWindow):
         t2 = 10
 
         self.stats_tab_canvas1.figure.clear()
-        # self.stats_tab_canvas2.figure.clear()
-        # self.stats_tab_canvas3.figure.clear()
-
         self.stats_tab.clear()
-
         fig1 = stats._bathtub(N, T, t1, t2)
-        # fig2 = stats._bathtub(N, T, t1, t2)
-        # fig3 = stats._bathtub(N, T, t1, t2)
 
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
         self.stats_tab_canvas1.draw()
-        # self.stats_tab_canvas2.figure = fig2
-        # self.stats_tab_canvas2.figure.tight_layout()
-        # self.stats_tab_canvas2.draw()
-        # self.stats_tab_canvas3.figure = fig3
-        # self.stats_tab_canvas3.figure.tight_layout()
-        # self.stats_tab_canvas3.draw()
 
-        # Add tabs after generating the graphs
         self.stats_tab.addTab(self.stats_tab_canvas1, "Plot 1")
-        # self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
-        # self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
     """
     
@@ -1419,31 +1365,19 @@ class MainWindow(QMainWindow):
     def update_rayleigh_canvas(self):
         # Clear the existing figures before displaying new ones
         self.stats_tab_canvas1.figure.clear()
-        # self.stats_tab_canvas2.figure.clear()
-        # self.stats_tab_canvas3.figure.clear()
 
         # Clear the existing tabs
         self.stats_tab.clear()
 
         fig1 = stats._rayleigh(self.values())
-        # fig2 = stats._rayleigh(self.values())
-        # fig3 = stats._rayleigh(self.values())
 
         # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
         self.stats_tab_canvas1.draw()
-        # self.stats_tab_canvas2.figure = fig2
-        # self.stats_tab_canvas2.figure.tight_layout()
-        # self.stats_tab_canvas2.draw()
-        # self.stats_tab_canvas3.figure = fig3
-        # self.stats_tab_canvas3.figure.tight_layout()
-        # self.stats_tab_canvas3.draw()
 
         # Add tabs after generating the graphs
         self.stats_tab.addTab(self.stats_tab_canvas1, "Plot 1")
-        # self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
-        # self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
     """
     
@@ -1456,30 +1390,18 @@ class MainWindow(QMainWindow):
     def update_weibull_canvas(self):
         # Clear the existing figures before displaying new ones
         self.stats_tab_canvas1.figure.clear()
-        # self.stats_tab_canvas2.figure.clear()
-        # self.stats_tab_canvas3.figure.clear()
 
         # Clear the existing tabs
         self.stats_tab.clear()
 
         fig1 = stats._weibull(self.values())
-        # fig2 = stats._weibull(self.values())
-        # fig3 = stats._weibull(self.values())
 
         # Update the canvas with the new figures
         self.stats_tab_canvas1.figure = fig1
         self.stats_tab_canvas1.figure.tight_layout()
         self.stats_tab_canvas1.draw()
-        # self.stats_tab_canvas2.figure = fig2
-        # self.stats_tab_canvas2.figure.tight_layout()
-        # self.stats_tab_canvas2.draw()
-        # self.stats_tab_canvas3.figure = fig3
-        # self.stats_tab_canvas3.figure.tight_layout()
-        # self.stats_tab_canvas3.draw()
 
         self.stats_tab.addTab(self.stats_tab_canvas1, "Plot 1")
-        # self.stats_tab.addTab(self.stats_tab_canvas2, "Plot 2")
-        # self.stats_tab.addTab(self.stats_tab_canvas3, "Plot 3")
 
     """
     Pulls default data from part_info.db and stores it in a pandas DataFrame.
@@ -1562,8 +1484,10 @@ class MainWindow(QMainWindow):
         # Update the maximum number of IDs to show
         self.max_ids = 10
 
-        # drop_duplicates shouldn't be necessary here, since components are unique. Just in case, though.
-        # np.sum is a duct-tapey way to convert to int, since you can't directly
+        # drop_duplicates shouldn't be necessary here, 
+        # since components are unique. Just in case, though.
+        # np.sum is a duct-tapey way to convert to int, 
+        # since you can't do that directly
         self.comp_id = np.sum(
             self.components[
                 self.components["name"] == component_name
