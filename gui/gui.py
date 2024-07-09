@@ -58,6 +58,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from graph.dep_graph import DepGraph
 from nlp import csv_loader_tab
 from nlp import subtab
+from nlp import similar
 
 
 # database_data = {}
@@ -76,9 +77,10 @@ class DepQToolBar(QToolBar):
 # Instances of this class are the buttons on the
 # right side of the Dependency Analysis tab
 class DepQAction(QAction):
-    def __init__(self, icon: QIcon, text: str, toolbar: DepQToolBar) -> None:
+    def __init__(self, icon: QIcon, text: str, scene, toolbar: DepQToolBar) -> None:
         super().__init__(icon, text)
 
+        self.scene = scene
         self.toolbar = toolbar
         self.triggered.connect(self.clearOtherSelections)
         self.setCheckable(True)
@@ -92,6 +94,8 @@ class DepQAction(QAction):
 
         for action in self.toolbar.actions():
             action.setChecked(action == self)
+        self.scene.dep_origin = None
+        self.scene.del_dyn_arr()
 
         self.toolbar.selected_tool = self
 
@@ -280,8 +284,6 @@ class DepQGraphicsScene(QGraphicsScene):
         self.rect_arrs_in[rect_item] = []
         self.rect_arrs_out[rect_item] = []
         self.dg.add_vertex(rect_item)
-        self.dg.calc_r()
-        self.rect_risks = self.dg.get_r_dict()
         self.update_rect_colors()
 
         # Update count dictionary
@@ -322,6 +324,7 @@ class DepQGraphicsScene(QGraphicsScene):
         rect_item = self.addRect(0, 0, rect_w, rect_h, QPen(), brush)
         rect_item.setPos(rect_x, rect_y)
         rect_item.setFlags(QGraphicsItem.ItemIsSelectable)
+        rect_item.setData(self.IS_COMPONENT, False)
 
         self.rect_depends_on[rect_item] = []
         self.rect_influences[rect_item] = []
@@ -368,6 +371,7 @@ class DepQGraphicsScene(QGraphicsScene):
             self.dyn_arr = None
 
     def update_rect_colors(self) -> None:
+        self.rect_risks = self.dg.get_r_dict()
         for rect in filter(lambda x: x.data(self.IS_COMPONENT), self.items()):
             risk = self.rect_risks[rect]
             brush = rect.brush()
@@ -524,6 +528,8 @@ class DepQGraphicsScene(QGraphicsScene):
                 self.mouseReleaseEventL(event)
             case Qt.RightButton:
                 self.clearSelection()
+                self.dep_origin = None
+                self.del_dyn_arr()
 
     def mouseReleaseEventL(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_l = False
@@ -545,8 +551,8 @@ class DepQGraphicsScene(QGraphicsScene):
                     if self.released_on_1:
                         self.mouseReleaseEventEdge(event)
                     else:
-                        self.del_dyn_arr()
                         self.dep_origin = None
+                        self.del_dyn_arr()
                 case self.parent_window.AND_gate_button:
                     if not self.released_on_1:
                         self.add_AND_gate(event)
@@ -605,8 +611,6 @@ class DepQGraphicsScene(QGraphicsScene):
                     self.rect_influences[self.released_on_r].append(self.dep_origin)
 
                     self.dg.add_edge((self.dep_origin, self.released_on_r))
-                    self.dg.calc_r()
-                    self.rect_risks = self.dg.get_r_dict()
                     self.update_rect_colors()
 
                 # Cleanup
@@ -628,8 +632,6 @@ class DepQGraphicsScene(QGraphicsScene):
 
                     self.dg.delete_vertex(item)
                     self.removeItem(item)
-                    self.dg.calc_r()
-                    self.rect_risks = self.dg.get_r_dict()
 
                 self.update_rect_colors()
 
@@ -736,8 +738,9 @@ class MainWindow(QMainWindow):
         self.central_widget.addTab(self.dep_tab, "Dependencies")
         self.lstm_tab = QWidget()
         self.central_widget.addTab(self.lstm_tab, "lstm")
-        self.nlp_tab = QWidget()
-        self.central_widget.addTab(subtab.NestedTabWidget(), "NLP")
+        self.central_widget.addTab(subtab.NestedTabWidgetS(), "NLP-Unsupervised")
+        self.central_widget.addTab(subtab.NestedTabWidgetUnS(), "NLP-Supervised")
+        self.central_widget.addTab(similar.SimilarityAnalysisTab(), "NLP-Similarity")
 
         self.init_main_tab()
         self.init_stats_tab()
@@ -1123,16 +1126,20 @@ class MainWindow(QMainWindow):
 
         # Component button
         self.comp_icon = QIcon(os.path.join(self.IMAGES_PATH, "add_comp_icon.png"))
-        self.comp_button = DepQAction(self.comp_icon, "Add Component", self.dep_toolbar)
+        self.comp_button = DepQAction(
+            self.comp_icon, "Add Component", self.system_vis_scene, self.dep_toolbar
+        )
 
         # Edge button
         self.edge_icon = QIcon(os.path.join(self.IMAGES_PATH, "edge_icon.png"))
-        self.edge_button = DepQAction(self.edge_icon, "Add Edge", self.dep_toolbar)
+        self.edge_button = DepQAction(
+            self.edge_icon, "Add Edge", self.system_vis_scene, self.dep_toolbar
+        )
 
         # AND gate button
         self.AND_gate_icon = QIcon(os.path.join(self.IMAGES_PATH, "and_gate.png"))
         self.AND_gate_button = DepQAction(
-            self.AND_gate_icon, "Add AND Gate", self.dep_toolbar
+            self.AND_gate_icon, "Add AND Gate", self.system_vis_scene, self.dep_toolbar
         )
 
         # Add widgets separate from setup
