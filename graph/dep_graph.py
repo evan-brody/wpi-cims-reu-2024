@@ -152,10 +152,10 @@ class DepGraph:
         to_update_to = np.copy(self.is_AND[:n]) if self.is_AND[b] else [True] * n
         to_update_to[b] = False
         for i in compress(range(n), to_update_to):
-            # When b = AND, don't incorporate
+            # When a != AND & b = AND don't incorporate
             # (b -> i) in (a -> b -> i)_c
             new_path = weight
-            if not self.is_AND[b]:
+            if not self.is_AND[b] or self.is_AND[a]:
                 new_path *= A_c_full[i, b]
 
             if 1 == new_path:
@@ -175,7 +175,7 @@ class DepGraph:
         # calculated its values, b's because we don't care
         # about loops
         # If we're dealing with an AND gate as a, we only want to
-        # collapse paths pf the form (i -> a -> AND)
+        # collapse paths of the form (i -> a -> AND)
         to_update_to = np.copy(self.is_AND[:n]) if self.is_AND[a] else [True] * n
         to_update_to[a] = False
         to_update_from = [True] * n
@@ -185,7 +185,7 @@ class DepGraph:
             for i in compress(range(n), to_update_to):
                 # j -> i OR (j -> a AND a -> i)
                 new_path = A_c_full[a, j]
-                if not self.is_AND[a]:
+                if not self.is_AND[a] or self.is_AND[j]:
                     new_path *= A_c_full[i, a]
                 
                 if 1 == new_path:
@@ -280,19 +280,36 @@ class DepGraph:
     def update_AND_weights(self) -> None:
         n = self.n
         A_c_full = self.calc_A_c_full()
-        for i in compress(range(n), self.is_AND[:n]):
-            # We only care about edges (c -> AND) where c is a component
-            to_update_from = np.logical_not(self.is_AND[:n])
-            if not np.any(A_c_full[i, to_update_from]):
+
+        AND_indices = compress(range(n), self.is_AND[:n])
+        comp_bools = np.logical_not(self.is_AND[:n])
+        comp_indices = compress(range(n), comp_bools)
+        for i in AND_indices:
+            # If an AND gate isn't connected to any components,
+            # we calculate its risk separately and mark it as 0
+            # for now
+            if not np.any(A_c_full[i, comp_bools]):
                 self.r0[i] = 0
                 continue
 
             self.r0[i] = 1
-            for j in compress(range(n), to_update_from):
-                # Reduction of j -> (j -> i)
-                path_weight = A_c_full[i, j] * self.r0[j]
+            for j in comp_indices:
+                # (j -> i)
+                path_weight = A_c_full[i, j]
+                # Include vertex weight if j is a component
+                if not self.is_AND[j]:
+                    path_weight *= self.r0[j]
                 if path_weight:
                     self.r0[i] *= path_weight
+
+        for i, j in filter(lambda t: t[0] != t[1], product(AND_indices, repeat=2)):
+            # Only consider risk from AND gates that are
+            # connected to a component. AND gates that
+            # have no connected components will have an r0
+            # value of 0
+            path_weight = self.r0[j] * A_c_full[i, j]
+            if path_weight:
+                self.r0[i] *= path_weight
 
     # Note: self.r values for AND gates are garbage values
     def calc_r(self) -> None:

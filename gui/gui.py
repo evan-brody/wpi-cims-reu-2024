@@ -1743,7 +1743,7 @@ class MainWindow(QMainWindow):
             self.predict_output_field.setText("")
             return
         prediction = train_lstm.predict(self.predict_input_field.text())
-        self.predict_output_field.setText((str)(prediction.tolist()))
+        self.predict_output_field.setText(str(prediction.tolist()))
 
 def stop_training():
     train_lstm.stop_training()
