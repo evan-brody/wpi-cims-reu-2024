@@ -402,4 +402,20 @@ if __name__ == "__main__":
         print("AND calc_r:")
         print(dg.calc_r())
 
+        print("\nTEST2")
+        dg = DepGraph()
+        dg.add_vertices(['a', 'b', 'c', 'd'], [0.75] * 4)
+        dg.add_AND_gate('A')
+        dg.add_AND_gate('B')
+        dg.add_edge(('B', 'd'))
+        dg.add_edge(('A', 'B'))
+        dg.add_edge(('a', 'A'))
+        dg.add_edge(('b', 'A'))
+        dg.add_edge(('c', 'B'))
+        n = dg.n
+
+        print()
+        print(dg.calc_A_c_full()[:n, :n])
+        print(dg.calc_r())
+
     test_suite_2()
