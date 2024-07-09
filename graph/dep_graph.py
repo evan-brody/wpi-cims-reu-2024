@@ -11,8 +11,8 @@ from PyQt5.QtWidgets import QGraphicsRectItem
 
 class DepGraph:
     MAX_VERTICES = 512
-    DEFAULT_EDGE_WEIGHT = 1
-    DEFAULT_DR = 0.25
+    DEFAULT_EDGE_WEIGHT = 0.5
+    DEFAULT_DR = 0.5
     J = np.ones((MAX_VERTICES, MAX_VERTICES), np.uint8)
     I = np.identity(MAX_VERTICES, np.uint8)
 
@@ -66,10 +66,6 @@ class DepGraph:
         A_c_full = np.empty((n, n), np.double)
         for i, j in product(range(n), repeat=2):
             A_c_full[i, j] = max(self.A_collapse[i, j], int(bool(self.one_count[i, j])))
-
-        # If we're updating to add an edge, we should clear
-        # outgoing edges from AND gates. If we're calculating
-        # final risk, we should clear incoming connections
         
         return A_c_full
     
@@ -151,7 +147,7 @@ class DepGraph:
 
         # Collapse paths starting at a and passing through b
         # If we're dealing with an AND gate as B, we should
-        # only collapse paths leading to other and gates
+        # only collapse paths leading to other AND gates
         # Skip b because we don't care about loops
         to_update_to = np.copy(self.is_AND[:n]) if self.is_AND[b] else [True] * n
         to_update_to[b] = False
@@ -173,7 +169,8 @@ class DepGraph:
         # Skip a's and b's columns. A's because we already
         # calculated its values, b's because we don't care
         # about loops
-        # If we're dealing with an AND gate as a, 
+        # If we're dealing with an AND gate as a, we only want to
+        # collapse paths pf the form (i -> a -> AND)
         to_update_to = np.copy(self.is_AND[:n]) if self.is_AND[a] else [True] * n
         to_update_to[a] = False
         to_update_from = [True] * n
@@ -192,7 +189,7 @@ class DepGraph:
         # Remove any loops we've created
         np.fill_diagonal(self.A_collapse[:n, :n], 0)
         np.fill_diagonal(self.one_count[:n, :n], 0)
-
+    
     def add_edges(self, edges: list[tuple[QGraphicsRectItem]], weights: list[float]=None) -> None:
         if None == weights:
             for e in edges:
@@ -214,9 +211,11 @@ class DepGraph:
 
         # Remove influence of deleted edge on other paths
         # Skip diagonal because we don't allow those edges
-        not_diagonal = np.ones((n ** 2,), dtype=np.uint8)
-        not_diagonal[::n + 1] = 0
-        for i, j in compress(product(range(n), repeat=2), not_diagonal):
+        # If the edge involves an AND gate, we should only update
+        # connections through it to other AND gates
+        to_update_to = self.is_AND[:n] if self.is_AND[a] or self.is_AND[b] else [True] * n
+        rangen = range(n)
+        for i, j in filter(lambda t: t[0] != t[1], product(rangen, compress(rangen, to_update_to))):
             # (i -> a) AND (a -> b) AND (b -> j)
             # Note that (a -> b) is not all possible paths (a -> b),
             # but the specific edge we're deleting
@@ -247,6 +246,10 @@ class DepGraph:
                 self.delete_edge_i((j, i))
 
         del self.refi[ref]
+        for key in self.refi.keys():
+            index = self.refi[key]
+            if index > vi:
+                self.refi[key] = index - 1
 
         self.iref[vi:n - 1] = self.iref[vi + 1:n]
         self.r0[vi:n - 1] = self.r0[vi + 1:n]
@@ -292,6 +295,7 @@ class DepGraph:
         return self.r
     
     def get_r_dict(self) -> dict:
+        self.calc_r()
         n = self.n
         return { self.iref[i] : risk for i, risk in compress(enumerate(self.r), np.logical_not(self.is_AND[:n])) }
 

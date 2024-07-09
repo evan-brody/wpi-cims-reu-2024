@@ -1,0 +1,217 @@
+BscStartDate,Asset,OriginalShorttext,PMType,Cost,Failure Mode
+2004-07-01,A,BUCKET WON'T OPEN,PM01,183.05,Bucket Opening Mechanism Failure
+2005-03-20,A,L/H BUCKET CYL LEAKING.,PM01,407.4,Hydraulic Cylinder Leak
+2006-05-05,A,SWAP BUCKET,PM01,0,Complete Bucket Replacement
+2006-07-11,A,FIT BUCKET TOOTH,PM01,0,Tooth Wear/Replacement
+2006-11-10,A,REFIT BUCKET TOOTH,PM01,1157.27,Tooth Wear/Replacement
+2008-04-21,A,REPAIR LOOSE BUCKET CYLINDER,PM01,0,Cylinder Mechanical Failure
+2008-10-02,A,REPLACE 2 BUCKET TEETH,PM01,1256.62,Tooth Wear/Replacement
+2001-07-12,B,REPLACE MISSING LIP TIPS,PM01,1281.36,Lip Wear/Damage
+2001-07-19,B,REPLACE LIP,PM01,1251.52,Lip Wear/Damage
+2001-10-01,B,rebuild lip #3,PM01,0,Lip Wear/Damage
+2001-10-10,B,REPLACE BUCKET TEETH.,PM01,681.1,Tooth Wear/Replacement
+2001-10-29,B,Repair RH120 lip at P&H,PM01,22611.06,Lip Wear/Damage
+2001-11-06,B,replace missing tip,PM01,1239.29,Tooth Wear/Replacement
+2001-11-13,B,replace missing tip& adaptor.,PM01,221.15,Tooth Wear/Replacement
+2001-11-16,B,Replace centre and LH lip shrouds,PM01,2118.87,Shroud Wear/Replacement
+2002-01-15,B,OIL LEAK ON BUCKET....,PM01,0,Hydraulic Hose/Line Leak
+2002-02-06,B,REPLACE ADAPTOR LOCK,PM01,346.47,Pin/Lock Replacement
+2002-02-22,B,Fit a lip shroud,PM01,56.59,Shroud Wear/Replacement
+2002-02-27,B,Refit left lip shroud,PM01,627.85,Shroud Wear/Replacement
+2002-03-08,B,refit adapter and tooth,PM01,1186.45,Adaptor Wear/Replacement
+2002-03-12,B,FIT NEW TOOTH,PM01,397.57,Tooth Wear/Replacement
+2002-03-12,B,cut off broken wear package,PM01,0,Wear Package Replacement
+2002-03-15,B,CHANGE ADAPTOR AND TOOTH,PM01,0,Adaptor Wear/Replacement
+2002-03-17,B,replace adaptor & tooth,PM01,453.95,Adaptor Wear/Replacement
+2002-03-17,B,replace lip shroud pin,PM01,107.42,Pin/Lock Replacement
+2002-03-25,B,Replace adaptors as required,PM01,464.51,Adaptor Wear/Replacement
+2002-03-25,B,repalced adaptor pins,PM01,464.52,Pin/Lock Replacement
+2002-04-02,B,REPLACE L/H BUCKET CYLINDER GREASE LINE,PM01,11.2,Grease Line/Fitting Issue
+2002-04-04,B,replace adaptor and tip,PM01,203.65,Adaptor Wear/Replacement
+2002-04-10,B,"loose grease line on bucket ,",PM01,0,Grease Line/Fitting Issue
+2002-04-16,B,O-RING U/S  ON BUCKET RAM,PM01,507.42,Hydraulic Cylinder Leak
+2002-04-17,B,TWO BUCKET TEETH AND ADAPTORS MISSING.,PM01,36.58,Tooth Wear/Replacement
+2002-04-19,B,Replace broken adaptor,PM01,378.47,Adaptor Wear/Replacement
+2002-04-21,B,PARTS FOR BUCKET,PM01,129.33,Routine Maintenance/Inspection
+2002-04-23,B,fitted two new adaptors,PM01,59.24,Adaptor Wear/Replacement
+2002-04-26,B,replace bucket tip & pins,PM01,739.68,Tooth Wear/Replacement
+2002-04-26,B,REPLACE TOOTH & ADAPTOR,PM01,317.14,Tooth Wear/Replacement
+2002-04-29,B,BROKEN GREASE LINE ON BUCKET.,PM01,120,Grease Line/Fitting Issue
+2002-05-06,B,repair to bucket,PM01,995.32,Structural Crack/Damage
+2002-05-09,B,Replace missing adaptors,PM01,6491.7,Adaptor Wear/Replacement
+2002-05-11,B,lh outer lip shroud lost,PM01,283.12,Shroud Wear/Replacement
+2002-05-29,B,Rebuild spare lip GET,PM01,6454.45,Lip Wear/Damage
+2002-05-30,B,REFIT RH OUTER ADAPTER,PM01,143.25,Adaptor Wear/Replacement
+2002-06-08,B,replace bent adapter pin,PM01,341.42,Pin/Lock Replacement
+2002-06-14,B,RH120C-BUCKET FRONT LIP CHANGEOUT,PM02,0,Lip Wear/Damage
+2002-06-18,B,Change LH bucket roll cylinder,PM01,12803.84,Cylinder Mechanical Failure
+2002-06-18,B,Change bucket lip.,PM01,778.56,Lip Wear/Damage
+2002-06-18,B,fit teeth to bucket,PM01,258.72,Tooth Wear/Replacement
+2002-06-20,B,REPLACE WEAR PACKAGE LOWER WALL,PM01,214.88,Wear Package Replacement
+2002-06-27,B,air con. not getting cold.,PM01,214.88,Unrelated Component
+2002-08-02,B,"Missing adapter,tooth and pins",PM01,159.25,Adaptor Wear/Replacement
+2002-09-12,B,L/H BUCKET CYL GLAND SEAL LEAKING,PM01,0,Hydraulic Cylinder Leak
+2002-10-03,B,REPLACE MISSING BUCKET TOOTH,PM01,1532.37,Tooth Wear/Replacement
+2002-10-14,B,repair wear package rhs inside bkt wall,PM01,1739.36,Wear Package Replacement
+2002-10-29,B,replace tip,PM01,676.11,Tooth Wear/Replacement
+2003-01-10,B,replace adaptor & tip,PM01,641.62,Adaptor Wear/Replacement
+2003-01-20,B,replace lip shroud,PM01,153.67,Shroud Wear/Replacement
+2003-01-28,B,WELD CRACK IN LH LIP EAR(FRONT),PM01,0,Structural Crack/Damage
+2003-02-08,B,replace tip,PM01,166.81,Tooth Wear/Replacement
+2003-02-14,B,change out damaged lip,PM01,8774.59,Lip Wear/Damage
+2003-02-19,B,replaced adaptor,PM01,844.6,Adaptor Wear/Replacement
+2003-02-22,B,replace stick to bucket hose,PM01,1203.26,Hydraulic Hose/Line Leak
+2003-04-08,B,REPLACE BUSTED LIP PIVOT GREASE LINES,PM01,59.38,Grease Line/Fitting Issue
+2003-04-11,B,LH LIP EAR CRACKED,PM01,118.76,Structural Crack/Damage
+2003-04-13,B,Change out bucket clam (lip),PM01,4853.36,Lip Wear/Damage
+2003-04-27,B,replace 2 lost tips,PM01,606.92,Tooth Wear/Replacement
+2003-05-01,B,replace lh outer adapter & tip,PM01,442.73,Adaptor Wear/Replacement
+2003-05-20,B,recover lower wear edge plate (CC1500),PM01,893.1,Wear Package Replacement
+2003-06-05,B,replace tooth,PM01,1043.88,Tooth Wear/Replacement
+2003-06-09,B,refit lip shroud,PM01,268.5,Shroud Wear/Replacement
+2003-06-11,B,replace tooth & adaptor,PM01,3244.06,Tooth Wear/Replacement
+2003-06-23,B,oil leak rh boom valve clam pipe adapter,PM01,124.12,Hydraulic Hose/Line Leak
+2003-06-29,B,replace tooth & adaptor,PM01,0,Tooth Wear/Replacement
+2003-07-04,B,repair crack in lh front lip ear,PM01,631.5,Structural Crack/Damage
+2003-07-18,B,replace rh lip shroud!,PM01,244.04,Shroud Wear/Replacement
+2003-08-01,B,fit new tooth,PM01,528.59,Tooth Wear/Replacement
+2003-08-10,B,replace adaptor  COMPLETED,PM01,491.98,Adaptor Wear/Replacement
+2003-08-11,B,replace teeth,PM01,159.61,Tooth Wear/Replacement
+2003-08-27,B,replace tip & pin  completed,PM01,180.8,Tooth Wear/Replacement
+2003-09-07,B,replace busted grease hose bucket pin,PM01,892.22,Grease Line/Fitting Issue
+2003-09-18,B,R/H BUCKET ROD CYL GLAND SEAL LEAKING,PM01,2881.21,Hydraulic Cylinder Leak
+2003-10-03,B,Repair broken grease line on bucket,PM01,0,Grease Line/Fitting Issue
+2003-10-27,B,replace adaptor & tooth,PM01,1264.05,Adaptor Wear/Replacement
+2003-11-14,B,lost tooth COMPLETED,PM01,162.47,Tooth Wear/Replacement
+2003-11-24,B,replace lip shroud lock,PM01,148.19,Pin/Lock Replacement
+2003-12-31,B,bucket clam gard is falling off,PM01,295.06,Wear Package Replacement
+2004-01-01,B,replace grease line on bucket,PM01,300.49,Grease Line/Fitting Issue
+2004-02-16,B,Replace centre tooth,PM01,557.5,Tooth Wear/Replacement
+2004-02-18,B,oil leak dist. block rear of bucket,PM01,4.53,Hydraulic Hose/Line Leak
+2004-02-24,B,replace broken bucket lube fittings,PM01,465.54,Grease Line/Fitting Issue
+2004-02-25,B,REPAIR BROKEN GREASE FITTING ON BUCKET.,PM01,399.04,Grease Line/Fitting Issue
+2004-03-09,B,replace tooth,PM01,862.46,Tooth Wear/Replacement
+2004-03-11,B,Reorder bucket tips SHD16,PM01,930,Routine Maintenance/Inspection
+2004-03-23,B,Replace bucket tip,PM01,153.96,Tooth Wear/Replacement
+2004-04-06,B,GET SUSPENTION ROPE SOCKETS,PM01,244.74,Unrelated Component
+2004-04-06,B,REPLACE LEFT HAND LIP SHROUD,PM01,1028.19,Shroud Wear/Replacement
+2004-04-12,B,replace tooth,PM01,354.1,Tooth Wear/Replacement
+2004-04-12,B,Broken grease line on bucket,PM01,244.74,Grease Line/Fitting Issue
+2004-04-13,B,replace adaptor keeper pin,PM01,249.55,Pin/Lock Replacement
+2004-03-01,C,REPLACE BUCKET TEETH,PM01,3368.74,Tooth Wear/Replacement
+2004-04-11,C,REPAIR DAMAGED BUCKET,PM06,6491.14,Structural Crack/Damage
+2004-05-14,C,REPLACE BROKEN LUBE FITTING / BUCKET,PM01,0,Grease Line/Fitting Issue
+2004-05-28,C,WELD NPB07 ON SPARE BUCKET,PM01,480.56,Structural Crack/Damage
+2004-08-27,C,WELD MODS TO BUCKET,PM01,1647.73,Structural Crack/Damage
+2004-10-28,C,MINING ~ GET,PM01,503.78,Routine Maintenance/Inspection
+2004-11-05,C,REPLACE RIGHT HAND TOOTH,PM01,690.82,Tooth Wear/Replacement
+2004-11-10,C,L/ H BUCKET TOOTH BROKEN,PM01,593.81,Tooth Wear/Replacement
+2004-11-17,C,CHANGE BUCKET TEETH.,PM01,3604.93,Tooth Wear/Replacement
+2004-12-18,C,BUCKET TEETH BROKEN  X  2,PM01,1292.72,Tooth Wear/Replacement
+2005-01-08,C,REPLACE BUCKET PIN,PM01,157.64,Pin/Lock Replacement
+2005-01-20,C,REPLACE MISSING BUCKET TEETH,PM01,1648.79,Tooth Wear/Replacement
+2005-03-27,C,REPLACE DAMAGED LUBE LINE ON RHS BUCKET,PM01,0,Grease Line/Fitting Issue
+2005-05-04,C,REPLACE BROKEN BUCKET GREASE LINE.,PM01,165,Grease Line/Fitting Issue
+2005-05-21,C,REPLACE BROKEN GREASE LINE ON BUCKET,PM01,73.33,Grease Line/Fitting Issue
+2005-06-05,C,REPAIR BROKEN GREASE LINE ON BUCKET,PM01,205.14,Grease Line/Fitting Issue
+2005-06-12,C,REPAIR BROKEN GREASE FITTING ON BUCKET,PM01,410.29,Grease Line/Fitting Issue
+2005-07-08,C,REPAIR GREASE LINES ON BUCKET PIN,PM01,107.93,Grease Line/Fitting Issue
+2005-08-18,C,REPLACE GREASE LIN TO BUCKET PIN,PM01,164.14,Grease Line/Fitting Issue
+2005-09-19,C,WEAR PLATES COMING OF CLAM-REPAIR BUCKET,PM01,342.48,Wear Package Replacement
+2005-09-28,C,CHANGEOUT ~ BUCKET ASSEMBLY. SWAPPED OVE,PM02,4528.35,Complete Bucket Replacement
+2005-10-04,C,REPLACE O RING ON BUCKET CLAM HOSE,PM01,0,Hydraulic Hose/Line Leak
+2005-10-20,C,REPLACE BOOM TO BUCKET HOSE.,PM01,1714.79,Hydraulic Hose/Line Leak
+2005-10-25,C,REPLACE BUCKET TOOTH,PM01,850.25,Tooth Wear/Replacement
+2005-10-27,C,REPLACE GREASE LINES TO BUCKET PINS,PM01,0,Grease Line/Fitting Issue
+2005-11-27,C,REPLACE GREASE LINES ON BUCKET,PM01,858.06,Grease Line/Fitting Issue
+2005-12-07,C,REPLACE CORNER TOOTH,PM01,589.34,Tooth Wear/Replacement
+2005-12-28,C,SLOW BUCKET CLAM ACTION,PM01,2550.55,Cylinder Mechanical Failure
+2006-02-22,C,REPAIR SHD23 SPARE BUCKET,PM01,4941.44,Structural Crack/Damage
+2006-02-25,C,CHANGE OUT 1 X BROKEN TOOTH,PM01,670.46,Tooth Wear/Replacement
+2006-03-14,C,REPLACE / Tips broken off teeth,PM01,2357.37,Tooth Wear/Replacement
+2006-03-28,C,REPLACE ONE BUCKET TOOTH,PM01,589.34,Tooth Wear/Replacement
+2006-04-17,C,NOT REQUIRED - SEE BUCKET CO 20579959,PM02,0,Routine Maintenance/Inspection
+2006-04-24,C,REPLACE LEAKING HOSE AT BUCKET,PM01,1882.81,Hydraulic Hose/Line Leak
+2006-04-28,C,OIL LEAK BUCKET CLAM,PM01,0,Hydraulic Cylinder Leak
+2006-04-28,C,REPAIR CRACK ON BUCKET,PM01,0,Structural Crack/Damage
+2006-09-20,C,BUCKET CLAM PIPE LEAKING L/H,PM01,4726.09,Hydraulic Hose/Line Leak
+2006-09-30,C,REPLACE LEAKING HOSE  AT BUCKET,PM01,3293.94,Hydraulic Hose/Line Leak
+2006-10-12,C,REPLACE CLAM CIRCUIT HOSE- STICK /BUCKET,PM01,2000.12,Hydraulic Hose/Line Leak
+2006-10-29,C,REPLACE BUCKET TEETH,PM01,1224.24,Tooth Wear/Replacement
+2006-10-30,C,REPLACE BUCKET TEETH 2 OFF,PM01,1308.24,Tooth Wear/Replacement
+2006-11-14,C,REPAIR BUCKET CRACKS,PM01,1165.7,Structural Crack/Damage
+2006-11-22,C,BUCKET CROWD HOSE U/S    @ R40S,PM01,1994.16,Hydraulic Hose/Line Leak
+2007-02-15,C,REPLACE BUCKET GREASE LINE,PM01,161.96,Grease Line/Fitting Issue
+2007-03-05,C,CHANGE OUT BUCKET TEETH,PM01,5136.74,Tooth Wear/Replacement
+2007-03-06,C,BUCKET PIN COMING OUT,PM01,1675.56,Pin/Lock Replacement
+2007-04-21,C,REPLACE BUCKET TOOTH,PM01,718.49,Tooth Wear/Replacement
+2007-05-29,C,broken bucket tooth,PM01,612.12,Tooth Wear/Replacement
+2007-06-28,C,bucket teeth worn. REPLACE SERVICE DAY 1,PM01,4524.18,Tooth Wear/Replacement
+2007-06-29,C,BROKEN GREASE LINE ON BUCKET,PM01,0,Grease Line/Fitting Issue
+2007-07-05,C,CRACK REPAIRS ON BOOM,PM01,0,Structural Crack/Damage
+2007-07-12,C,BROKEN GREASE LINE ON BUCKET,PM01,0,Grease Line/Fitting Issue
+2007-07-23,C,REPLACE 2 BUCKET TEETH AND KEEPERS,PM01,1362.78,Tooth Wear/Replacement
+2007-08-29,C,REPLACE ONE BROKEN BUCKET TOOTH,PM01,540.12,Tooth Wear/Replacement
+2007-11-04,C,REPLACE ONE MISSING BUCKET TOOTH,PM01,1318.96,Tooth Wear/Replacement
+2007-11-25,C,GREASE LINE ON BUCKET BROKEN,PM01,146.9,Grease Line/Fitting Issue
+2008-02-01,C,BROKEN GREASE LINE ON BUCKET.,PM01,194.2,Grease Line/Fitting Issue
+2008-02-03,C,REPLACE FULL SET BUCKET TEETH,PM01,4970.46,Tooth Wear/Replacement
+2008-02-06,C,REPLACE BUCKET TOOTH.,PM01,426.41,Tooth Wear/Replacement
+2008-03-03,C,CHANGEOUT ~ BUCKET ASSEMBLY,PM02,29679.15,Complete Bucket Replacement
+2008-06-28,C,REPLACE BROKEN BUCKET TOOTH,PM01,4253.97,Tooth Wear/Replacement
+2008-07-07,C,GREASE LINE BROKEN ON BUCKET,PM01,256.48,Grease Line/Fitting Issue
+2008-07-13,C,BLOWN HYDRAULIC OIL HOSE ON BUCKET,PM01,5341.32,Hydraulic Hose/Line Leak
+2008-07-15,C,BROKEN BUCKET TEETH,PM01,1512.37,Tooth Wear/Replacement
+2008-09-01,C,REPLACE BUCKET TOOTH,PM01,701.27,Tooth Wear/Replacement
+2008-09-13,C,STEEL TUBE ON BUCKET CLAM BROKEN,PM01,0,Structural Crack/Damage
+2008-09-14,C,REPLACE MISSING BUCKET TOOTH.,PM01,701.27,Tooth Wear/Replacement
+2008-09-14,C,LH BUCKET CROWD CYLINDER LEAKING,PM01,0,Hydraulic Cylinder Leak
+2008-10-02,C,REPLACE MISSING BUCKET TOOTH,PM01,3024.74,Tooth Wear/Replacement
+2008-10-18,C,REPAIRS TO R/H BUCKET RAM  HYD HOSE,PM01,1920.16,Hydraulic Hose/Line Leak
+2008-10-19,C,REPLACE MISSING TOOTH,PM01,701.43,Tooth Wear/Replacement
+2008-10-24,C,Offsite Repair RH120 bucket SHD23 Oct 08,PM01,109451.45,Complete Bucket Replacement
+2008-11-05,C,REPAIR  BUCKET WEAR PLATES - BROKEN AWAY,PM01,0,Wear Package Replacement
+2008-11-30,C,REPLACE TWO BROKEN TEETH,PM01,1403.16,Tooth Wear/Replacement
+2008-12-28,C,REPLACE BUCKET TOOTH,PM01,789.39,Tooth Wear/Replacement
+2009-03-02,C,REPLACE R.H CORNER BUCKET TOOTH,PM01,889.68,Tooth Wear/Replacement
+2009-03-24,C,REPLACE BUCKET TOOTH,PM01,806.22,Tooth Wear/Replacement
+2009-03-30,C,BUCKET TOOTH BROKEN OFF,PM01,3769.26,Tooth Wear/Replacement
+2009-03-30,C,CHANGEOUT BUCKET,PM01,7774.83,Complete Bucket Replacement
+2009-04-03,C,REPLACE 2 LOST TEETH,PM01,1714.5,Tooth Wear/Replacement
+2009-04-05,C,REPLACE LOST CENTRE BUCKET TOOTH,PM01,701.77,Tooth Wear/Replacement
+2009-04-26,C,GREASE LINE ON LHS OF BUCKET BROKEN,PM01,138.21,Grease Line/Fitting Issue
+2009-05-01,C,ONE BUCKET TOOTH HAS FALLEN OFF,PM01,1241.89,Tooth Wear/Replacement
+2009-05-17,C,REPAIR BLOWN BUCKET HOSE.,PM01,0,Hydraulic Hose/Line Leak
+2009-05-18,C,Offsite Repair RH120E May  09,PM01,105784.35,Complete Bucket Replacement
+2009-07-01,C,MINING GET - SHD023 FY10,PM05,12356.89,Routine Maintenance/Inspection
+2009-07-30,C,TWO BUCKET TEETH BROKEN,PM01,1604.08,Tooth Wear/Replacement
+2009-08-25,C,REPLACE BUCKET TOOTH.,PM01,701.77,Tooth Wear/Replacement
+2009-10-11,C,CRACKS UNDER HEEL OF BUCKET,PM01,1568,Structural Crack/Damage
+2009-10-17,C,C/O R/H BUCKET CLAM CYLINDER,PM01,4682.12,Cylinder Mechanical Failure
+2009-11-03,C,REPLACE LUBE HOSE TO BUCKET,PM01,0,Grease Line/Fitting Issue
+2009-11-23,C,Off Site Repair RH120E November 2009,PM01,216816.49,Complete Bucket Replacement
+2009-12-20,C,Change out bucket teeth.,PM01,6496.88,Tooth Wear/Replacement
+2010-01-16,C,REPLACE MISSING BUCKET TOOTH.,PM01,2358.57,Tooth Wear/Replacement
+2010-01-17,C,REPLACE A MISSING BUCKET TOOTH,PM01,926.89,Tooth Wear/Replacement
+2010-02-05,C,REPLACE BUCKET TOOTH,PM01,1008.19,Tooth Wear/Replacement
+2010-03-10,C,BUCKET TOOTH MISSING    @R10,PM01,66.43,Tooth Wear/Replacement
+2010-04-30,C,REPLACE MISSING BUCKET TOOTH.,PM01,974.53,Tooth Wear/Replacement
+2010-05-06,C,REPAIR BUCKET WEAR PLATES,PM01,0,Wear Package Replacement
+2010-05-26,C,BUCKET CRACKS,PM01,0,Structural Crack/Damage
+2010-06-17,C,REPLACE BUCKET TOOTH,PM01,1624.22,Tooth Wear/Replacement
+2010-06-28,C,REPLACE MISSING BUCKET TOOTH.,PM01,5133.07,Tooth Wear/Replacement
+2010-07-01,C,MINING GET - SHD0023 FY11,PM05,845.17,Routine Maintenance/Inspection
+2010-07-14,C,REPLACE LH BUCKET CYL HOSES,PM01,1731.37,Hydraulic Hose/Line Leak
+2010-09-14,C,CHANGE OUT BUCKET,PM01,3222.88,Complete Bucket Replacement
+2011-03-25,C,CHANDE BUCKET TOOTH,PM01,670.5,Tooth Wear/Replacement
+2011-05-01,C,REPAIR & REPLACE GREASE HOSES BUCKET,PM01,9300.14,Grease Line/Fitting Issue
+2011-05-08,C,REPLACE MISSING BUCKET TOOTH,PM01,1844.9,Tooth Wear/Replacement
+2011-05-08,C,GREASE LINES BROKEN AT BUCKET,PM01,998.67,Grease Line/Fitting Issue
+2011-05-12,C,L/H PIN WALKING OUT ON BUCKET CLAM LOWER,PM01,1743.12,Pin/Lock Replacement
+2011-07-03,C,HEATER NOT GETTING WARM,PM01,1304.5,Unrelated Component
+2011-07-06,C,OIL LEAK AT BACK OF BUCKET,PM01,559.07,Hydraulic Hose/Line Leak
+2011-08-08,C,round plate r/h side of bucket fallen of,PM01,1645.9,Wear Package Replacement
+2011-10-07,C,REPAIR SPARE BUCKET SHD23.,PM01,267231.39,Complete Bucket Replacement
+2003-07-17,D,Replace tooth on bucket,PM01,954.93,Tooth Wear/Replacement
+2003-08-12,D,No bucket crowd  COMPLETED,PM01,245.99,Bucket Opening Mechanism Failure
+2003-10-31,D,Replace bucket with 20m3 style.,PM01,10635.51,Complete Bucket Replacement

@@ -3,7 +3,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from data import *
 from model import *
-from model_lstm import *
+from lstm.model_lstm import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
