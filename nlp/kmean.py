@@ -53,54 +53,12 @@ class KMeansTab(QWidget):
 
         self.setLayout(layout)
 
-    def perform_elbow_method(self):
-        dialog = KRangeDialog(self)
-        if dialog.exec_() == QDialog.Accepted:
-            min_k, max_k = dialog.get_values()
-            try:
-                min_k = int(min_k)
-                max_k = int(max_k)
-                if min_k >= max_k or min_k < 1:
-                    QMessageBox.warning(
-                        self,
-                        "Invalid Input",
-                        "Please ensure min k < max k and min k >= 1.",
-                    )
-                    return
-                self.show_elbow_method(min_k, max_k)
-            except ValueError:
-                QMessageBox.warning(
-                    self, "Invalid Input", "Please enter valid integers for k."
-                )
-
     def load_processed_text(self):
         file_path = os.path.join(os.getcwd(), "selected.csv")
         df = pd.read_csv(file_path)
         if "Processed Text" not in df.columns:
             raise ValueError("Processed Text column is missing in the CSV file.")
         return df["Processed Text"].dropna().tolist()
-
-    def show_elbow_method(self, min_k, max_k):
-        text_data = self.load_processed_text()
-        tfidf_vectorizer = TfidfVectorizer(max_features=1000)
-        tfidf_matrix = tfidf_vectorizer.fit_transform(text_data)
-        tfidf_matrix_normalized = normalize(tfidf_matrix, norm="l2")
-
-        inertias = []
-        k_range = range(int(min_k), int(max_k) + 1)
-        for k in k_range:
-            kmeans = KMeans(n_clusters=k, random_state=42)
-            kmeans.fit(tfidf_matrix_normalized)
-            inertias.append(kmeans.inertia_)
-
-        plt.figure(figsize=(10, 5))
-        plt.plot(k_range, inertias, marker="o")
-        plt.xlabel("Number of clusters (k)")
-        plt.ylabel("Inertia")
-        plt.title("Elbow Method For Optimal k")
-        plt.xticks(k_range)
-        plt.grid(True)
-        plt.show()
 
     def run_kmeans(self):
         k = int(self.k_input.text())

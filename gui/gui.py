@@ -58,6 +58,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from graph.dep_graph import DepGraph
 from nlp import csv_loader_tab
 from nlp import subtab
+from nlp import similar
 
 
 # database_data = {}
@@ -737,8 +738,9 @@ class MainWindow(QMainWindow):
         self.central_widget.addTab(self.dep_tab, "Dependencies")
         self.lstm_tab = QWidget()
         self.central_widget.addTab(self.lstm_tab, "lstm")
-        self.nlp_tab = QWidget()
-        self.central_widget.addTab(subtab.NestedTabWidget(), "NLP")
+        self.central_widget.addTab(subtab.NestedTabWidgetS(), "NLP-Unsupervised")
+        self.central_widget.addTab(subtab.NestedTabWidgetUnS(), "NLP-Supervised")
+        self.central_widget.addTab(similar.SimilarityAnalysisTab(), "NLP-Similarity")
 
         self.init_main_tab()
         self.init_stats_tab()
@@ -1124,11 +1126,15 @@ class MainWindow(QMainWindow):
 
         # Component button
         self.comp_icon = QIcon(os.path.join(self.IMAGES_PATH, "add_comp_icon.png"))
-        self.comp_button = DepQAction(self.comp_icon, "Add Component", self.system_vis_scene, self.dep_toolbar)
+        self.comp_button = DepQAction(
+            self.comp_icon, "Add Component", self.system_vis_scene, self.dep_toolbar
+        )
 
         # Edge button
         self.edge_icon = QIcon(os.path.join(self.IMAGES_PATH, "edge_icon.png"))
-        self.edge_button = DepQAction(self.edge_icon, "Add Edge", self.system_vis_scene, self.dep_toolbar)
+        self.edge_button = DepQAction(
+            self.edge_icon, "Add Edge", self.system_vis_scene, self.dep_toolbar
+        )
 
         # AND gate button
         self.AND_gate_icon = QIcon(os.path.join(self.IMAGES_PATH, "and_gate.png"))
