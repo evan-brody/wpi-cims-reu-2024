@@ -152,7 +152,12 @@ class DepGraph:
         to_update_to = np.copy(self.is_AND[:n]) if self.is_AND[b] else [True] * n
         to_update_to[b] = False
         for i in compress(range(n), to_update_to):
-            new_path = weight * A_c_full[i, b]
+            # When b = AND, don't incorporate
+            # (b -> i) in (a -> b -> i)_c
+            new_path = weight
+            if not self.is_AND[b]:
+                new_path *= A_c_full[i, b]
+
             if 1 == new_path:
                 self.one_count[i, a] += 1
             else:
@@ -179,7 +184,9 @@ class DepGraph:
         for j in compress(range(n), to_update_from):
             for i in compress(range(n), to_update_to):
                 # j -> i OR (j -> a AND a -> i)
-                new_path = A_c_full[a, j] * A_c_full[i, a]
+                new_path = A_c_full[a, j]
+                if not self.is_AND[a]:
+                    new_path *= A_c_full[i, a]
                 
                 if 1 == new_path:
                     self.one_count[i, j] += 1
@@ -401,7 +408,7 @@ if __name__ == "__main__":
         dg.add_edge(('b', 'AND'), 1)
         n = dg.n
 
-        print(dg.calc_A_c_full()[:n, :n])
+        print(dg.calc_A_c_full()[:n, :n] + dg.I[:n, :n])
 
         print("AND calc_r:")
         print(dg.calc_r())
@@ -411,11 +418,11 @@ if __name__ == "__main__":
         dg.add_vertices(['a', 'b', 'c', 'd'], [0.75] * 4)
         dg.add_AND_gate('A')
         dg.add_AND_gate('B')
-        dg.add_edge(('B', 'd'))
-        dg.add_edge(('A', 'B'))
-        dg.add_edge(('a', 'A'))
-        dg.add_edge(('b', 'A'))
-        dg.add_edge(('c', 'B'))
+        dg.add_edge(('B', 'd'), 0.75)
+        dg.add_edge(('A', 'B'), 0.75)
+        dg.add_edge(('a', 'A'), 1)
+        dg.add_edge(('b', 'A'), 1)
+        dg.add_edge(('c', 'B'), 1)
         n = dg.n
 
         print()
