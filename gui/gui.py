@@ -33,7 +33,6 @@ TODO: UI Bug fixes
     TODO: fix dependency arrow snapping when dragging rectangles over each other
 
 TODO:
-    # New names for each component of same type (A, B, C)
     # Success criteria: fails if n or more components fail
 """
 
@@ -113,8 +112,6 @@ class DepQComboBox(QComboBox):
     def updateComponentFailureRate(self, comp_str: str) -> None:
         pass
         # TODO: get component failure rate from comp_str
-
-
 
 # Custom QGraphicsScene class for the dependency tab
 class DepQGraphicsScene(QGraphicsScene):
