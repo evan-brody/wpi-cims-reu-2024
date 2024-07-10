@@ -129,6 +129,8 @@ class DepQGraphicsScene(QGraphicsScene):
 
     RECT_DIMS = (400, 200)
 
+    ERASER_RADIUS = 50
+
     SCENE_WIDTH = 5_000
     SCENE_HEIGHT = 1_000
 
@@ -382,6 +384,17 @@ class DepQGraphicsScene(QGraphicsScene):
             brush.setColor(bcolor)
             rect.setBrush(brush)
 
+    def erase_in_circle(self, pos: QPointF) -> None:
+        eraser = self.addEllipse(
+            pos.x(), pos.y(),
+            self.ERASER_RADIUS,
+            self.ERASER_RADIUS,
+            QPen(),
+            QBrush(Qt.NoBrush)
+        )
+        for item in self.collidingItems(eraser):
+            self.removeItem(item)
+
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         match event.button():
             case Qt.LeftButton:
@@ -435,6 +448,11 @@ class DepQGraphicsScene(QGraphicsScene):
             return
 
         pos = event.scenePos()
+
+        toolbar = self.parent_window.dep_toolbar
+        if self.parent_window.eraser_button == toolbar.selected_tool:
+            self.erase_in_circle(pos)
+            return
 
         # Drags objects around, if we should
         if self.clicked_on_l is not None and self.select_start is not None:
@@ -574,6 +592,8 @@ class DepQGraphicsScene(QGraphicsScene):
                 case self.parent_window.AND_gate_button:
                     if not self.released_on_1:
                         self.add_AND_gate(event)
+                case self.parent_window.eraser_button:
+                    self.erase_in_circle(pos)
             return
 
         if not self.select_rect_item:
