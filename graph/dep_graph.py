@@ -6,9 +6,6 @@ import numpy as np
 from itertools import chain, compress, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
-# TODO: delete_edge works with AND gates
-# TODO: zero_count for AND gates ?
-
 class DepGraph:
     MAX_VERTICES = 512
     DEFAULT_EDGE_WEIGHT = 1
