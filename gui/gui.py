@@ -1099,6 +1099,12 @@ class MainWindow(QMainWindow):
             self.AND_gate_icon, "Add AND Gate", self.system_vis_scene, self.dep_toolbar
         )
 
+        # Eraser button
+        self.eraser_icon = QIcon(os.path.join(self.IMAGES_PATH, "eraser.png"))
+        self.eraser_button = DepQAction(
+            self.eraser_icon, "Eraser", self.system_vis_scene, self.dep_toolbar
+        )
+
         # Add widgets separate from setup
         self.dep_layout.addWidget(self.dep_toolbar)
         self.dep_layout.addWidget(self.system_vis_view)
