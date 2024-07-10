@@ -96,6 +96,25 @@ class DepQAction(QAction):
 
         self.toolbar.selected_tool = self
 
+class DepQComboBox(QComboBox):
+    def __init__(self, parent_scene: QGraphicsScene, parent_window: QMainWindow) -> None:
+        super().__init__()
+
+        self.parent_scene = parent_scene
+        self.parent_window = parent_window
+
+        self.setEditable(True)
+        self.setSizeAdjustPolicy(QComboBox.AdjustToContents)
+        self.setMinimumContentsLength(25)
+        self.addItem("Select a Component")
+        self.addItems(self.parent_window.components["name"])
+        self.textActivated.connect(self.updateComponentFailureRate)
+
+    def updateComponentFailureRate(self, comp_str: str) -> None:
+        pass
+        # TODO: get component failure rate from comp_str
+
+
 
 # Custom QGraphicsScene class for the dependency tab
 class DepQGraphicsScene(QGraphicsScene):
@@ -107,7 +126,7 @@ class DepQGraphicsScene(QGraphicsScene):
     ARR_LONG = 30  # The length of the middle axis
     ARR_SHORT = 15  # Half the length of the base
 
-    RECT_DIMS = (300, 150)
+    RECT_DIMS = (400, 200)
 
     SCENE_WIDTH = 5_000
     SCENE_HEIGHT = 1_000
@@ -149,21 +168,20 @@ class DepQGraphicsScene(QGraphicsScene):
         self.rect_arrs_out = {}
         self.rect_risks = {}
 
-        # How many of each components have we created ?
-        # This should not decrement on component deletion
-        self.component_counts = {}
+    def items_at(self, pos: QPointF) -> list:
+        collision_line = self.addLine(QLineF(pos, pos), QPen(QColor(0, 0, 0, 0)))
+        colliding_items = self.collidingItems(collision_line)
+        self.removeItem(collision_line)
+
+        return colliding_items
 
     def top_rect_at(self, pos: QPointF) -> QGraphicsRectItem:
-        collision_line = self.addLine(QLineF(pos, pos), QPen(QColor(0, 0, 0, 0)))
-        moused_over = self.collidingItems(collision_line)
         top_rect = None
-        if moused_over:
-            maxz = float("-inf")
-            for item in moused_over:
-                if isinstance(item, QGraphicsRectItem) and item.zValue() > maxz:
-                    top_rect, maxz = item, item.zValue()
+        maxz = float("-inf")
+        for item in self.items_at(pos):
+            if isinstance(item, QGraphicsRectItem) and item.zValue() > maxz:
+                top_rect, maxz = item, item.zValue()
 
-        self.removeItem(collision_line)
         return top_rect
 
     def draw_arr(
@@ -262,10 +280,6 @@ class DepQGraphicsScene(QGraphicsScene):
         return arr
 
     def add_component(self, event: QGraphicsSceneMouseEvent) -> None:
-        comp_str = self.parent_window.dep_comp_select.currentText()
-        if comp_str == "Select a Component":
-            return
-
         # Create and add rectangle
         rect_w, rect_h = self.RECT_DIMS
         rect_x = event.scenePos().x() - rect_w // 2
@@ -283,33 +297,23 @@ class DepQGraphicsScene(QGraphicsScene):
         self.dg.add_vertex(rect_item)
         self.update_rect_colors()
 
-        # Update count dictionary
-        comp_count = self.component_counts.get(comp_str, 0)
-        comp_label = comp_str
-        if 0 < comp_count:
-            comp_label += f" ({comp_count})"
-        self.component_counts[comp_str] = comp_count + 1
+        # Create text input box
+        comp_name_input = DepQComboBox(self, self.parent_window)
 
-        # Create text
-        text_widg = QLabel(comp_label)
-        text_widg.setWordWrap(True)
-        text_widg.setAlignment(Qt.AlignHCenter)
-
-        # Match background color to rectangle
-        pal = text_widg.palette()
-        pal.setBrush(QPalette.Window, QBrush(Qt.NoBrush))
-        text_widg.setPalette(pal)
+        QTimer.singleShot(0, 
+            lambda: comp_name_input.setFocus(Qt.OtherFocusReason)
+        )
 
         # Set up proxy for binding to scene
         proxy = QGraphicsProxyWidget(parent=rect_item)
-        proxy.setWidget(text_widg)
-
-        # Center within rectangle
-        text_pos = rect_item.mapFromScene(rect_item.pos())
+        proxy.setWidget(comp_name_input)
+    
+        # Center input box within rectangle
+        input_pos = rect_item.mapFromScene(rect_item.pos())
         text_w = proxy.boundingRect().width()
         text_h = proxy.boundingRect().height()
-        text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
-        proxy.setPos(text_pos)
+        input_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
+        proxy.setPos(input_pos)
 
     def add_AND_gate(self, event: QGraphicsSceneMouseEvent) -> None:
         # Create and add rectangle
@@ -384,6 +388,8 @@ class DepQGraphicsScene(QGraphicsScene):
             case Qt.RightButton:
                 self.mousePressEventR(event)
 
+        super().mousePressEvent(event)
+
     def mousePressEventL(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_l = True
         pos = event.scenePos()
@@ -420,6 +426,8 @@ class DepQGraphicsScene(QGraphicsScene):
             self.mouseMoveEventL(event)
         if self.dep_origin:
             self.mouseMoveEventR(event)
+
+        super().mouseMoveEvent(event)
 
     def mouseMoveEventL(self, event: QGraphicsSceneMouseEvent) -> None:
         if self.dep_origin:
@@ -527,6 +535,8 @@ class DepQGraphicsScene(QGraphicsScene):
                 self.clearSelection()
                 self.dep_origin = None
                 self.del_dyn_arr()
+        
+        super().mouseReleaseEvent(event)
 
     def mouseReleaseEventL(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_l = False
@@ -536,6 +546,16 @@ class DepQGraphicsScene(QGraphicsScene):
         # Handle single clicks
         self.select_end = pos
         single_click = self.select_start == self.select_end
+
+        # Cancel click if we're just selecting
+        # a component from the dropdown
+        released_on_l_all = self.items_at(pos)
+        for item in released_on_l_all:
+            if isinstance(item, QGraphicsProxyWidget) and \
+               isinstance(item.widget(), QFrame) and not \
+               isinstance(item.widget(), QLabel):
+                return
+
         self.released_on_1 = self.top_rect_at(pos)
         if single_click:
             match self.parent_window.dep_toolbar.selected_tool:
@@ -616,7 +636,7 @@ class DepQGraphicsScene(QGraphicsScene):
 
     def keyReleaseEvent(self, event) -> None:
         match event.key():
-            case Qt.Key_Delete | Qt.Key_Backspace:
+            case Qt.Key_Delete:
                 for item in self.selectedItems():
                     for arr in self.rect_arrs_out[item] + self.rect_arrs_in[item]:
                         if arr.scene():
@@ -631,7 +651,6 @@ class DepQGraphicsScene(QGraphicsScene):
                     self.removeItem(item)
 
                 self.update_rect_colors()
-
 
 """
 
@@ -1047,30 +1066,7 @@ class MainWindow(QMainWindow):
         ### END OF STATISTICS TAB SETUP ###
 
     def init_dep_tab(self):
-        self.dep_layout = QHBoxLayout(self.dep_tab)
-        self.dep_left_layout = QVBoxLayout()
-        self.dep_right_layout = QVBoxLayout()
-
-        # Set up top component selection layout
-        self.dep_select_layout = QHBoxLayout()
-
-        # Set up component selection dropdown
-        self.dep_comp_select = QComboBox(self)
-        self.dep_comp_select.addItem("Select a Component")
-        self.populate_component_dropdown(self.dep_comp_select, self.components["name"])
-
-        # Set up component search field
-        self.dep_comp_search = QLineEdit(self)
-        self.dep_comp_search.setPlaceholderText("Search for a component...")
-        self.dep_comp_search.textChanged.connect(
-            self.filter_components(
-                self.populate_component_dropdown, self.dep_comp_select
-            )
-        )
-
-        # Add widgets to top layout
-        self.dep_select_layout.addWidget(self.dep_comp_search, stretch=1)
-        self.dep_select_layout.addWidget(self.dep_comp_select, stretch=1)
+        self.dep_layout = QVBoxLayout(self.dep_tab)
 
         # Setting up system dependency view
         self.system_vis_scene = DepQGraphicsScene(self)
@@ -1083,7 +1079,6 @@ class MainWindow(QMainWindow):
 
         # Right-hand toolbar for selecting mode
         self.dep_toolbar = DepQToolBar()
-        self.dep_toolbar.setOrientation(Qt.Vertical)
 
         # Component button
         self.comp_icon = QIcon(os.path.join(self.IMAGES_PATH, "add_comp_icon.png"))
@@ -1104,13 +1099,8 @@ class MainWindow(QMainWindow):
         )
 
         # Add widgets separate from setup
-        self.dep_left_layout.addLayout(self.dep_select_layout, stretch=1)
-        self.dep_left_layout.addWidget(self.system_vis_view, stretch=3)
-
-        self.dep_right_layout.addWidget(self.dep_toolbar)
-
-        self.dep_layout.addLayout(self.dep_left_layout)
-        self.dep_layout.addLayout(self.dep_right_layout)
+        self.dep_layout.addWidget(self.dep_toolbar)
+        self.dep_layout.addWidget(self.system_vis_view)
 
     def init_lstm_tab(self):
         ### START OF lstm TAB SETUP ###
