@@ -252,6 +252,13 @@ class DepGraph:
         for e, w in zip(edges, new_weights):
             self.update_edge(e, w)
 
+    def update_vertex(self, ref: QGraphicsRectItem, new_weight: float) -> None:
+        self.r0[self.refi[ref]] = new_weight
+
+    def update_vertices(self, refs: list[QGraphicsRectItem], new_weights: list[float]) -> None:
+        for ref, nw in zip(refs, new_weights):
+            self.update_vertex(ref, nw)
+
     # edge is a tuple of integers (a, b) where (a -> b)
     def delete_edge_i(self, edge: tuple[int]) -> None:
         self.update_edge_i(edge, 0)
