@@ -95,9 +95,8 @@ class DepGraph:
 
         self.n += d
 
-    def add_vertex(self, ref: QGraphicsRectItem, direct_risk: float=None) -> None:
+    def add_vertex(self, ref: QGraphicsRectItem, direct_risk: float=DEFAULT_DR) -> None:
         n = self.n
-        direct_risk = direct_risk if direct_risk else self.DEFAULT_DR
         self.refi[ref] = n
         self.iref[n] = ref
 
@@ -129,10 +128,9 @@ class DepGraph:
         self.n += 1
 
     # edge is a tuple (a, b) where a -> b
-    def add_edge(self, edge: tuple[QGraphicsRectItem], weight: float=None) -> None:
+    def add_edge(self, edge: tuple[QGraphicsRectItem], weight: float=DEFAULT_EDGE_WEIGHT) -> None:
         n = self.n
         a, b = self.refi[edge[0]], self.refi[edge[1]]
-        weight = weight if weight else self.DEFAULT_EDGE_WEIGHT
         self.A[b, a] = weight
 
         # Add to A-collapse by combining with existing connections
@@ -205,8 +203,8 @@ class DepGraph:
             for e, w in zip(edges, weights):
                 self.add_edge(e, w)
 
-    # edge is a tuple of integers (a, b) where a -> b
-    def delete_edge_i(self, edge: tuple[int]) -> None:
+    # edge is a tuple of integers (a, b) where (a -> b)
+    def update_edge_i(self, edge: tuple[int], new_weight: float) -> None:
         n = self.n
         a, b = edge
 
@@ -214,9 +212,12 @@ class DepGraph:
         # for broken_path_weight are accurate when i or j = a or b
         A_c_full = self.I[:n, :n] + self.calc_A_c_full()
         weight = A_c_full[b, a]
-        self.A[b, a] = 0
+        if weight == new_weight:
+            return
+        self.A[b, a] = new_weight
 
         # Remove influence of deleted edge on other paths
+        # then add influence of new edge weight
         # Skip diagonal because we don't allow those edges
         # If the edge involves an AND gate, we should only update
         # connections through it to other AND gates
@@ -225,7 +226,7 @@ class DepGraph:
         for i, j in filter(lambda t: t[0] != t[1], product(rangen, compress(rangen, to_update_to))):
             # (i -> a) AND (a -> b) AND (b -> j)
             # Note that (a -> b) is not all possible paths (a -> b),
-            # but the specific edge we're deleting
+            # but the specific edge we're updating
             broken_path_weight = A_c_full[a, i] * weight * A_c_full[j, b]
             # Remove influence of (a -> b) on (i -> j)
             if 1 == broken_path_weight:
@@ -234,6 +235,26 @@ class DepGraph:
                 self.A_collapse[j, i] = self.or_inv(
                     self.A_collapse[j, i], broken_path_weight
                 )
+
+            # Add influence of new weight
+            if 1 == new_weight:
+                self.one_count[j, i] += 1
+            else:
+                self.A_collapse[j, i] = self.scl_or_scl(
+                    self.A_collapse[j, i], new_weight
+                )
+
+    # edge is a tuple of references (a, b) where (a -> b)
+    def update_edge(self, edge: tuple[QGraphicsRectItem], new_weight: float) -> None:
+        self.update_edge_i((self.refi[edge[0]], self.refi[edge[1]]), new_weight)
+
+    def update_edges(self, edges: list[tuple[QGraphicsRectItem]], new_weights: list[float]) -> None:
+        for e, w in zip(edges, new_weights):
+            self.update_edge(e, w)
+
+    # edge is a tuple of integers (a, b) where (a -> b)
+    def delete_edge_i(self, edge: tuple[int]) -> None:
+        self.update_edge_i(edge, 0)
             
     # edge is a tuple of references (a, b) where (a -> b)
     def delete_edge(self, edge: tuple[QGraphicsRectItem]) -> None:
