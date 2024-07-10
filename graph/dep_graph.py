@@ -343,6 +343,15 @@ class DepGraph:
         self.r = self.mat_or_vec(self.I[:n, :n] + self.calc_A_c_full(), self.r0[:n])
         return self.r
     
+    def get_edge_weight_A(self, edge: tuple[QGraphicsRectItem]) -> float:
+        return self.A_collapse[self.refi[edge[1]], self.refi[edge[0]]]
+
+    def get_edge_weight_Ac(self, edge: tuple[QGraphicsRectItem]) -> float:
+        return self.A_collapse[self.refi[edge[1]], self.refi[edge[0]]]
+
+    def get_vertex_weight(self, ref: QGraphicsRectItem) -> float:
+        return self.r0[self.refi[ref]]
+    
     def get_r_dict(self) -> dict:
         self.calc_r()
         n = self.n

@@ -96,9 +96,10 @@ class DepQAction(QAction):
         self.toolbar.selected_tool = self
 
 class DepQComboBox(QComboBox):
-    def __init__(self, parent_scene: QGraphicsScene, parent_window: QMainWindow) -> None:
+    def __init__(self, parent_rect: QGraphicsRectItem, parent_scene: QGraphicsScene, parent_window: QMainWindow) -> None:
         super().__init__()
 
+        self.parent_rect = parent_rect
         self.parent_scene = parent_scene
         self.parent_window = parent_window
 
@@ -110,8 +111,11 @@ class DepQComboBox(QComboBox):
         self.textActivated.connect(self.updateComponentFailureRate)
 
     def updateComponentFailureRate(self, comp_str: str) -> None:
-        pass
-        # TODO: get component failure rate from comp_str
+        new_weight = 0.05 # TODO: get component failure rate from comp_str
+        self.parent_scene.dg.update_vertex(self.parent_rect, new_weight)
+
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        event.ignore()
 
 # Custom QGraphicsScene class for the dependency tab
 class DepQGraphicsScene(QGraphicsScene):
@@ -295,7 +299,7 @@ class DepQGraphicsScene(QGraphicsScene):
         self.update_rect_colors()
 
         # Create text input box
-        comp_name_input = DepQComboBox(self, self.parent_window)
+        comp_name_input = DepQComboBox(rect_item, self, self.parent_window)
 
         QTimer.singleShot(0, 
             lambda: comp_name_input.setFocus(Qt.OtherFocusReason)
