@@ -11,8 +11,8 @@ from PyQt5.QtWidgets import QGraphicsRectItem
 
 class DepGraph:
     MAX_VERTICES = 512
-    DEFAULT_EDGE_WEIGHT = 0.5
-    DEFAULT_DR = 0.5
+    DEFAULT_EDGE_WEIGHT = 1
+    DEFAULT_DR = 0.05
     J = np.ones((MAX_VERTICES, MAX_VERTICES), np.uint8)
     I = np.identity(MAX_VERTICES, np.uint8)
 
