@@ -36,7 +36,7 @@ TODO:
     # Success criteria: fails if n or more components fail
 """
 
-import os, sys, sqlite3
+import os, sys, sqlite3, logging
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -1699,7 +1699,7 @@ class MainWindow(QMainWindow):
             train_lstm.LEARNING_RATE = float(self.learning_rate_box.text())
         except:
             QMessageBox.warning(
-                self, "Cast Error", "Input values aren't able to be cast to ints"
+                self, "Cast Error", "Input values aren't able to be cast"
             )
             return
 
@@ -1723,6 +1723,7 @@ if __name__ == "__main__":
     pool = mp.Pool(NUM_PROCESSES)
     app = QApplication(sys.argv)
     window = MainWindow()
+    logger = mp.log_to_stderr(logging.INFO)
     plt.ioff()
 
     train_lstm.window = window
