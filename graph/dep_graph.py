@@ -6,6 +6,8 @@ import numpy as np
 from itertools import chain, compress, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
+# TODO: zero_count for AND gates
+
 class DepGraph:
     MAX_VERTICES = 512
     DEFAULT_EDGE_WEIGHT = 1
@@ -21,6 +23,8 @@ class DepGraph:
         self.n = 0
         # Direct risk vector
         self.r0 = np.empty((self.MAX_VERTICES,), np.double)
+        # Full risk vector
+        self.r = np.empty((self.MAX_VERTICES,), np.double)
         # self.is_AND[i] stores whether vi is an AND gate
         self.is_AND = np.empty((self.MAX_VERTICES,), bool)
         # Adjacency matrix
@@ -208,11 +212,28 @@ class DepGraph:
         # We need to add the identity matrix so our calculations
         # for broken_path_weight are accurate when i or j = a or b
         A_c_full = self.I[:n, :n] + self.calc_A_c_full()
-        weight = A_c_full[b, a]
-        if weight == new_weight:
+        old_weight = A_c_full[b, a]
+        if old_weight == new_weight:
             return
         self.A[b, a] = new_weight
 
+        # Handle the edge itself directly if a is an AND gate
+        # In all other cases, this is handled in the for-loop below
+        if self.is_AND[a]:
+            if 1 == old_weight:
+                self.one_count[b, a] -= 1
+            else:
+                self.A_collapse[b, a] = self.or_inv(
+                    self.A_collapse[b, a], old_weight
+                )
+            
+            if 1 == new_weight:
+                self.one_count[b, a] += 1
+            else:
+                self.A_collapse[b, a] = self.scl_or_scl(
+                    self.A_collapse[b, a], new_weight
+                )
+        
         # Remove influence of deleted edge on other paths
         # then add influence of new edge weight
         # Skip diagonal because we don't allow those edges
@@ -224,7 +245,7 @@ class DepGraph:
             # (i -> a) AND (a -> b) AND (b -> j)
             # Note that (a -> b) is not all possible paths (a -> b),
             # but the specific edge we're updating
-            broken_path_weight = A_c_full[a, i] * weight * A_c_full[j, b]
+            broken_path_weight = A_c_full[a, i] * old_weight * A_c_full[j, b]
             # Remove influence of (a -> b) on (i -> j)
             if 1 == broken_path_weight:
                 self.one_count[j, i] -= 1

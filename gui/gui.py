@@ -34,6 +34,7 @@ TODO: UI Bug fixes
 
 TODO:
     # Success criteria: fails if n or more components fail
+    # Fix edge erasing
 """
 
 import os, sys, sqlite3, logging
@@ -109,7 +110,6 @@ class DepQComboBox(QComboBox):
         self.setEditable(True)
         self.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.setMinimumContentsLength(25)
-        self.addItem("Select a Component")
         self.addItems(self.parent_window.components["name"])
         self.textActivated.connect(self.update_comp_fail_rate)
 
@@ -204,11 +204,6 @@ class DepQGraphicsScene(QGraphicsScene):
         point_up = False
 
         origin_rect_pos = origin_rect.scenePos()
-        origin_rect_center = origin_rect_pos
-        origin_rect_center += QPointF(
-            origin_rect.rect().width() / 2, origin_rect.rect().height() / 2
-        )
-
         start_pos = origin_rect_pos
         arr_start_pos = origin_rect_pos
         left_bound = origin_rect_pos.x()
@@ -228,10 +223,12 @@ class DepQGraphicsScene(QGraphicsScene):
         # Coming out of the top
         elif end_pos.y() <= top_bound:
             arr_start_pos.setY(top_bound)
+            arr_start_pos.setX((left_bound + right_bound) / 2)
             elbow = QPointF(start_pos.x(), end_pos.y())
         # Coming out of the bottom
         elif end_pos.y() >= bot_bound:
             arr_start_pos.setY(bot_bound)
+            arr_start_pos.setX((left_bound + right_bound) / 2)
             elbow = QPointF(start_pos.x(), end_pos.y())
 
         moused_over = self.top_rect_at(end_pos)
@@ -311,9 +308,11 @@ class DepQGraphicsScene(QGraphicsScene):
 
         # Create text input box
         comp_name_input = DepQComboBox(rect_item, self, self.parent_window)
+        comp_name_input.setCurrentText('')
 
-        QTimer.singleShot(0, 
-            lambda: comp_name_input.setFocus(Qt.OtherFocusReason)
+        # This gives the input box keyboard focus
+        QTimer.singleShot(
+            0, lambda: comp_name_input.setFocus(Qt.OtherFocusReason)
         )
 
         # Set up proxy for binding to scene
