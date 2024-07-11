@@ -69,34 +69,37 @@ class DepQToolBar(QToolBar):
 
         self.selected_tool = None
 
-
 # Instances of this class are the buttons on the
 # right side of the Dependency Analysis tab
 class DepQAction(QAction):
-    def __init__(self, icon: QIcon, text: str, scene, toolbar: DepQToolBar) -> None:
+    def __init__(self, icon: QIcon, text: str, 
+                 parent_scene: QGraphicsScene, 
+                 parent_toolbar: DepQToolBar) -> None:
         super().__init__(icon, text)
 
-        self.scene = scene
-        self.toolbar = toolbar
-        self.triggered.connect(self.clearOtherSelections)
+        self.parent_scene = parent_scene
+        self.parent_toolbar = parent_toolbar
         self.setCheckable(True)
+        self.triggered.connect(self.clear_other_selections)
 
-        self.toolbar.addAction(self)
+        self.parent_toolbar.addAction(self)
 
     # Checked is the new state
-    def clearOtherSelections(self, checked: bool) -> None:
+    def clear_other_selections(self, checked: bool) -> None:
         if not checked:
             return
 
-        for action in self.toolbar.actions():
+        for action in self.parent_toolbar.actions():
             action.setChecked(action == self)
-        self.scene.dep_origin = None
-        self.scene.del_dyn_arr()
+        self.parent_scene.dep_origin = None
+        self.parent_scene.del_dyn_arr()
 
-        self.toolbar.selected_tool = self
+        self.parent_toolbar.selected_tool = self
 
 class DepQComboBox(QComboBox):
-    def __init__(self, parent_rect: QGraphicsRectItem, parent_scene: QGraphicsScene, parent_window: QMainWindow) -> None:
+    def __init__(self, parent_rect: QGraphicsRectItem, 
+                 parent_scene: QGraphicsScene, 
+                 parent_window: QMainWindow) -> None:
         super().__init__()
 
         self.parent_rect = parent_rect
@@ -108,10 +111,10 @@ class DepQComboBox(QComboBox):
         self.setMinimumContentsLength(25)
         self.addItem("Select a Component")
         self.addItems(self.parent_window.components["name"])
-        self.textActivated.connect(self.updateComponentFailureRate)
+        self.textActivated.connect(self.update_comp_fail_rate)
 
-    def updateComponentFailureRate(self, comp_str: str) -> None:
-        new_weight = 0.05 # TODO: get component failure rate from comp_str
+    def update_comp_fail_rate(self, comp_str: str) -> None:
+        new_weight = self.parent_scene.dg.DEFAULT_DR # TODO: get component failure rate from comp_str
         self.parent_scene.dg.update_vertex(self.parent_rect, new_weight)
 
     def wheelEvent(self, event: QWheelEvent) -> None:
@@ -122,6 +125,8 @@ class DepQGraphicsScene(QGraphicsScene):
     # Keys for the QGraphicsItem data table
     MOUSE_DELTA = 0
     IS_COMPONENT = 1
+    IS_AND_GATE = 2
+    EDGES_VERTICES = 3
 
     # The tip of a dependency arrow is an isosceles triangle
     ARR_LONG = 30  # The length of the middle axis
@@ -172,7 +177,7 @@ class DepQGraphicsScene(QGraphicsScene):
         self.rect_risks = {}
 
     def items_at(self, pos: QPointF) -> list:
-        collision_line = self.addLine(QLineF(pos, pos), QPen(QColor(0, 0, 0, 0)))
+        collision_line = self.addLine(QLineF(pos, pos), QPen(Qt.NoPen))
         colliding_items = self.collidingItems(collision_line)
         self.removeItem(collision_line)
 
@@ -188,7 +193,7 @@ class DepQGraphicsScene(QGraphicsScene):
         return top_rect
 
     def draw_arr(
-        self, start_pos: QPointF, end_pos: QPointF, pen: QPen
+        self, origin_rect: QGraphicsRectItem, end_pos: QPointF, pen: QPen
     ) -> QGraphicsItemGroup:
         self.del_dyn_arr()
 
@@ -198,10 +203,14 @@ class DepQGraphicsScene(QGraphicsScene):
         point_down = False
         point_up = False
 
-        origin_rect = self.top_rect_at(start_pos)
         origin_rect_pos = origin_rect.scenePos()
+        origin_rect_center = origin_rect_pos
+        origin_rect_center += QPointF(
+            origin_rect.rect().width() / 2, origin_rect.rect().height() / 2
+        )
 
-        arr_start_pos = start_pos
+        start_pos = origin_rect_pos
+        arr_start_pos = origin_rect_pos
         left_bound = origin_rect_pos.x()
         right_bound = left_bound + origin_rect.rect().width()
         top_bound = origin_rect_pos.y()
@@ -328,7 +337,7 @@ class DepQGraphicsScene(QGraphicsScene):
         rect_item = self.addRect(0, 0, rect_w, rect_h, QPen(), brush)
         rect_item.setPos(rect_x, rect_y)
         rect_item.setFlags(QGraphicsItem.ItemIsSelectable)
-        rect_item.setData(self.IS_COMPONENT, False)
+        rect_item.setData(self.IS_AND_GATE, True)
 
         self.rect_depends_on[rect_item] = []
         self.rect_influences[rect_item] = []
@@ -384,17 +393,45 @@ class DepQGraphicsScene(QGraphicsScene):
             brush.setColor(bcolor)
             rect.setBrush(brush)
 
+    # Properly deletes components and AND gates
+    def delete_rect(self, rect_item: QGraphicsRectItem) -> None:
+        for arr in self.rect_arrs_out[rect_item] + self.rect_arrs_in[rect_item]:
+            if arr.scene():
+                self.removeItem(arr)
+        self.rect_arrs_out[rect_item].clear()
+        self.rect_arrs_in[rect_item].clear()
+
+        self.rect_depends_on[rect_item].clear()
+        self.rect_influences[rect_item].clear()
+
+        self.dg.delete_vertex(rect_item)
+        self.removeItem(rect_item)
+
     def erase_in_circle(self, pos: QPointF) -> None:
         eraser = self.addEllipse(
             pos.x(), pos.y(),
             self.ERASER_RADIUS,
             self.ERASER_RADIUS,
-            QPen(),
+            QPen(Qt.NoPen),
             QBrush(Qt.NoBrush)
         )
-        for item in self.collidingItems(eraser):
-            self.removeItem(item)
 
+        # Clear out edges first to make sure
+        # we don't trigger an error trying to
+        # delete an edge that's already been deleted
+        to_erase = self.collidingItems(eraser)
+        for item in to_erase:
+            if item.data(self.EDGES_VERTICES):
+                self.dg.delete_edge(item.data(self.EDGES_VERTICES))
+                self.removeItem(item)
+        
+        # Now deal with components and AND gates
+        for item in to_erase:
+            if item.data(self.IS_COMPONENT) or item.data(self.IS_AND_GATE):
+                self.delete_rect(item)
+
+        self.removeItem(eraser)
+                
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         match event.button():
             case Qt.LeftButton:
@@ -439,7 +476,7 @@ class DepQGraphicsScene(QGraphicsScene):
         if self.mouse_down_l:
             self.mouseMoveEventL(event)
         if self.dep_origin:
-            self.mouseMoveEventR(event)
+            self.mouseMoveEventWithArrow(event)
 
         super().mouseMoveEvent(event)
 
@@ -480,17 +517,13 @@ class DepQGraphicsScene(QGraphicsScene):
                     if not dependency.scene():
                         continue
 
-                    item_center = item.scenePos()
-                    item_center += QPointF(
-                        item.rect().width() / 2, item.rect().height() / 2
-                    )
-
                     dep_center = dependency.scenePos()
                     dep_center += QPointF(
                         dependency.rect().width() / 2, dependency.rect().height() / 2
                     )
 
-                    new_arr = self.draw_arr(item_center, dep_center, QPen())
+                    new_arr = self.draw_arr(item, dep_center, QPen())
+                    new_arr.setData(self.EDGES_VERTICES, (item, dependency))
 
                     self.rect_arrs_out[item].append(new_arr)
                     self.rect_arrs_in[dependency].append(new_arr)
@@ -512,7 +545,8 @@ class DepQGraphicsScene(QGraphicsScene):
                         item.rect().width() / 2, item.rect().height() / 2
                     )
 
-                    new_arr = self.draw_arr(inf_center, item_center, QPen())
+                    new_arr = self.draw_arr(influence, item_center, QPen())
+                    new_arr.setData(self.EDGES_VERTICES, (influence, item))
 
                     self.rect_arrs_out[influence].append(new_arr)
                     self.rect_arrs_in[item].append(new_arr)
@@ -533,7 +567,7 @@ class DepQGraphicsScene(QGraphicsScene):
             ax, ay, bx, by, QPen(Qt.DashLine), QBrush(Qt.NoBrush)
         )
 
-    def mouseMoveEventR(self, event: QGraphicsSceneMouseEvent) -> None:
+    def mouseMoveEventWithArrow(self, event: QGraphicsSceneMouseEvent) -> None:
         # Important to note that y-values increase as we go down
         pos = event.scenePos()
         arr_start_pos = self.dep_origin.scenePos()
@@ -544,7 +578,7 @@ class DepQGraphicsScene(QGraphicsScene):
         if self.dep_origin == self.top_rect_at(pos):
             return
 
-        self.dyn_arr = self.draw_arr(arr_start_pos, pos, QPen(Qt.DashLine))
+        self.dyn_arr = self.draw_arr(self.dep_origin, pos, QPen(Qt.DashLine))
 
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         match event.button():
@@ -640,7 +674,8 @@ class DepQGraphicsScene(QGraphicsScene):
                         self.released_on_r.rect().height() / 2,
                     )
 
-                    arr = self.draw_arr(arr_start_pos, arr_end_pos, QPen())
+                    arr = self.draw_arr(self.dep_origin, arr_end_pos, QPen())
+                    arr.setData(self.EDGES_VERTICES, (self.dep_origin, self.released_on_r))
 
                     self.rect_arrs_out[self.dep_origin].append(arr)
                     self.rect_arrs_in[self.released_on_r].append(arr)
@@ -659,17 +694,7 @@ class DepQGraphicsScene(QGraphicsScene):
         match event.key():
             case Qt.Key_Delete:
                 for item in self.selectedItems():
-                    for arr in self.rect_arrs_out[item] + self.rect_arrs_in[item]:
-                        if arr.scene():
-                            self.removeItem(arr)
-                    self.rect_arrs_out[item].clear()
-                    self.rect_arrs_in[item].clear()
-
-                    self.rect_depends_on[item].clear()
-                    self.rect_influences[item].clear()
-
-                    self.dg.delete_vertex(item)
-                    self.removeItem(item)
+                    self.delete_rect(item)
 
                 self.update_rect_colors()
 

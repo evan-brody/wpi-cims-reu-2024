@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QGraphicsRectItem
 class DepGraph:
     MAX_VERTICES = 512
     DEFAULT_EDGE_WEIGHT = 1
-    DEFAULT_DR = 0.05
+    DEFAULT_DR = 0.25
     J = np.ones((MAX_VERTICES, MAX_VERTICES), np.uint8)
     I = np.identity(MAX_VERTICES, np.uint8)
 
@@ -268,6 +268,7 @@ class DepGraph:
         for e in edges:
             self.delete_edge(e)
 
+    # This works for AND gates too
     def delete_vertex(self, ref: QGraphicsRectItem) -> None:
         n = self.n
         vi = self.refi[ref]
