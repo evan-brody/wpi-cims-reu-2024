@@ -74,12 +74,14 @@ class DepQToolBar(QToolBar):
 # right side of the Dependency Analysis tab
 class DepQAction(QAction):
     def __init__(self, icon: QIcon, text: str, 
+                 parent_toolbar: DepQToolBar,
                  parent_scene: QGraphicsScene, 
-                 parent_toolbar: DepQToolBar) -> None:
+                 parent_window: QMainWindow) -> None:
         super().__init__(icon, text)
 
-        self.parent_scene = parent_scene
         self.parent_toolbar = parent_toolbar
+        self.parent_scene = parent_scene
+        self.parent_window = parent_window
         self.setCheckable(True)
         self.triggered.connect(self.clear_other_selections)
 
@@ -96,6 +98,11 @@ class DepQAction(QAction):
         self.parent_scene.del_dyn_arr()
 
         self.parent_toolbar.selected_tool = self
+
+        if self == self.parent_window.eraser_button:
+            QApplication.setOverrideCursor(self.parent_window.eraser_cursor)
+        else:
+            QApplication.restoreOverrideCursor()
 
 class DepQComboBox(QComboBox):
     def __init__(self, parent_rect: QGraphicsRectItem, 
@@ -1141,26 +1148,27 @@ class MainWindow(QMainWindow):
         # Component button
         self.comp_icon = QIcon(os.path.join(self.IMAGES_PATH, "add_comp_icon.png"))
         self.comp_button = DepQAction(
-            self.comp_icon, "Add Component", self.system_vis_scene, self.dep_toolbar
+            self.comp_icon, "Add Component", self.dep_toolbar, self.system_vis_scene, self
         )
 
         # Edge button
         self.edge_icon = QIcon(os.path.join(self.IMAGES_PATH, "edge_icon.png"))
         self.edge_button = DepQAction(
-            self.edge_icon, "Add Edge", self.system_vis_scene, self.dep_toolbar
+            self.edge_icon, "Add Edge", self.dep_toolbar, self.system_vis_scene, self
         )
 
         # AND gate button
         self.AND_gate_icon = QIcon(os.path.join(self.IMAGES_PATH, "and_gate.png"))
         self.AND_gate_button = DepQAction(
-            self.AND_gate_icon, "Add AND Gate", self.system_vis_scene, self.dep_toolbar
+            self.AND_gate_icon, "Add AND Gate", self.dep_toolbar, self.system_vis_scene, self
         )
 
         # Eraser button
         self.eraser_icon = QIcon(os.path.join(self.IMAGES_PATH, "eraser.png"))
         self.eraser_button = DepQAction(
-            self.eraser_icon, "Eraser", self.system_vis_scene, self.dep_toolbar
+            self.eraser_icon, "Eraser", self.dep_toolbar, self.system_vis_scene, self
         )
+        self.eraser_cursor = QCursor(QPixmap(os.path.join(self.IMAGES_PATH, "eraser_cursor.png")))
 
         # Add widgets separate from setup
         self.dep_layout.addWidget(self.dep_toolbar)
