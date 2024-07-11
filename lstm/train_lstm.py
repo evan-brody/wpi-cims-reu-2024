@@ -20,7 +20,7 @@ NORMALIZATION_CONSTANT = 0.01
 N_HIDDEN = 512
 N_EPOCHS = 100
 EPOCH_SIZE = 10
-LEARNING_RATE = 0.0001 # If you set this too high, it might explode. If too low, it might not learn
+LEARNING_RATE = 0.0005 # If you set this too high, it might explode. If too low, it might not learn
 
 PLOT_UPDATE_INTERVAL = 4
 
@@ -210,7 +210,9 @@ def async_callback(func_result):
         
         # # plotting newer graph
         with plt.ion():
+            #this line crashes 4/5 times
             window.loss_fig = plt.plot(window.loss_x,window.loss_y,color = 'g')[0]
+            
             plt.xlim(window.loss_x[0], window.loss_x[-1])
             plt.ylim(0, max(window.loss_y))
 
