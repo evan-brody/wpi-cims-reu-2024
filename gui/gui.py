@@ -33,7 +33,6 @@ TODO: UI Bug fixes
     TODO: fix dependency arrow snapping when dragging rectangles over each other
 
 TODO:
-    # New names for each component of same type (A, B, C)
     # Success criteria: fails if n or more components fail
 """
 
@@ -97,9 +96,10 @@ class DepQAction(QAction):
         self.toolbar.selected_tool = self
 
 class DepQComboBox(QComboBox):
-    def __init__(self, parent_scene: QGraphicsScene, parent_window: QMainWindow) -> None:
+    def __init__(self, parent_rect: QGraphicsRectItem, parent_scene: QGraphicsScene, parent_window: QMainWindow) -> None:
         super().__init__()
 
+        self.parent_rect = parent_rect
         self.parent_scene = parent_scene
         self.parent_window = parent_window
 
@@ -111,10 +111,11 @@ class DepQComboBox(QComboBox):
         self.textActivated.connect(self.updateComponentFailureRate)
 
     def updateComponentFailureRate(self, comp_str: str) -> None:
-        pass
-        # TODO: get component failure rate from comp_str
+        new_weight = 0.05 # TODO: get component failure rate from comp_str
+        self.parent_scene.dg.update_vertex(self.parent_rect, new_weight)
 
-
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        event.ignore()
 
 # Custom QGraphicsScene class for the dependency tab
 class DepQGraphicsScene(QGraphicsScene):
@@ -127,6 +128,8 @@ class DepQGraphicsScene(QGraphicsScene):
     ARR_SHORT = 15  # Half the length of the base
 
     RECT_DIMS = (400, 200)
+
+    ERASER_RADIUS = 50
 
     SCENE_WIDTH = 5_000
     SCENE_HEIGHT = 1_000
@@ -298,7 +301,7 @@ class DepQGraphicsScene(QGraphicsScene):
         self.update_rect_colors()
 
         # Create text input box
-        comp_name_input = DepQComboBox(self, self.parent_window)
+        comp_name_input = DepQComboBox(rect_item, self, self.parent_window)
 
         QTimer.singleShot(0, 
             lambda: comp_name_input.setFocus(Qt.OtherFocusReason)
@@ -381,6 +384,17 @@ class DepQGraphicsScene(QGraphicsScene):
             brush.setColor(bcolor)
             rect.setBrush(brush)
 
+    def erase_in_circle(self, pos: QPointF) -> None:
+        eraser = self.addEllipse(
+            pos.x(), pos.y(),
+            self.ERASER_RADIUS,
+            self.ERASER_RADIUS,
+            QPen(),
+            QBrush(Qt.NoBrush)
+        )
+        for item in self.collidingItems(eraser):
+            self.removeItem(item)
+
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         match event.button():
             case Qt.LeftButton:
@@ -434,6 +448,11 @@ class DepQGraphicsScene(QGraphicsScene):
             return
 
         pos = event.scenePos()
+
+        toolbar = self.parent_window.dep_toolbar
+        if self.parent_window.eraser_button == toolbar.selected_tool:
+            self.erase_in_circle(pos)
+            return
 
         # Drags objects around, if we should
         if self.clicked_on_l is not None and self.select_start is not None:
@@ -573,6 +592,8 @@ class DepQGraphicsScene(QGraphicsScene):
                 case self.parent_window.AND_gate_button:
                     if not self.released_on_1:
                         self.add_AND_gate(event)
+                case self.parent_window.eraser_button:
+                    self.erase_in_circle(pos)
             return
 
         if not self.select_rect_item:
@@ -1096,6 +1117,12 @@ class MainWindow(QMainWindow):
         self.AND_gate_icon = QIcon(os.path.join(self.IMAGES_PATH, "and_gate.png"))
         self.AND_gate_button = DepQAction(
             self.AND_gate_icon, "Add AND Gate", self.system_vis_scene, self.dep_toolbar
+        )
+
+        # Eraser button
+        self.eraser_icon = QIcon(os.path.join(self.IMAGES_PATH, "eraser.png"))
+        self.eraser_button = DepQAction(
+            self.eraser_icon, "Eraser", self.system_vis_scene, self.dep_toolbar
         )
 
         # Add widgets separate from setup
