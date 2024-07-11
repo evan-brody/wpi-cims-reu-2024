@@ -375,8 +375,8 @@ class DepGraph:
         return self.r0[self.refi[ref]]
     
     def get_r_dict(self) -> dict:
-        self.calc_r()
         n = self.n
+        self.calc_r()
         return { self.iref[i] : risk for i, risk in compress(enumerate(self.r), np.logical_not(self.is_AND[:n])) }
 
 if __name__ == "__main__":

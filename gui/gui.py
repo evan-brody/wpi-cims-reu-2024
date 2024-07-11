@@ -34,7 +34,7 @@ TODO: UI Bug fixes
 
 TODO:
     # Success criteria: fails if n or more components fail
-    # Fix edge erasing
+    # Eraser cursor
 """
 
 import os, sys, sqlite3, logging
@@ -415,6 +415,8 @@ class DepQGraphicsScene(QGraphicsScene):
             QBrush(Qt.NoBrush)
         )
 
+        something_erased = False
+
         # Clear out edges first to make sure
         # we don't trigger an error trying to
         # delete an edge that's already been deleted
@@ -423,11 +425,16 @@ class DepQGraphicsScene(QGraphicsScene):
             if item.data(self.EDGES_VERTICES):
                 self.dg.delete_edge(item.data(self.EDGES_VERTICES))
                 self.removeItem(item)
+                something_erased = True
         
         # Now deal with components and AND gates
         for item in to_erase:
             if item.data(self.IS_COMPONENT) or item.data(self.IS_AND_GATE):
                 self.delete_rect(item)
+                something_erased = True
+
+        if something_erased:
+            self.update_rect_colors()
 
         self.removeItem(eraser)
                 
@@ -692,10 +699,16 @@ class DepQGraphicsScene(QGraphicsScene):
     def keyReleaseEvent(self, event) -> None:
         match event.key():
             case Qt.Key_Delete:
+                something_deleted = False
                 for item in self.selectedItems():
                     self.delete_rect(item)
+                    something_deleted = True
 
-                self.update_rect_colors()
+                self.dep_origin = None
+                self.del_dyn_arr()
+
+                if something_deleted:
+                    self.update_rect_colors()
 
 """
 
