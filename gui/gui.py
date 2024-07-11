@@ -491,6 +491,13 @@ class DepQGraphicsScene(QGraphicsScene):
         if self.dep_origin:
             self.mouseMoveEventWithArrow(event)
 
+        os.system("cls")
+        n = self.dg.n
+        print(self.dg.calc_A_c_full()[:n, :n])
+        print(self.dg.r0[:n])
+        print(self.dg.r[:n])
+        print("==============\n")
+
         super().mouseMoveEvent(event)
 
     def mouseMoveEventL(self, event: QGraphicsSceneMouseEvent) -> None:

@@ -34,8 +34,6 @@ class DepGraph:
         # [i, j] = Count of paths j -> i with weight = 1
         # Probably doesn't need to be 64-bit but that can be figured out later
         self.one_count = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.uint64)
-        # For index [i, j] possible paths from j -> i with weights
-        self.member_paths = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), dict)
 
     # P(a U b)
     def scl_or_scl(self, a: float, b: float) -> float:
@@ -109,6 +107,9 @@ class DepGraph:
 
         self.A_collapse[n, :n + 1] = 0
         self.A_collapse[:n, n] = 0
+
+        self.one_count[n, :n + 1] = 0
+        self.one_count[:n, n] = 0
 
         self.n += 1
 
