@@ -505,7 +505,7 @@ class DepQGraphicsScene(QGraphicsScene):
             return
 
         # Drags objects around, if we should
-        if self.clicked_on_l is not None and self.select_start is not None:
+        if self.clicked_on_l and self.select_start:
             selected = self.selectedItems()
             # Move everything before we redraw arrows
             for item in selected:
@@ -598,9 +598,7 @@ class DepQGraphicsScene(QGraphicsScene):
             case Qt.LeftButton:
                 self.mouseReleaseEventL(event)
             case Qt.RightButton:
-                self.clearSelection()
-                self.dep_origin = None
-                self.del_dyn_arr()
+                self.mouseReleaseEventR(event)
         
         super().mouseReleaseEvent(event)
 
@@ -659,6 +657,24 @@ class DepQGraphicsScene(QGraphicsScene):
         if self.clicked_on_l is not None and self.clicked_on_l == self.released_on_1:
             self.clearSelection()
             self.clicked_on_l.setSelected(True)
+
+    def mouseReleaseEventR(self, event: QGraphicsSceneMouseEvent) -> None:
+        self.clearSelection()
+        self.dep_origin = None
+        self.del_dyn_arr()
+
+        pos = event.scenePos()
+
+        self.clicked_on_r = self.top_rect_at(pos)
+        if not self.clicked_on_r:
+            return
+        
+        global_pos = event.pos().toPoint()
+        
+        self.context_menu = QMenu("TEST")
+        self.test_button = QAction()
+        self.context_menu.addAction(self.test_button)
+        self.context_menu.exec(global_pos)
 
     def mouseReleaseEventEdge(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_r = False
