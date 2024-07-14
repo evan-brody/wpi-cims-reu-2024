@@ -665,13 +665,13 @@ class DepQGraphicsScene(QGraphicsScene):
 
         pos = event.scenePos()
 
-        self.clicked_on_r = self.top_rect_at(pos)
-        if not self.clicked_on_r:
+        self.released_on_r = self.top_rect_at(pos)
+        if not self.released_on_r:
             return
         
-        global_pos = event.pos().toPoint()
+        global_pos = event.screenPos()
         
-        self.context_menu = QMenu("TEST")
+        self.context_menu = QMenu()
         self.test_button = QAction()
         self.context_menu.addAction(self.test_button)
         self.context_menu.exec(global_pos)
