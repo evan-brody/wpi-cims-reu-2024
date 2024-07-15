@@ -18,8 +18,8 @@ N_LETTERS = len(ALL_LETTERS)
 
 NORMALIZATION_CONSTANT = 0.01
 N_HIDDEN = 512
-N_EPOCHS = 100
-EPOCH_SIZE = 10
+N_EPOCHS = 1000
+EPOCH_SIZE = 50
 LEARNING_RATE = 0.0005 # If you set this too high, it might explode. If too low, it might not learn
 
 PLOT_UPDATE_INTERVAL = 4
@@ -66,8 +66,8 @@ def gen_batched_training_pairs():
     for i in range(EPOCH_SIZE):
         line, expected_output, line_tensor = random_training_pair_batched()
         
-        if(line_tensor.size()[1]>max_size):
-            max_size = line_tensor.size()[1]
+        if(line_tensor.size()[0]>max_size):
+            max_size = line_tensor.size()[0]
         
         lines.append(line)
         e_outs = torch.cat((e_outs,expected_output))
@@ -78,14 +78,6 @@ def gen_batched_training_pairs():
     lengths = torch.tensor([len(t) for t in l_ts_lst])
     packed = turnn.pack_padded_sequence(padded, lengths.to(device), batch_first=True, enforce_sorted=False)
 
-    #pull out result
-    #output, lengths = turnn.pad_packed_sequence(packed, batch_first=True)
-    
-    #manual padding
-    # padded_value = -1*torch.ones([1,1,N_LETTERS])
-    # padded = [torch.cat((item,padded_value.expand(-1,max_size- item.size()[1],-1)),dim=1) for item in l_ts_lst]
-    # l_ts = torch.cat(padded)
-        
     return lines,e_outs,packed
 
 # Turn a Unicode string to plain ASCII, thanks to http://stackoverflow.com/a/518232/2809427
@@ -178,7 +170,11 @@ def load_batch(epoch):
 
 def start_training():
     # Keep track of losses for plotting
+    r = random.random() 
+    b = random.random() 
+    g = random.random() 
     
+    window.loss_fig_color = (r, g, b) 
     window.start_time = time.time()
     window.loss_x = [0]
     window.loss_y = [1]
@@ -187,8 +183,8 @@ def start_training():
     plt.ylim(0,1)
     
     for i in range(N_EPOCHS):
-        pool.apply_async(iterate,args=[i],callback=async_callback)
-        #pool.apply_async(load_batch,args=[i],callback=async_callback)
+        #pool.apply_async(iterate,args=[i],callback=async_callback)
+        pool.apply_async(load_batch,args=[i],callback=async_callback)
     #pool.apply_async(train,args=[0,trainer],callback=async_callback)
 
 def stop_training():
@@ -210,13 +206,19 @@ def async_callback(func_result):
         
         # # plotting newer graph
         with plt.ion():
-            #this line crashes 4/5 times
-            window.loss_fig = plt.plot(window.loss_x,window.loss_y,color = 'g')[0]
+            window.loss_fig = plt.plot(window.loss_x,window.loss_y,color= window.loss_fig_color)[0]
             
             plt.xlim(window.loss_x[0], window.loss_x[-1])
             plt.ylim(0, max(window.loss_y))
 
 
 def predict(line: str) -> torch.Tensor:
-    line_tensor = lineToTensor(line)
-    return lstm.forward(line_tensor)
+    lt = [line_to_tensor_2d(line)]
+    
+    padded = turnn.pad_sequence(lt, batch_first=True, padding_value=0.0)
+
+    lengths = torch.tensor([len(t) for t in lt])
+    packed = turnn.pack_padded_sequence(padded, lengths.to(device), batch_first=True, enforce_sorted=False)
+    return lstm.forward_batched(packed)
+    # line_tensor = lineToTensor(line)
+    # return lstm.forward(line_tensor)
