@@ -104,6 +104,30 @@ class DepQAction(QAction):
         else:
             QApplication.restoreOverrideCursor()
 
+class DepQMenu(QMenu):
+    def __init__(self, dg: DepGraph, parent_rect: QGraphicsRectItem, pos: QPoint) -> None:
+        super().__init__()
+
+        self.dg = dg
+        self.parent_rect = parent_rect
+
+        # Removes icons
+        self.setStyleSheet(
+            "QMenu::item {"
+                "background-color: rgb(255, 255, 255);"
+                "padding: 2px 5px 2px 2px;"
+            "}"
+            "QMenu::item:selected {"
+                "background-color: rgb(0, 85, 127);"
+                "color: rgb(255, 255, 255);"
+            "}"
+        )
+
+        self.dr_action = self.addAction(f"Direct Risk: {self.dg.get_vertex_weight(self.parent_rect):.3f}")
+        # NLP integration ?
+
+        self.exec(pos)
+
 class DepQComboBox(QComboBox):
     def __init__(self, parent_rect: QGraphicsRectItem, 
                  parent_scene: QGraphicsScene, 
@@ -323,15 +347,41 @@ class DepQGraphicsScene(QGraphicsScene):
         )
 
         # Set up proxy for binding to scene
-        proxy = QGraphicsProxyWidget(parent=rect_item)
-        proxy.setWidget(comp_name_input)
+        input_proxy = QGraphicsProxyWidget(parent=rect_item)
+        input_proxy.setWidget(comp_name_input)
     
         # Center input box within rectangle
         input_pos = rect_item.mapFromScene(rect_item.pos())
-        text_w = proxy.boundingRect().width()
-        text_h = proxy.boundingRect().height()
-        input_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
-        proxy.setPos(input_pos)
+        input_w = input_proxy.boundingRect().width()
+        input_h = input_proxy.boundingRect().height()
+        input_pos += QPointF((rect_w - input_w) / 2, (rect_h - input_h) / 2)
+        input_proxy.setPos(input_pos)
+
+        # Create risk info label
+        comp_risk_label = QLabel(f"Total Risk: {self.dg.DEFAULT_DR:.3f}")
+        comp_risk_label.setAlignment(Qt.AlignHCenter)
+        comp_risk_label.setMargin(3)
+
+        # Customize font
+        font = comp_risk_label.font()
+        font.setBold(True)
+        comp_risk_label.setFont(font)
+
+        # Customize color palette
+        pal = comp_risk_label.palette()
+        pal.setColor(QPalette.Window, QColor(0, 0, 0, alpha=0))
+        comp_risk_label.setPalette(pal)
+
+        # Create proxy for risk label
+        text_proxy = QGraphicsProxyWidget(parent=rect_item)
+        text_proxy.setWidget(comp_risk_label)
+
+        # Center in bottom half of rectangle
+        text_pos = rect_item.mapFromScene(rect_item.pos())
+        text_w = text_proxy.boundingRect().width()
+        text_h = text_proxy.boundingRect().height()
+        text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) * 3 / 4)
+        text_proxy.setPos(text_pos)
 
     def add_AND_gate(self, event: QGraphicsSceneMouseEvent) -> None:
         # Create and add rectangle
@@ -671,10 +721,7 @@ class DepQGraphicsScene(QGraphicsScene):
         
         global_pos = event.screenPos()
         
-        self.context_menu = QMenu()
-        self.test_button = QAction()
-        self.context_menu.addAction(self.test_button)
-        self.context_menu.exec(global_pos)
+        self.context_menu = DepQMenu(self.dg, self.released_on_r, global_pos)
 
     def mouseReleaseEventEdge(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_r = False

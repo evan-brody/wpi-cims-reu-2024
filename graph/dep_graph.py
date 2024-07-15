@@ -373,6 +373,9 @@ class DepGraph:
     def get_vertex_weight(self, ref: QGraphicsRectItem) -> float:
         return self.r0[self.refi[ref]]
     
+    def get_total_risk(self, ref: QGraphicsRectItem) -> float:
+        return self.r[self.refi[ref]]
+    
     def get_r_dict(self) -> dict:
         n = self.n
         self.calc_r()
