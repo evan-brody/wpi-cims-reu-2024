@@ -104,6 +104,30 @@ class DepQAction(QAction):
         else:
             QApplication.restoreOverrideCursor()
 
+class DepQMenu(QMenu):
+    def __init__(self, dg: DepGraph, parent_rect: QGraphicsRectItem, pos: QPoint) -> None:
+        super().__init__()
+
+        self.dg = dg
+        self.parent_rect = parent_rect
+
+        # Removes icons
+        self.setStyleSheet(
+            "QMenu::item {"
+                "background-color: rgb(255, 255, 255);"
+                "padding: 2px 5px 2px 2px;"
+            "}"
+            "QMenu::item:selected {"
+                "background-color: rgb(0, 85, 127);"
+                "color: rgb(255, 255, 255);"
+            "}"
+        )
+
+        self.dr_action = self.addAction(f"Direct Risk: {self.dg.get_vertex_weight(self.parent_rect):.3f}")
+        # NLP integration ?
+
+        self.exec(pos)
+
 class DepQComboBox(QComboBox):
     def __init__(self, parent_rect: QGraphicsRectItem, 
                  parent_scene: QGraphicsScene, 
@@ -323,15 +347,41 @@ class DepQGraphicsScene(QGraphicsScene):
         )
 
         # Set up proxy for binding to scene
-        proxy = QGraphicsProxyWidget(parent=rect_item)
-        proxy.setWidget(comp_name_input)
+        input_proxy = QGraphicsProxyWidget(parent=rect_item)
+        input_proxy.setWidget(comp_name_input)
     
         # Center input box within rectangle
         input_pos = rect_item.mapFromScene(rect_item.pos())
-        text_w = proxy.boundingRect().width()
-        text_h = proxy.boundingRect().height()
-        input_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
-        proxy.setPos(input_pos)
+        input_w = input_proxy.boundingRect().width()
+        input_h = input_proxy.boundingRect().height()
+        input_pos += QPointF((rect_w - input_w) / 2, (rect_h - input_h) / 2)
+        input_proxy.setPos(input_pos)
+
+        # Create risk info label
+        comp_risk_label = QLabel(f"Total Risk: {self.dg.DEFAULT_DR:.3f}")
+        comp_risk_label.setAlignment(Qt.AlignHCenter)
+        comp_risk_label.setMargin(3)
+
+        # Customize font
+        font = comp_risk_label.font()
+        font.setBold(True)
+        comp_risk_label.setFont(font)
+
+        # Customize color palette
+        pal = comp_risk_label.palette()
+        pal.setColor(QPalette.Window, QColor(0, 0, 0, alpha=0))
+        comp_risk_label.setPalette(pal)
+
+        # Create proxy for risk label
+        text_proxy = QGraphicsProxyWidget(parent=rect_item)
+        text_proxy.setWidget(comp_risk_label)
+
+        # Center in bottom half of rectangle
+        text_pos = rect_item.mapFromScene(rect_item.pos())
+        text_w = text_proxy.boundingRect().width()
+        text_h = text_proxy.boundingRect().height()
+        text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) * 3 / 4)
+        text_proxy.setPos(text_pos)
 
     def add_AND_gate(self, event: QGraphicsSceneMouseEvent) -> None:
         # Create and add rectangle
@@ -505,7 +555,7 @@ class DepQGraphicsScene(QGraphicsScene):
             return
 
         # Drags objects around, if we should
-        if self.clicked_on_l is not None and self.select_start is not None:
+        if self.clicked_on_l and self.select_start:
             selected = self.selectedItems()
             # Move everything before we redraw arrows
             for item in selected:
@@ -598,9 +648,7 @@ class DepQGraphicsScene(QGraphicsScene):
             case Qt.LeftButton:
                 self.mouseReleaseEventL(event)
             case Qt.RightButton:
-                self.clearSelection()
-                self.dep_origin = None
-                self.del_dyn_arr()
+                self.mouseReleaseEventR(event)
         
         super().mouseReleaseEvent(event)
 
@@ -659,6 +707,21 @@ class DepQGraphicsScene(QGraphicsScene):
         if self.clicked_on_l is not None and self.clicked_on_l == self.released_on_1:
             self.clearSelection()
             self.clicked_on_l.setSelected(True)
+
+    def mouseReleaseEventR(self, event: QGraphicsSceneMouseEvent) -> None:
+        self.clearSelection()
+        self.dep_origin = None
+        self.del_dyn_arr()
+
+        pos = event.scenePos()
+
+        self.released_on_r = self.top_rect_at(pos)
+        if not self.released_on_r:
+            return
+        
+        global_pos = event.screenPos()
+        
+        self.context_menu = DepQMenu(self.dg, self.released_on_r, global_pos)
 
     def mouseReleaseEventEdge(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_r = False

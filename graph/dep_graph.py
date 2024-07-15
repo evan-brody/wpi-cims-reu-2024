@@ -6,8 +6,6 @@ import numpy as np
 from itertools import chain, compress, product
 from PyQt5.QtWidgets import QGraphicsRectItem
 
-# TODO: zero_count for AND gates
-
 class DepGraph:
     MAX_VERTICES = 512
     DEFAULT_EDGE_WEIGHT = 1
@@ -374,6 +372,9 @@ class DepGraph:
 
     def get_vertex_weight(self, ref: QGraphicsRectItem) -> float:
         return self.r0[self.refi[ref]]
+    
+    def get_total_risk(self, ref: QGraphicsRectItem) -> float:
+        return self.r[self.refi[ref]]
     
     def get_r_dict(self) -> dict:
         n = self.n
