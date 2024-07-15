@@ -20,11 +20,17 @@ class LSTM(nn.Module):
         return torch.flatten(output)
     
     def forward_batched(self, input):
-        output,_=self.lstm(input)
-        output, lengths = turnn.pad_packed_sequence(output, batch_first=True)
+        output_packed,_=self.lstm(input)
+        output, lengths = turnn.pad_packed_sequence(output_packed, batch_first=True)
         
-        output = self.act(output[:,-1,:])
+        output = self.act(self.extract_packed_sequence(output,lengths))
         return torch.flatten(output)
 
     def initHidden(self):
         return Variable(torch.zeros(1, self.hidden_size))
+    
+    def extract_packed_sequence(self,output, lengths):
+        e = torch.empty(0)
+        for i in range(len(lengths)):
+            e = torch.cat((e,output[i][lengths[i]-1][:].reshape(1,self.hidden_size)))
+        return e

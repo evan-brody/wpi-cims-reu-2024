@@ -1726,7 +1726,6 @@ class MainWindow(QMainWindow):
     def update_prediction(self):
         txt = self.predict_input_field.text()
         if(len(txt)==0):
-            self.predict_output_field.setText("")
             return
         prediction = train_lstm.predict(self.predict_input_field.text())
         self.predict_output_field.setText(str(prediction.tolist()))
