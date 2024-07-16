@@ -1,4 +1,4 @@
-import torch, sys, os, random, time, math, unicodedata, string, gui.gui as gui
+import torch, sys, os, random, time, math, unicodedata, string, copy, gui.gui as gui
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
@@ -6,30 +6,33 @@ from lstm.model_lstm import *
 import matplotlib.pyplot as plt
 import torch.nn.utils.rnn as turnn
 
-if __name__ == "__main__":
-    window = gui.window
-    pool = gui.pool
-
-#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
-
 ALL_LETTERS = string.ascii_letters + " .,;'-"
 N_LETTERS = len(ALL_LETTERS)
 
 NORMALIZATION_CONSTANT = 0.01
 N_HIDDEN = 512
 N_EPOCHS = 1000
-EPOCH_SIZE = 50
-LEARNING_RATE = 0.0005 # If you set this too high, it might explode. If too low, it might not learn
+EPOCH_SIZE = 10
+LEARNING_RATE = 0.0001 # If you set this too high, it might explode. If too low, it might not learn
 
 PLOT_UPDATE_INTERVAL = 4
 
-lstm = LSTM(N_LETTERS,N_HIDDEN,1).to(device)
-lstm.share_memory()
-optimizer = torch.optim.Adam(lstm.parameters(), lr=LEARNING_RATE)
-#optimizer = torch.optim.SGD(lstm.parameters(), lr=LEARNING_RATE)
-criterion = nn.MSELoss()
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
+if __name__ == "__main__":
+    window = gui.window
+    pool = gui.pool
+    lstm = LSTM(N_LETTERS,N_HIDDEN,1).to(device)
+    lstm.share_memory()
+    best_model = LSTM(N_LETTERS,N_HIDDEN,1).to(device)
+    lowest_error = 3.402823466E+38
+
+if __name__ == "lstm.train_lstm":
+    lstm = LSTM(N_LETTERS,N_HIDDEN,1).to(device)
+    lstm.share_memory()
+    best_model = LSTM(N_LETTERS,N_HIDDEN,1).to(device)
+    lowest_error = 3.402823466E+38
 ######## DATA LOADING ########
 
 def randomChoice(l):
@@ -116,9 +119,20 @@ def line_to_tensor_2d(line: str):
 
 ######## END OF DATA LOADING ########
 
-def train_batched(e_outs,packed_l_ts):
-    lstm.train()
-    output= lstm.forward_batched(packed_l_ts)
+def save_model():
+    torch.save(best_model, os.path.join(os.path.dirname(__file__),'failure_rate_estimator.pt'))
+
+def load_model():
+    global best_model
+    best_model = torch.load(os.path.join(os.path.dirname(__file__),'failure_rate_estimator.pt'))
+    window.update_prediction()
+
+def train_batched(args):
+    model,e_outs,packed_l_ts = args
+    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    criterion = nn.MSELoss()
+    model.train()
+    output= model.forward_batched(packed_l_ts)
     
     loss = criterion(output, e_outs)
     optimizer.zero_grad()
@@ -129,6 +143,8 @@ def train_batched(e_outs,packed_l_ts):
     
 
 def train(expected_output, line_tensor):
+    optimizer = torch.optim.Adam(lstm.parameters(), lr=LEARNING_RATE)
+    criterion = nn.MSELoss()
     lstm.train()
     output= lstm.forward(line_tensor)
     
@@ -162,9 +178,10 @@ def iterate(epoch):
     return [avg_loss,time.time(),epoch]
     #return [avg_loss,time.time(),epoch, line, output, expected_output]
 
-def load_batch(epoch):
+def load_batch(args):
+    model,epoch = args
     lines,e_outs,packed_l_ts = gen_batched_training_pairs()
-    outs, avg_loss = train_batched(e_outs,packed_l_ts)
+    outs, avg_loss = train_batched((model,e_outs,packed_l_ts))
     
     return [avg_loss,time.time(),epoch]
 
@@ -184,7 +201,7 @@ def start_training():
     
     for i in range(N_EPOCHS):
         #pool.apply_async(iterate,args=[i],callback=async_callback)
-        pool.apply_async(load_batch,args=[i],callback=async_callback)
+        pool.apply_async(load_batch,args=[(lstm,i)],callback=async_callback)
     #pool.apply_async(train,args=[0,trainer],callback=async_callback)
 
 def stop_training():
@@ -194,11 +211,17 @@ def stop_training():
 
 def async_callback(func_result):
     print(func_result)
+    global lowest_error
     # updating the data
     #line,output,expected_output,loss,avg_loss,del_time,epoch = func_result
     window.loss_x.append(func_result[1]-window.start_time)
     window.loss_y.append(func_result[0])
     #print('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / 10, x[-1], loss, line, output, expected_output))
+    if(func_result[0]<lowest_error):
+        lowest_error = func_result[0]
+        window.min_loss_box.setText(str(lowest_error))
+        global best_model
+        best_model = copy.deepcopy(lstm)
     # removing the older graph
     if(func_result[2] % PLOT_UPDATE_INTERVAL ==0):
         window.update_prediction()
@@ -219,6 +242,7 @@ def predict(line: str) -> torch.Tensor:
 
     lengths = torch.tensor([len(t) for t in lt])
     packed = turnn.pack_padded_sequence(padded, lengths.to(device), batch_first=True, enforce_sorted=False)
-    return lstm.forward_batched(packed)
+    best_model.eval()
+    return best_model.forward_batched(packed)
     # line_tensor = lineToTensor(line)
     # return lstm.forward(line_tensor)

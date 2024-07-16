@@ -37,7 +37,7 @@ TODO:
     # Eraser cursor
 """
 
-import os, sys, sqlite3, logging
+import os, sys, sqlite3, logging, torch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -61,7 +61,7 @@ from nlp import subtab
 from nlp import similar
 import pyautogui
 
-NUM_PROCESSES = 4
+NUM_PROCESSES = 1
 
 # There should be only one instance of this class
 # It's the toolbar on the right side of the Dependency Analysis tab
@@ -1373,6 +1373,19 @@ class MainWindow(QMainWindow):
         self.stop_train_button_lstm.clicked.connect(stop_training)
 
         self.right_layout_lstm.addLayout(self.start_and_stop_layout)
+        
+        #Save and Load Model
+        self.save_and_load_layout = QHBoxLayout()
+        
+        self.save_button_lstm = QPushButton("Save Best Model")
+        self.save_and_load_layout.addWidget(self.save_button_lstm)
+        self.save_button_lstm.clicked.connect(train_lstm.save_model)
+        
+        self.load_button_lstm = QPushButton("Load Saved Model")
+        self.save_and_load_layout.addWidget(self.load_button_lstm)
+        self.load_button_lstm.clicked.connect(train_lstm.load_model)
+        
+        self.right_layout_lstm.addLayout(self.save_and_load_layout)
 
         # Create the matplotlib figure and canvas
         self.loss_fig = plt.figure()
@@ -1424,6 +1437,7 @@ class MainWindow(QMainWindow):
         self.predict_input_field = QLineEdit()
         self.predict_input_field.setPlaceholderText("Input String...")
         self.predict_input_field.textEdited.connect(self.update_prediction)
+        #self.predict_output_field = QLabel("Output Value...")
         self.predict_output_field = QLineEdit()
         self.predict_output_field.setPlaceholderText("Output Value...")
         
@@ -1433,6 +1447,12 @@ class MainWindow(QMainWindow):
         
         self.right_layout_lstm.addWidget(self.predict_input_label)
         self.right_layout_lstm.addLayout(self.predict_field_layout)
+        
+        self.min_loss_label = QLabel("Minimum Loss:")
+        self.min_loss_box = QLineEdit()
+        
+        self.right_layout_lstm.addWidget(self.min_loss_label)
+        self.right_layout_lstm.addWidget(self.min_loss_box)
         
         self.right_layout_lstm.addStretch()
 
@@ -1839,6 +1859,7 @@ class MainWindow(QMainWindow):
         self.predict_output_field.setText(str(prediction.tolist()))
 
 def stop_training():
+    #move to train_lstm
     train_lstm.stop_training()
     if __name__ == "__main__":
         pool = mp.Pool(NUM_PROCESSES)
@@ -1852,7 +1873,7 @@ if __name__ == "__main__":
     window = MainWindow()
     logger = mp.log_to_stderr(logging.INFO)
     plt.ioff()
-
+    
     train_lstm.window = window
     train_lstm.pool = pool
 
