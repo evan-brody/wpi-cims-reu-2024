@@ -125,7 +125,6 @@ class DepQMenu(QMenu):
         )
 
         self.dr_action = self.addAction(f"Direct Risk: {self.dg.get_vertex_weight(self.parent_rect):.3f}")
-        # NLP integration ?
 
         self.exec(pos)
 
@@ -146,8 +145,10 @@ class DepQComboBox(QComboBox):
         self.textActivated.connect(self.update_comp_fail_rate)
 
     def update_comp_fail_rate(self, comp_str: str) -> None:
-        new_weight = self.parent_scene.dg.DEFAULT_DR # TODO: get component failure rate from comp_str
+        # Predict the failure rate using the RNN
+        new_weight = max(0, train_lstm.predict(comp_str).item())
         self.parent_scene.dg.update_vertex(self.parent_rect, new_weight)
+        self.parent_scene.update_rect_colors()
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         event.ignore()
@@ -159,6 +160,7 @@ class DepQGraphicsScene(QGraphicsScene):
     IS_COMPONENT = 1
     IS_AND_GATE = 2
     EDGES_VERTICES = 3
+    RISK_LABEL = 4
 
     # The tip of a dependency arrow is an isosceles triangle
     ARR_LONG = 30  # The length of the middle axis
@@ -335,8 +337,6 @@ class DepQGraphicsScene(QGraphicsScene):
         self.rect_influences[rect_item] = []
         self.rect_arrs_in[rect_item] = []
         self.rect_arrs_out[rect_item] = []
-        self.dg.add_vertex(rect_item)
-        self.update_rect_colors()
 
         # Create text input box
         comp_name_input = DepQComboBox(rect_item, self, self.parent_window)
@@ -383,6 +383,12 @@ class DepQGraphicsScene(QGraphicsScene):
         text_h = text_proxy.boundingRect().height()
         text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) * 3 / 4)
         text_proxy.setPos(text_pos)
+        text_proxy.setZValue(-1)
+
+        rect_item.setData(self.RISK_LABEL, comp_risk_label)
+
+        self.dg.add_vertex(rect_item)
+        self.update_rect_colors()
 
     def add_AND_gate(self, event: QGraphicsSceneMouseEvent) -> None:
         # Create and add rectangle
@@ -428,6 +434,7 @@ class DepQGraphicsScene(QGraphicsScene):
         text_h = proxy.boundingRect().height()
         text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
         proxy.setPos(text_pos)
+        proxy.setZValue(-1)
 
     def del_select_rect_item(self) -> None:
         # Remove selection box
@@ -449,6 +456,9 @@ class DepQGraphicsScene(QGraphicsScene):
             bcolor.setAlphaF(risk)
             brush.setColor(bcolor)
             rect.setBrush(brush)
+
+            risk_label = rect.data(self.RISK_LABEL)
+            risk_label.setText(f"Total Risk: {risk:.3f}")
 
     # Properly deletes components and AND gates
     def delete_rect(self, rect_item: QGraphicsRectItem) -> None:
@@ -480,8 +490,14 @@ class DepQGraphicsScene(QGraphicsScene):
         # delete an edge that's already been deleted
         to_erase = self.collidingItems(eraser)
         for item in to_erase:
+            # This will always be true for edges
             if item.data(self.EDGES_VERTICES):
-                self.dg.delete_edge(item.data(self.EDGES_VERTICES))
+                start, end = item.data(self.EDGES_VERTICES)
+
+                self.rect_depends_on[start].remove(end)
+                self.rect_influences[end].remove(start)
+                self.dg.delete_edge((start, end))
+
                 self.removeItem(item)
                 something_erased = True
         
@@ -728,16 +744,16 @@ class DepQGraphicsScene(QGraphicsScene):
         self.mouse_down_r = False
         pos = event.scenePos()
 
-        self.released_on_r = self.top_rect_at(pos)
-        if self.released_on_r:
+        dependent = self.top_rect_at(pos)
+        if dependent:
             if not self.dep_origin:
-                self.dep_origin = self.released_on_r
+                self.dep_origin = dependent
             else:
                 # Don't draw an arrow from a component to itself
                 # or redraw an arrow that's already been created
                 if (
-                    self.dep_origin != self.released_on_r
-                    and self.released_on_r not in self.rect_depends_on[self.dep_origin]
+                    self.dep_origin != dependent
+                    and dependent not in self.rect_depends_on[self.dep_origin]
                 ):
                     arr_start_pos = self.dep_origin.scenePos()
                     arr_start_pos += QPointF(
@@ -745,22 +761,22 @@ class DepQGraphicsScene(QGraphicsScene):
                         self.dep_origin.rect().height() / 2,
                     )
 
-                    arr_end_pos = self.released_on_r.scenePos()
+                    arr_end_pos = dependent.scenePos()
                     arr_end_pos += QPointF(
-                        self.released_on_r.rect().width() / 2,
-                        self.released_on_r.rect().height() / 2,
+                        dependent.rect().width() / 2,
+                        dependent.rect().height() / 2,
                     )
 
                     arr = self.draw_arr(self.dep_origin, arr_end_pos, QPen())
-                    arr.setData(self.EDGES_VERTICES, (self.dep_origin, self.released_on_r))
+                    arr.setData(self.EDGES_VERTICES, (self.dep_origin, dependent))
 
                     self.rect_arrs_out[self.dep_origin].append(arr)
-                    self.rect_arrs_in[self.released_on_r].append(arr)
+                    self.rect_arrs_in[dependent].append(arr)
 
-                    self.rect_depends_on[self.dep_origin].append(self.released_on_r)
-                    self.rect_influences[self.released_on_r].append(self.dep_origin)
+                    self.rect_depends_on[self.dep_origin].append(dependent)
+                    self.rect_influences[dependent].append(self.dep_origin)
 
-                    self.dg.add_edge((self.dep_origin, self.released_on_r))
+                    self.dg.add_edge((self.dep_origin, dependent))
                     self.update_rect_colors()
 
                 # Cleanup
@@ -859,14 +875,14 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
 
         # Creating the tabs
-        self.main_tool_tab = QWidget()  # Create a new tab
-        self.central_widget.addTab(
-            self.main_tool_tab, "Main Tool"
-        )  # Add the tab to the QTabWidget
-        self.statistics_tab = QWidget()  # Create a new tab
-        self.central_widget.addTab(
-            self.statistics_tab, "Statistics"
-        )  # Add the tab to the QTabWidget
+        # self.main_tool_tab = QWidget()  # Create a new tab
+        # self.central_widget.addTab(
+        #     self.main_tool_tab, "Main Tool"
+        # )  # Add the tab to the QTabWidget
+        # self.statistics_tab = QWidget()  # Create a new tab
+        # self.central_widget.addTab(
+        #     self.statistics_tab, "Statistics"
+        # )  # Add the tab to the QTabWidget
         self.dep_tab = QWidget()
         self.central_widget.addTab(self.dep_tab, "Dependencies")
         self.lstm_tab = QWidget()
@@ -875,8 +891,8 @@ class MainWindow(QMainWindow):
         self.central_widget.addTab(subtab.NestedTabWidgetUnS(), "NLP-Supervised")
         self.central_widget.addTab(similar.SimilarityAnalysisTab(), "NLP-Similarity")
 
-        self.init_main_tab()
-        self.init_stats_tab()
+        # self.init_main_tab()
+        # self.init_stats_tab()
         self.init_dep_tab()
         self.init_lstm_tab()
 
