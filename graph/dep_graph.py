@@ -58,13 +58,13 @@ class DepGraph:
         
         return res
     
-    def calc_A_c_full(self) -> np.ndarray:
+    def calc_Ac_full(self) -> np.ndarray:
         n = self.n
-        A_c_full = np.empty((n, n), np.double)
+        Ac_full = np.empty((n, n), np.double)
         for i, j in product(range(n), repeat=2):
-            A_c_full[i, j] = max(self.A_collapse[i, j], int(bool(self.one_count[i, j])))
+            Ac_full[i, j] = max(self.A_collapse[i, j], int(bool(self.one_count[i, j])))
         
-        return A_c_full
+        return Ac_full
     
     def add_vertices(self, refs: list[QGraphicsRectItem], direct_risks: list[float]=None) -> None:
         n = self.n
@@ -141,7 +141,7 @@ class DepGraph:
                 self.A_collapse[b, a], weight
             )
 
-        A_c_full = self.calc_A_c_full()
+        Ac_full = self.calc_Ac_full()
 
         # Collapse paths starting at a and passing through b
         # If we're dealing with an AND gate as B, we should
@@ -154,7 +154,7 @@ class DepGraph:
             # (b -> i) in (a -> b -> i)_c
             new_path = weight
             if not self.is_AND[b] or self.is_AND[a]:
-                new_path *= A_c_full[i, b]
+                new_path *= Ac_full[i, b]
 
             if 1 == new_path:
                 self.one_count[i, a] += 1
@@ -182,9 +182,9 @@ class DepGraph:
         for j in compress(range(n), to_update_from):
             for i in compress(range(n), to_update_to):
                 # j -> i OR (j -> a AND a -> i)
-                new_path = A_c_full[a, j]
+                new_path = Ac_full[a, j]
                 if not self.is_AND[a] or self.is_AND[j]:
-                    new_path *= A_c_full[i, a]
+                    new_path *= Ac_full[i, a]
                 
                 if 1 == new_path:
                     self.one_count[i, j] += 1
@@ -210,8 +210,8 @@ class DepGraph:
 
         # We need to add the identity matrix so our calculations
         # for broken_path_weight are accurate when i or j = a or b
-        A_c_full = self.I[:n, :n] + self.calc_A_c_full()
-        old_weight = A_c_full[b, a]
+        Ac_full = self.I[:n, :n] + self.calc_Ac_full()
+        old_weight = Ac_full[b, a]
         if old_weight == new_weight:
             return
         self.A[b, a] = new_weight
@@ -244,7 +244,7 @@ class DepGraph:
             # (i -> a) AND (a -> b) AND (b -> j)
             # Note that (a -> b) is not all possible paths (a -> b),
             # but the specific edge we're updating
-            broken_path_weight = A_c_full[a, i] * old_weight * A_c_full[j, b]
+            broken_path_weight = Ac_full[a, i] * old_weight * Ac_full[j, b]
             # Remove influence of (a -> b) on (i -> j)
             if 1 == broken_path_weight:
                 self.one_count[j, i] -= 1
@@ -325,7 +325,7 @@ class DepGraph:
 
     def update_AND_weights(self) -> None:
         n = self.n
-        A_c_full = self.calc_A_c_full()
+        Ac_full = self.calc_Ac_full()
 
         AND_indices = compress(range(n), self.is_AND[:n])
         comp_bools = np.logical_not(self.is_AND[:n])
@@ -334,14 +334,14 @@ class DepGraph:
             # If an AND gate isn't connected to any components,
             # we calculate its risk separately and mark it as 0
             # for now
-            if not np.any(A_c_full[i, comp_bools]):
+            if not np.any(Ac_full[i, comp_bools]):
                 self.r0[i] = 0
                 continue
 
             self.r0[i] = 1
             for j in comp_indices:
                 # (j -> i)
-                path_weight = A_c_full[i, j]
+                path_weight = Ac_full[i, j]
                 # Include vertex weight if j is a component
                 if not self.is_AND[j]:
                     path_weight *= self.r0[j]
@@ -353,7 +353,7 @@ class DepGraph:
             # connected to a component. AND gates that
             # have no connected components will have an r0
             # value of 0
-            path_weight = self.r0[j] * A_c_full[i, j]
+            path_weight = self.r0[j] * Ac_full[i, j]
             if path_weight:
                 self.r0[i] *= path_weight
 
@@ -361,7 +361,7 @@ class DepGraph:
     def calc_r(self) -> None:
         n = self.n
         self.update_AND_weights()
-        self.r = self.mat_or_vec(self.I[:n, :n] + self.calc_A_c_full(), self.r0[:n])
+        self.r = self.mat_or_vec(self.I[:n, :n] + self.calc_Ac_full(), self.r0[:n])
         return self.r
     
     def get_edge_weight_A(self, edge: tuple[QGraphicsRectItem]) -> float:
@@ -483,7 +483,7 @@ if __name__ == "__main__":
         dg.add_edge(('b', 'AND'), 1)
         n = dg.n
 
-        print(dg.calc_A_c_full()[:n, :n] + dg.I[:n, :n])
+        print(dg.calc_Ac_full()[:n, :n] + dg.I[:n, :n])
 
         print("AND calc_r:")
         print(dg.calc_r())
@@ -501,7 +501,7 @@ if __name__ == "__main__":
         n = dg.n
 
         print()
-        print(dg.calc_A_c_full()[:n, :n])
+        print(dg.calc_Ac_full()[:n, :n])
         print(dg.calc_r())
 
     test_suite_2()
