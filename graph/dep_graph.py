@@ -27,7 +27,7 @@ class DepGraph:
         self.is_AND = np.empty((self.MAX_VERTICES,), bool)
         # Adjacency matrix
         self.A = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
-        # Path information. Updated when calc_r is called
+        # Transitive closure of A
         self.A_collapse = np.empty((self.MAX_VERTICES, self.MAX_VERTICES), np.double)
         # [i, j] = Count of paths j -> i with weight = 1
         # Probably doesn't need to be 64-bit but that can be figured out later
