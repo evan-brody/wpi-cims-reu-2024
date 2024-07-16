@@ -319,7 +319,7 @@ class DepGraph:
 
         self.n -= 1
 
-    def delete_vertices(self, refs: list) -> None:
+    def delete_vertices(self, refs: list[QGraphicsRectItem]) -> None:
         for ref in refs:
             self.delete_vertex(ref)
 

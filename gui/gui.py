@@ -124,7 +124,6 @@ class DepQMenu(QMenu):
         )
 
         self.dr_action = self.addAction(f"Direct Risk: {self.dg.get_vertex_weight(self.parent_rect):.3f}")
-        # NLP integration ?
 
         self.exec(pos)
 
@@ -146,8 +145,9 @@ class DepQComboBox(QComboBox):
 
     def update_comp_fail_rate(self, comp_str: str) -> None:
         # Predict the failure rate using the RNN
-        new_weight = train_lstm.predict(comp_str).item()
+        new_weight = max(0, train_lstm.predict(comp_str).item())
         self.parent_scene.dg.update_vertex(self.parent_rect, new_weight)
+        self.parent_scene.update_rect_colors()
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         event.ignore()
@@ -382,6 +382,7 @@ class DepQGraphicsScene(QGraphicsScene):
         text_h = text_proxy.boundingRect().height()
         text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) * 3 / 4)
         text_proxy.setPos(text_pos)
+        text_proxy.setZValue(-1)
 
         rect_item.setData(self.RISK_LABEL, comp_risk_label)
 
@@ -432,6 +433,7 @@ class DepQGraphicsScene(QGraphicsScene):
         text_h = proxy.boundingRect().height()
         text_pos += QPointF((rect_w - text_w) / 2, (rect_h - text_h) / 2)
         proxy.setPos(text_pos)
+        proxy.setZValue(-1)
 
     def del_select_rect_item(self) -> None:
         # Remove selection box
