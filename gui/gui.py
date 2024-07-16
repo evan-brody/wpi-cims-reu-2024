@@ -59,6 +59,7 @@ from graph.dep_graph import DepGraph
 from nlp import csv_loader_tab
 from nlp import subtab
 from nlp import similar
+import pyautogui
 
 NUM_PROCESSES = 4
 
@@ -964,6 +965,9 @@ class MainWindow(QMainWindow):
         )
         self.left_layout.addWidget(self.submit_button)
 
+        # Find Screen Resolution
+        res_width = pyautogui.size()[0]
+
         # Create and add the table widget
         self.table_widget = QTableWidget()
         self.table_widget.setColumnCount(len(self.HORIZONTAL_HEADER_LABELS))
@@ -974,15 +978,15 @@ class MainWindow(QMainWindow):
             headerItem = QTableWidgetItem(str(item))
             headerItem.setTextAlignment(Qt.AlignLeft)
             self.table_widget.setHorizontalHeaderItem(i, headerItem)
-        self.table_widget.setColumnWidth(0, 250)  # Failure Mode
-        self.table_widget.setColumnWidth(1, 80)  # RPN
-        self.table_widget.setColumnWidth(2, 80)  # Frequency
-        self.table_widget.setColumnWidth(3, 80)  # Severity
-        self.table_widget.setColumnWidth(4, 80)  # Detectability
-        self.table_widget.setColumnWidth(5, 110)  # Lower Bound
-        self.table_widget.setColumnWidth(6, 110)  # Best Estimate
-        self.table_widget.setColumnWidth(7, 110)  # Upper Bound
-        self.table_widget.setColumnWidth(8, 110)  # Mission Time
+        self.table_widget.setColumnWidth(0, res_width//6)  # Failure Mode
+        self.table_widget.setColumnWidth(1, res_width//24)  # RPN
+        self.table_widget.setColumnWidth(2, res_width//16)  # Frequency
+        self.table_widget.setColumnWidth(3, res_width//18)  # Severity
+        self.table_widget.setColumnWidth(4, res_width//13)  # Detectability
+        self.table_widget.setColumnWidth(5, res_width//9)  # Lower Bound
+        self.table_widget.setColumnWidth(6, res_width//9)  # Best Estimate
+        self.table_widget.setColumnWidth(7, res_width//9)  # Upper Bound
+        self.table_widget.setColumnWidth(8, res_width//13)  # Mission Time
         self.table_widget.verticalHeader().setDefaultSectionSize(32)
         self.table_widget.verticalHeader().setMaximumSectionSize(32)
         self.table_widget.verticalScrollBar().setMaximum(10 * 30)
@@ -1112,20 +1116,32 @@ class MainWindow(QMainWindow):
         )
         self.left_layout_stats.addWidget(self.submit_button_stats)
 
+        # Find Screen Resolution
+        res_width = pyautogui.size()[0]
+
         # Create and add the table widget
         self.table_widget_stats = QTableWidget()
         self.table_widget_stats.setColumnCount(len(self.HORIZONTAL_HEADER_LABELS))
         self.table_widget_stats.setHorizontalHeaderLabels(self.HORIZONTAL_HEADER_LABELS)
-        self.table_widget_stats.setColumnWidth(0, 150)  # ID
-        self.table_widget_stats.setColumnWidth(1, 150)  # Failure Mode
-        self.table_widget_stats.setColumnWidth(3, 150)  # RPN
-        self.table_widget_stats.setColumnWidth(4, 150)  # Frequency
-        self.table_widget_stats.setColumnWidth(5, 150)  # Severity
-        self.table_widget_stats.setColumnWidth(6, 150)  # Detectability
-        self.table_widget_stats.setColumnWidth(7, 150)  # Mission Time
-        self.table_widget_stats.setColumnWidth(8, 150)  # Lower Bound
-        self.table_widget_stats.setColumnWidth(9, 150)  # Lower Bound
-        self.table_widget_stats.setColumnWidth(10, 150)  # Best Estimate
+        header = self.table_widget_stats.horizontalHeader()
+        for i in range(len(self.HORIZONTAL_HEADER_LABELS)):
+            item = header.model().headerData(i, Qt.Horizontal)
+            headerItem = QTableWidgetItem(str(item))
+            headerItem.setTextAlignment(Qt.AlignLeft)
+            self.table_widget_stats.setHorizontalHeaderItem(i, headerItem)
+        self.table_widget_stats.setColumnCount(len(self.HORIZONTAL_HEADER_LABELS))
+        self.table_widget_stats.setHorizontalHeaderLabels(self.HORIZONTAL_HEADER_LABELS)
+        self.table_widget_stats.setColumnWidth(0, res_width//6)   # ID (Actually gives size for Failure Mode)
+        self.table_widget_stats.setColumnWidth(1, res_width//24)  # Failure Mode (Actually gives size for RPN)
+        self.table_widget_stats.setColumnWidth(2, res_width//16)  # Frequency
+        self.table_widget_stats.setColumnWidth(3, res_width//18)  # RPN (Actually gives size for Severity)
+        self.table_widget_stats.setColumnWidth(4, res_width//13)  # Frequency (Actually gives size for Detectability)
+        self.table_widget_stats.setColumnWidth(5, res_width//9)  # Severity (Actually gives size for Lower Bound)
+        self.table_widget_stats.setColumnWidth(6, res_width//9)  # Detectability (Actually gives size for Best Estimate)
+        self.table_widget_stats.setColumnWidth(7, res_width//9)  # Mission Time (Actually gives size for Upper Bound)
+        self.table_widget_stats.setColumnWidth(8, res_width//13)  # Lower Bound (Actually gives size for Mission Time)
+        self.table_widget_stats.setColumnWidth(9, res_width//10)  # Lower Bound (Unsure what this changes?)
+        self.table_widget_stats.setColumnWidth(10,res_width//10)  # Best Estimate (Unsure what this changes?)
         self.table_widget_stats.verticalHeader().setDefaultSectionSize(32)
         self.table_widget_stats.verticalHeader().setMaximumSectionSize(32)
         self.table_widget_stats.verticalScrollBar().setMaximum(10 * 30)
@@ -1288,20 +1304,33 @@ class MainWindow(QMainWindow):
         )
         self.left_layout_lstm.addWidget(self.submit_button_lstm)
 
+        # Find Screen Resolution
+        res_width = pyautogui.size()[0]
+
         # Create and add the table widget
+        self.table_widget_lstm = QTableWidget()
         self.table_widget_lstm = QTableWidget()
         self.table_widget_lstm.setColumnCount(len(self.HORIZONTAL_HEADER_LABELS))
         self.table_widget_lstm.setHorizontalHeaderLabels(self.HORIZONTAL_HEADER_LABELS)
-        self.table_widget_lstm.setColumnWidth(0, 150)  # ID
-        self.table_widget_lstm.setColumnWidth(1, 150)  # Failure Mode
-        self.table_widget_lstm.setColumnWidth(3, 150)  # RPN
-        self.table_widget_lstm.setColumnWidth(4, 150)  # Frequency
-        self.table_widget_lstm.setColumnWidth(5, 150)  # Severity
-        self.table_widget_lstm.setColumnWidth(6, 150)  # Detectability
-        self.table_widget_lstm.setColumnWidth(7, 150)  # Mission Time
-        self.table_widget_lstm.setColumnWidth(8, 150)  # Lower Bound
-        self.table_widget_lstm.setColumnWidth(9, 150)  # Lower Bound
-        self.table_widget_lstm.setColumnWidth(10, 150)  # Best Estimate
+        header = self.table_widget_lstm.horizontalHeader()
+        for i in range(len(self.HORIZONTAL_HEADER_LABELS)):
+            item = header.model().headerData(i, Qt.Horizontal)
+            headerItem = QTableWidgetItem(str(item))
+            headerItem.setTextAlignment(Qt.AlignLeft)
+            self.table_widget_lstm.setHorizontalHeaderItem(i, headerItem)
+        self.table_widget_lstm.setColumnCount(len(self.HORIZONTAL_HEADER_LABELS))
+        self.table_widget_lstm.setHorizontalHeaderLabels(self.HORIZONTAL_HEADER_LABELS)
+        self.table_widget_lstm.setColumnWidth(0, res_width//6)   # ID (Actually gives size for Failure Mode)
+        self.table_widget_lstm.setColumnWidth(1, res_width//24)  # Failure Mode (Actually gives size for RPN)
+        self.table_widget_lstm.setColumnWidth(2, res_width//16)  # Frequency
+        self.table_widget_lstm.setColumnWidth(3, res_width//18)  # RPN (Actually gives size for Severity)
+        self.table_widget_lstm.setColumnWidth(4, res_width//13)  # Frequency (Actually gives size for Detectability)
+        self.table_widget_lstm.setColumnWidth(5, res_width//9)  # Severity (Actually gives size for Lower Bound)
+        self.table_widget_lstm.setColumnWidth(6, res_width//9)  # Detectability (Actually gives size for Best Estimate)
+        self.table_widget_lstm.setColumnWidth(7, res_width//9)  # Mission Time (Actually gives size for Upper Bound)
+        self.table_widget_lstm.setColumnWidth(8, res_width//13)  # Lower Bound (Actually gives size for Mission Time)
+        self.table_widget_lstm.setColumnWidth(9, res_width//10)  # Lower Bound (Unsure what this changes?)
+        self.table_widget_lstm.setColumnWidth(10,res_width//10)  # Best Estimate (Unsure what this changes?)
         self.table_widget_lstm.verticalHeader().setDefaultSectionSize(32)
         self.table_widget_lstm.verticalHeader().setMaximumSectionSize(32)
         self.table_widget_lstm.verticalScrollBar().setMaximum(10 * 30)
