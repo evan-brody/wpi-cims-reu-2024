@@ -1856,7 +1856,7 @@ class MainWindow(QMainWindow):
         if(len(txt)==0):
             return
         prediction = train_lstm.predict(self.predict_input_field.text())
-        self.predict_output_field.setText(str(prediction.tolist()))
+        self.predict_output_field.setText(str(prediction))
 
 def stop_training():
     #move to train_lstm
@@ -1872,6 +1872,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     logger = mp.log_to_stderr(logging.INFO)
+    torch.set_printoptions(precision=2)
     plt.ioff()
     
     train_lstm.window = window

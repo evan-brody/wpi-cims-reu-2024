@@ -1,4 +1,4 @@
-import torch, sys, os, random, time, math, unicodedata, string, copy, gui.gui as gui
+import torch, sys, os, random, time, math, unicodedata, string, copy, numpy as np, gui.gui as gui
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
@@ -9,11 +9,16 @@ import torch.nn.utils.rnn as turnn
 ALL_LETTERS = string.ascii_letters + " .,;'-"
 N_LETTERS = len(ALL_LETTERS)
 
-NORMALIZATION_CONSTANT = 0.01
+OUTPUT_SIZE = 3
+
+NORMALIZATION_CONSTANT_LB = 0.01
+NORMALIZATION_CONSTANT_BE = 0.001
+NORMALIZATION_CONSTANT_UB = 0.0001
+
 N_HIDDEN = 512
 N_EPOCHS = 1000
 EPOCH_SIZE = 10
-LEARNING_RATE = 0.0001 # If you set this too high, it might explode. If too low, it might not learn
+LEARNING_RATE = 0.01 # If you set this too high, it might explode. If too low, it might not learn
 
 PLOT_UPDATE_INTERVAL = 4
 
@@ -23,46 +28,39 @@ device = torch.device("cpu")
 if __name__ == "__main__":
     window = gui.window
     pool = gui.pool
-    lstm = LSTM(N_LETTERS,N_HIDDEN,1).to(device)
+    lstm = LSTM(N_LETTERS,N_HIDDEN,OUTPUT_SIZE).to(device)
     lstm.share_memory()
-    best_model = LSTM(N_LETTERS,N_HIDDEN,1).to(device)
-    lowest_error = 3.402823466E+38
+    best_model = LSTM(N_LETTERS,N_HIDDEN,OUTPUT_SIZE).to(device)
+    lowest_error = [3.402823466E+38,0]
 
 if __name__ == "lstm.train_lstm":
-    lstm = LSTM(N_LETTERS,N_HIDDEN,1).to(device)
+    lstm = LSTM(N_LETTERS,N_HIDDEN,OUTPUT_SIZE).to(device)
     lstm.share_memory()
-    best_model = LSTM(N_LETTERS,N_HIDDEN,1).to(device)
-    lowest_error = 3.402823466E+38
+    best_model = LSTM(N_LETTERS,N_HIDDEN,OUTPUT_SIZE).to(device)
+    lowest_error = [3.402823466E+38,0]
 ######## DATA LOADING ########
-
-def randomChoice(l):
-    return l[random.randint(0, len(l) - 1)]
-
-def randomTrainingPair():
-    row = comp_fails.sample()
-    #line = row.iloc[0,row.columns.get_loc('name')] + "," + row.iloc[0,row.columns.get_loc('desc')]
-    line = row.iloc[0,row.columns.get_loc('name')]
-    expected_output = Variable(
-        torch.mul(torch.tensor(
-            [row.iloc[0,row.columns.get_loc('best_estimate')]],dtype=torch.float32),NORMALIZATION_CONSTANT)).to(device)
-    #line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + "," + row.iloc[0,row.columns.get_loc('desc')]))
-    line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')]))
-    return line, expected_output, line_tensor
 
 def random_training_pair_batched():
     row = comp_fails.sample()
     #line = row.iloc[0,row.columns.get_loc('name')] + "," + row.iloc[0,row.columns.get_loc('desc')]
     line = row.iloc[0,row.columns.get_loc('name')]
+    # expected_output = Variable(
+    #     torch.mul(torch.tensor(
+    #         [row.iloc[0,row.columns.get_loc('best_estimate')]],dtype=torch.float32),NORMALIZATION_CONSTANT)).to(device)
+    
     expected_output = Variable(
-        torch.mul(torch.tensor(
-            [row.iloc[0,row.columns.get_loc('best_estimate')]],dtype=torch.float32),NORMALIZATION_CONSTANT)).to(device)
+        torch.tensor(
+            [row.iloc[0,row.columns.get_loc('lower_bound')]*NORMALIZATION_CONSTANT_LB,
+            row.iloc[0,row.columns.get_loc('best_estimate')]*NORMALIZATION_CONSTANT_BE,
+            row.iloc[0,row.columns.get_loc('upper_bound')]*NORMALIZATION_CONSTANT_UB]
+            ,dtype=torch.float32)).to(device)
     #line_tensor = Variable(lineToTensor(row.iloc[0,row.columns.get_loc('name')] + "," + row.iloc[0,row.columns.get_loc('desc')]))
     line_tensor = Variable(line_to_tensor_2d(row.iloc[0,row.columns.get_loc('name')]))
     return line, expected_output, line_tensor
 
 def gen_batched_training_pairs():
     lines = []
-    e_outs = torch.empty(0)
+    e_outs = torch.empty((0,3))
     l_ts_lst = []
     max_size = 0
     
@@ -73,7 +71,7 @@ def gen_batched_training_pairs():
             max_size = line_tensor.size()[0]
         
         lines.append(line)
-        e_outs = torch.cat((e_outs,expected_output))
+        e_outs = torch.cat((e_outs,expected_output.reshape(1,OUTPUT_SIZE)))
         l_ts_lst.append(line_tensor)
     
     padded = turnn.pad_sequence(l_ts_lst, batch_first=True, padding_value=0.0)
@@ -140,20 +138,6 @@ def train_batched(args):
     
     optimizer.step()
     return output, loss.data.item()
-    
-
-def train(expected_output, line_tensor):
-    optimizer = torch.optim.Adam(lstm.parameters(), lr=LEARNING_RATE)
-    criterion = nn.MSELoss()
-    lstm.train()
-    output= lstm.forward(line_tensor)
-    
-    loss = criterion(output, expected_output)
-    optimizer.zero_grad()
-    loss.backward()
-    
-    optimizer.step()
-    return output, loss.data.item()
 
 def timeSince(since):
     now = time.time()
@@ -161,22 +145,6 @@ def timeSince(since):
     m = math.floor(s / 60)
     s -= m * 60
     return '%dm %ds' % (m, s)
-
-def iterate_once():
-    line, expected_output, line_tensor = randomTrainingPair()
-    output, loss = train(expected_output, line_tensor)
-    return line,output,expected_output,loss
-
-def iterate(epoch):
-    current_loss = 0
-    for e in range(EPOCH_SIZE):
-        line,output,expected_output,loss = iterate_once()
-        current_loss += loss
-    
-    avg_loss = current_loss/EPOCH_SIZE
-    # Print epoch number, loss, name and guess
-    return [avg_loss,time.time(),epoch]
-    #return [avg_loss,time.time(),epoch, line, output, expected_output]
 
 def load_batch(args):
     model,epoch = args
@@ -200,14 +168,16 @@ def start_training():
     plt.ylim(0,1)
     
     for i in range(N_EPOCHS):
-        #pool.apply_async(iterate,args=[i],callback=async_callback)
         pool.apply_async(load_batch,args=[(lstm,i)],callback=async_callback)
-    #pool.apply_async(train,args=[0,trainer],callback=async_callback)
 
 def stop_training():
     pool.terminate()
     #pool.close()
     return
+
+def test_update_best(func_result: list):
+    e = 50*np.exp(-0.2*(func_result[2]-lowest_error[1]))
+    return ((func_result[0]*e/(1+e))<lowest_error[0])   
 
 def async_callback(func_result):
     print(func_result)
@@ -217,9 +187,10 @@ def async_callback(func_result):
     window.loss_x.append(func_result[1]-window.start_time)
     window.loss_y.append(func_result[0])
     #print('{d} {d}% ({s}) {.4f} {s} / {s} {s}'.format(epoch, epoch / 10, x[-1], loss, line, output, expected_output))
-    if(func_result[0]<lowest_error):
-        lowest_error = func_result[0]
-        window.min_loss_box.setText(str(lowest_error))
+    if(test_update_best(func_result)):
+        lowest_error[0] = func_result[0]
+        lowest_error[1] = func_result[2]
+        window.min_loss_box.setText(str(lowest_error[0]))
         global best_model
         best_model = copy.deepcopy(lstm)
     # removing the older graph
@@ -243,6 +214,10 @@ def predict(line: str) -> torch.Tensor:
     lengths = torch.tensor([len(t) for t in lt])
     packed = turnn.pack_padded_sequence(padded, lengths.to(device), batch_first=True, enforce_sorted=False)
     best_model.eval()
-    return best_model.forward_batched(packed)
+    res = torch.flatten(best_model.forward_batched(packed))*1000
+    res[0]/=NORMALIZATION_CONSTANT_LB
+    res[1]/=NORMALIZATION_CONSTANT_BE
+    res[2]/=NORMALIZATION_CONSTANT_UB
+    return res.int()/1000.0
     # line_tensor = lineToTensor(line)
     # return lstm.forward(line_tensor)
