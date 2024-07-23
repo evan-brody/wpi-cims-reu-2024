@@ -144,9 +144,16 @@ class DepQComboBox(QComboBox):
         self.addItems(self.parent_window.components["name"])
         self.textActivated.connect(self.update_comp_fail_rate)
 
+    def get_prob_from_fpmh(self, fpmh_list: list[float]) -> float:
+        one_dist = (sum(fpmh_list) / 3 - 1) / 15
+        zero_prob = 10 / (one_dist ** 2)
+
+        return zero_prob
+
     def update_comp_fail_rate(self, comp_str: str) -> None:
         # Predict the failure rate using the RNN
-        new_weight = max(0, train_lstm.predict(comp_str).item())
+        lstm_res = [ e.item() for e in train_lstm.predict(comp_str) ]
+        new_weight = min(max(0, self.get_prob_from_fpmh(lstm_res)), 1)
         self.parent_scene.dg.update_vertex(self.parent_rect, new_weight)
         self.parent_scene.update_rect_colors()
 
