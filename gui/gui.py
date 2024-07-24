@@ -146,7 +146,7 @@ class DepQComboBox(QComboBox):
 
     def get_prob_from_fpmh(self, fpmh_list: list[float]) -> float:
         one_dist = (sum(fpmh_list) / 3 - 1) / 15
-        zero_prob = 10 / (one_dist ** 2)
+        zero_prob = 1 / (one_dist ** 2)
 
         return zero_prob
 
