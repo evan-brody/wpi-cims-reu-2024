@@ -106,11 +106,14 @@ class DepQAction(QAction):
             QApplication.restoreOverrideCursor()
 
 class DepQMenu(QMenu):
-    def __init__(self, dg: DepGraph, parent_rect: QGraphicsRectItem, pos: QPoint) -> None:
+    def __init__(self, dg: DepGraph, parent_scene: QGraphicsScene,
+                 parent_rect: QGraphicsRectItem, pos: QPoint) -> None:
         super().__init__()
 
         self.dg = dg
         self.parent_rect = parent_rect
+        self.parent_scene = parent_scene
+        self.lstm_dr = self.dg.get_vertex_weight(self.parent_rect)
 
         # Removes icons
         self.setStyleSheet(
@@ -124,9 +127,34 @@ class DepQMenu(QMenu):
             "}"
         )
 
-        self.dr_action = self.addAction(f"Direct Risk: {self.dg.get_vertex_weight(self.parent_rect):.3f}")
+        self.dr_action = self.addAction(f"Direct Risk: {self.lstm_dr:.3f}")
+        self.dr_action.triggered.connect(self.input_dr)
+
+        
+        # self.reset_action = self.addAction("Reset Direct Risk")
+        # self.reset_action.triggered.connect(self.reset_dr)
 
         self.exec(pos)
+    
+    def input_dr(self) -> None:
+        # Get user-inputted direct risk
+        new_dr, res = QInputDialog.getDouble(self, "Direct Risk Input",
+                                             "Direct Risk:",
+                                             value=0, min=0,
+                                             max=1, decimals=10)
+        
+        # Use the input to change appropriate values
+        if not res: return
+        self.user_dr = new_dr
+        self.set_new_risk(self.user_dr)
+
+    def reset_dr(self) -> None:
+        self.set_new_risk(self.lstm_dr)
+
+    def set_new_risk(self, risk: float) -> None:
+        self.dg.update_vertex(self.parent_rect, risk)
+        self.parent_scene.update_rect_colors()
+        self.dr_action.setText(f"Direct Risk: {self.lstm_dr:.3f}")
 
 class DepQComboBox(QComboBox):
     def __init__(self, parent_rect: QGraphicsRectItem, 
@@ -144,20 +172,43 @@ class DepQComboBox(QComboBox):
         self.addItems(self.parent_window.components["name"])
         self.textActivated.connect(self.update_comp_fail_rate)
 
+    def set_new_weight(self, fpmh_list: list[float]) -> None:
+        new_weight = min(1, max(0, self.get_prob_from_fpmh(fpmh_list)))
+        self.parent_scene.dg.update_vertex(self.parent_rect, new_weight)
+        self.parent_scene.update_rect_colors()
+    
     def get_prob_from_fpmh(self, fpmh_list: list[float]) -> float:
-        one_dist = (sum(fpmh_list) / 3 - 1) / 15
+        fpmh_list_sum = max(sum(fpmh_list), 0.000001)
+        one_dist = (fpmh_list_sum / 3 - 1) / 15
         if 0 == one_dist:
             one_dist = 1
         zero_prob = 1 / (one_dist ** 2)
 
-        return zero_prob
+        return 1 / zero_prob
 
     def update_comp_fail_rate(self, comp_str: str) -> None:
-        # Predict the failure rate using the RNN
-        lstm_res = [ e.item() for e in train_lstm.predict(comp_str) ]
-        new_weight = min(max(0, self.get_prob_from_fpmh(lstm_res)), 1)
-        self.parent_scene.dg.update_vertex(self.parent_rect, new_weight)
-        self.parent_scene.update_rect_colors()
+        parent_window = self.parent_scene.parent_window
+
+        # drop_duplicates() shouldn't be necessary here, but just in case
+        comp_fail_rows = parent_window.df[
+                            parent_window.df["name"] == comp_str
+                        ].drop_duplicates()
+    
+        # If we have the component in our database, pull
+        # the data from there
+        if 0 != len(comp_fail_rows.index):
+            lb = comp_fail_rows["lower_bound"].sum()
+            be = comp_fail_rows["best_estimate"].sum()
+            ub = comp_fail_rows["upper_bound"].sum()
+            
+            self.set_new_weight([lb, be, ub])
+        else:
+            # If we don't, predict the failure rate using the RNN
+            self.set_new_weight(
+                [ e.item() for e in train_lstm.predict(comp_str) ]
+            )
+
+            print([ e.item() for e in train_lstm.predict(comp_str) ])
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         event.ignore()
@@ -747,7 +798,7 @@ class DepQGraphicsScene(QGraphicsScene):
         
         global_pos = event.screenPos()
         
-        self.context_menu = DepQMenu(self.dg, self.released_on_r, global_pos)
+        self.context_menu = DepQMenu(self.dg, self, self.released_on_r, global_pos)
 
     def mouseReleaseEventEdge(self, event: QGraphicsSceneMouseEvent) -> None:
         self.mouse_down_r = False
@@ -1672,7 +1723,7 @@ class MainWindow(QMainWindow):
         table_widget.clearContents()
 
         # retrieve component name from text box
-        component_name = self.component_name_field.currentText()
+        component_name = self.component_name_field_lstm.currentText()
 
         # Update the column header for "Failure Mode"
         header_labels_static = self.HORIZONTAL_HEADER_LABELS[1:]
