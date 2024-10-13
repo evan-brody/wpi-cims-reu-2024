@@ -41,6 +41,7 @@ import os, sys, sqlite3, logging, torch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import math
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -165,6 +166,7 @@ class DepQComboBox(QComboBox):
         self.parent_rect = parent_rect
         self.parent_scene = parent_scene
         self.parent_window = parent_window
+        self.three_param = None # Three parameter Weibull distribution
 
         self.setEditable(True)
         self.setSizeAdjustPolicy(QComboBox.AdjustToContents)
@@ -172,19 +174,24 @@ class DepQComboBox(QComboBox):
         self.addItems(self.parent_window.components["name"])
         self.textActivated.connect(self.update_comp_fail_rate)
 
-    def set_new_weight(self, fpmh_list: list[float]) -> None:
-        new_weight = min(1, max(0, self.get_prob_from_fpmh(fpmh_list)))
+    def set_new_weight(self, three_params: list[float]) -> None:
+        self.three_param = three_params
+        unclamped_weight = self.get_prob_from_3param_weibull(*three_params)
+
+        # Weight is a probability, so it should be in [0, 1]
+        new_weight = min(max(0, unclamped_weight), 1)
         self.parent_scene.dg.update_vertex(self.parent_rect, new_weight)
         self.parent_scene.update_rect_colors()
     
-    def get_prob_from_fpmh(self, fpmh_list: list[float]) -> float:
-        fpmh_list_sum = max(sum(fpmh_list), 0.000001)
-        one_dist = (fpmh_list_sum / 3 - 1) / 15
-        if 0 == one_dist:
-            one_dist = 1
-        zero_prob = 1 / (one_dist ** 2)
+    def get_prob_from_3param_weibull(self, lb: float, be: float, ub: float) -> float:
+        t = 1_000 # We choose one thousand
 
-        return 1 / zero_prob
+        # Ensure reasonable values
+        ub = max(0, min(ub, 10))
+
+        # Cumulative distribution function of the 3 paramater Weibull distribution
+        e_power = ((t - lb) / be) ** abs(ub)
+        return 1 - math.exp(-e_power)
 
     def update_comp_fail_rate(self, comp_str: str) -> None:
         parent_window = self.parent_scene.parent_window
@@ -207,8 +214,6 @@ class DepQComboBox(QComboBox):
             self.set_new_weight(
                 [ e.item() for e in train_lstm.predict(comp_str) ]
             )
-
-            print([ e.item() for e in train_lstm.predict(comp_str) ])
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         event.ignore()
