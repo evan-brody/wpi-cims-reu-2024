@@ -231,7 +231,7 @@ class DepQGraphicsScene(QGraphicsScene):
     ARR_LONG = 30  # The length of the middle axis
     ARR_SHORT = 15  # Half the length of the base
 
-    RECT_DIMS = (400, 200)
+    RECT_DIMS = (200, 100)
 
     ERASER_RADIUS = 50
 
@@ -424,7 +424,7 @@ class DepQGraphicsScene(QGraphicsScene):
         input_proxy.setPos(input_pos)
 
         # Create risk info label
-        comp_risk_label = QLabel(f"Total Risk: {self.dg.DEFAULT_DR:.3f}")
+        comp_risk_label = QLabel(f"Probability: {self.dg.DEFAULT_DR:.3f}")
         comp_risk_label.setAlignment(Qt.AlignHCenter)
         comp_risk_label.setMargin(3)
 
@@ -523,7 +523,7 @@ class DepQGraphicsScene(QGraphicsScene):
             rect.setBrush(brush)
 
             risk_label = rect.data(self.RISK_LABEL)
-            risk_label.setText(f"Total Risk: {risk:.3f}")
+            risk_label.setText(f"Probability: {risk:.3f}")
 
     # Properly deletes components and AND gates
     def delete_rect(self, rect_item: QGraphicsRectItem) -> None:
