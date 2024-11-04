@@ -107,6 +107,8 @@ class DepQAction(QAction):
             QApplication.restoreOverrideCursor()
 
 class DepQMenu(QMenu):
+    COMP_STR = 0
+
     def __init__(self, dg: DepGraph, parent_scene: QGraphicsScene,
                  parent_rect: QGraphicsRectItem, pos: QPoint) -> None:
         super().__init__()
@@ -114,7 +116,7 @@ class DepQMenu(QMenu):
         self.dg = dg
         self.parent_rect = parent_rect
         self.parent_scene = parent_scene
-        self.lstm_dr = self.dg.get_vertex_weight(self.parent_rect)
+        self.dr = self.dg.get_vertex_weight(self.parent_rect)
 
         # Removes icons
         self.setStyleSheet(
@@ -128,19 +130,21 @@ class DepQMenu(QMenu):
             "}"
         )
 
-        self.dr_action = self.addAction(f"Direct Risk: {self.lstm_dr:.3f}")
+        self.dr_action = self.addAction(f"Direct Probability: {self.dr:.3f}")
         self.dr_action.triggered.connect(self.input_dr)
-
         
-        # self.reset_action = self.addAction("Reset Direct Risk")
+        # self.reset_action = self.addAction("Reset Direct Probability")
         # self.reset_action.triggered.connect(self.reset_dr)
+
+        self.weibull_action = self.addAction("Generate Weibull Distribution")
+        self.dr_action.triggered.connect(self.gen_weibull)
 
         self.exec(pos)
     
     def input_dr(self) -> None:
         # Get user-inputted direct risk
-        new_dr, res = QInputDialog.getDouble(self, "Direct Risk Input",
-                                             "Direct Risk:",
+        new_dr, res = QInputDialog.getDouble(self, "Direct Probability Input",
+                                             "Direct Probability:",
                                              value=0, min=0,
                                              max=1, decimals=10)
         
@@ -150,14 +154,44 @@ class DepQMenu(QMenu):
         self.set_new_risk(self.user_dr)
 
     def reset_dr(self) -> None:
-        self.set_new_risk(self.lstm_dr)
+        pass
 
     def set_new_risk(self, risk: float) -> None:
         self.dg.update_vertex(self.parent_rect, risk)
         self.parent_scene.update_rect_colors()
-        self.dr_action.setText(f"Direct Risk: {self.lstm_dr:.3f}")
+        self.dr_action.setText(f"Direct Probability: {risk:.3f}")
+        self.dr = risk
+
+    def weibull_func(self, alpha: float, beta: float, gamma: float, t: float) -> float:
+        return (alpha / beta) * ((t - gamma) ** (alpha - 1)) * np.exp((-(t - gamma) / beta) ** alpha)
+
+    def gen_weibull(self) -> None:
+        comp_str = self.parent_rect.data(self.COMP_STR)
+        print(comp_str)
+        parent_window = self.parent_scene.parent_window
+
+                # drop_duplicates() shouldn't be necessary here, but just in case
+        comp_fail_rows = parent_window.df[
+                            parent_window.df["name"] == comp_str
+                        ].drop_duplicates()
+    
+        # If we have the component in our database, pull
+        # the data from there
+        if 0 != len(comp_fail_rows.index):
+            lb = comp_fail_rows["lower_bound"].sum()
+            be = comp_fail_rows["best_estimate"].sum()
+            ub = comp_fail_rows["upper_bound"].sum()
+            
+            self.set_new_weight([lb, be, ub])
+        else:
+            # If we don't, predict the failure rate using the RNN
+            self.set_new_weight(
+                [ e.item() for e in train_lstm.predict(comp_str) ]
+            )
 
 class DepQComboBox(QComboBox):
+    COMP_STR = 0
+
     def __init__(self, parent_rect: QGraphicsRectItem, 
                  parent_scene: QGraphicsScene, 
                  parent_window: QMainWindow) -> None:
@@ -184,7 +218,8 @@ class DepQComboBox(QComboBox):
         self.parent_scene.update_rect_colors()
     
     def get_prob_from_3param_weibull(self, lb: float, be: float, ub: float) -> float:
-        t = 1_000 # We choose one thousand
+        if be == 0: return 0 # Prevent division by zero
+        t = 1_000_000 # We choose failures per one million hours
 
         # Ensure reasonable values
         ub = max(0, min(ub, 10))
@@ -194,6 +229,7 @@ class DepQComboBox(QComboBox):
         return 1 - math.exp(-e_power)
 
     def update_comp_fail_rate(self, comp_str: str) -> None:
+        self.parent_rect.setData(self.COMP_STR, comp_str)
         parent_window = self.parent_scene.parent_window
 
         # drop_duplicates() shouldn't be necessary here, but just in case
