@@ -162,15 +162,24 @@ class DepQMenu(QMenu):
         self.dr_action.setText(f"Direct Probability: {risk:.3f}")
         self.dr = risk
 
+    def set_new_weight(self, three_params: list[float]) -> None:
+        self.three_param = three_params
+        unclamped_weight = self.get_prob_from_3param_weibull(*three_params)
+
+        # Weight is a probability, so it should be in [0, 1]
+        new_weight = min(max(0, unclamped_weight), 1)
+        self.set_new_risk(new_weight)
+
     def weibull_func(self, alpha: float, beta: float, gamma: float, t: float) -> float:
         return (alpha / beta) * ((t - gamma) ** (alpha - 1)) * np.exp((-(t - gamma) / beta) ** alpha)
 
     def gen_weibull(self) -> None:
         comp_str = self.parent_rect.data(self.COMP_STR)
-        print(comp_str)
+        if comp_str is None: return
+        if not isinstance(comp_str, str): return # Duct-tape bugfix. Sometimes it's a QPointF. Not sure why
         parent_window = self.parent_scene.parent_window
 
-                # drop_duplicates() shouldn't be necessary here, but just in case
+        # drop_duplicates() shouldn't be necessary here, but just in case
         comp_fail_rows = parent_window.df[
                             parent_window.df["name"] == comp_str
                         ].drop_duplicates()
@@ -182,7 +191,7 @@ class DepQMenu(QMenu):
             be = comp_fail_rows["best_estimate"].sum()
             ub = comp_fail_rows["upper_bound"].sum()
             
-            self.set_new_weight([lb, be, ub])
+            self.set_new_risk([lb, be, ub])
         else:
             # If we don't, predict the failure rate using the RNN
             self.set_new_weight(
